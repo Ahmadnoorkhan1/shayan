@@ -5,5 +5,9 @@ server/node_modules/
 # Ignore build folder from client
 client/dist/
 
+
+server/.env
+server/.env.local
+
 # Optional: Ignore other common directories
 **/node_modules/
