@@ -10,7 +10,14 @@ const EditCoursePage = () => {
   const [courseData, setCourseData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
+  // const [selectedChapter, setSelectedChapter] = useState<string>("");
+
   const [selectedChapter, setSelectedChapter] = useState<string>("");
+  
+  const handleSectionSelect = (sectionContent: string) => {
+    setSelectedChapter(sectionContent);
+  };
+
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -51,14 +58,17 @@ const EditCoursePage = () => {
   return (
     <div className="flex flex-col sm:flex-row p-4 space-y-6 sm:space-y-0 sm:space-x-6">
       <div className="flex-1 p-6 bg-white rounded-lg shadow-md ">
-        <h2 className="text-2xl font-bold mb-4 text-gray-800">Edit Chapter</h2>
+        <h2 className="text-2xl font-bold mb-4 text-purple-800">Edit Chapter</h2>
         <RichTextEditor
           initialContent={selectedChapter}
        
         />
       </div>
-      <ChapterGallery chapters={chapters} onSelectChapter={setSelectedChapter} />
-    </div>
+      <ChapterGallery 
+        chapters={chapters} 
+        onSelectChapter={setSelectedChapter}
+        onSelectSection={handleSectionSelect}
+      />    </div>
   );
 };
 

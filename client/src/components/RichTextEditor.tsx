@@ -5,7 +5,6 @@ import 'react-quill/dist/quill.snow.css';
 const RichTextEditor = ({ initialContent }: any) => {
   const [content, setContent] = useState(initialContent);
 
-  // Sync content with initialContent when it changes
   useEffect(() => {
     setContent(initialContent);
   }, [initialContent]);
@@ -30,21 +29,42 @@ const RichTextEditor = ({ initialContent }: any) => {
   };
 
   return (
-    <div
-      className="editor-container max-h-[90vh] overflow-y-auto p-4 bg-white rounded-2xl shadow-lg border border-gray-200 hover:shadow-xl transition-shadow duration-300"
-      style={{
-        scrollbarWidth: 'none', // Firefox
-        msOverflowStyle: 'none', // IE/Edge
-      }}
-    >
+    <div className="editor-wrapper">
       <style>
         {`
-          .editor-container::-webkit-scrollbar {
-            display: none;
+          .editor-wrapper {
+            display: flex;
+            flex-direction: column;
+            // height: 90vh;
           }
-          /* Force editor text to be black */
+          .editor-wrapper .ql-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: white;
+            // border-top: none;
+          }
+          .editor-wrapper .ql-container {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+          }
           .ql-editor {
             color: black;
+            // min-height: 90vh;
+          }
+          .ql-container::-webkit-scrollbar {
+            width: 6px;
+          }
+          .ql-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+          }
+          .ql-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+          }
+          .ql-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
           }
         `}
       </style>

@@ -2,42 +2,52 @@ import GettingStarted from "../../../components/dashboard/GettingStarted";
 import Table from "../../../components/ui/Table";
 import { useEffect, useState } from "react";
 
-
 import apiService from "../../../utilities/service/api";
 import { addItem, deleteItem, downloadItem, editItem } from "../../../utilities/shared/tableUtils";
+
 const CoursecreatorPage = () => {
   const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleCourses = (item:any) =>{
-    setCourses(item)
-  }
+  const handleCourses = (item: any) => {
+    setCourses(item);
+  };
 
   try {
     useEffect(() => {
       const fetchData = async () => {
-        const response = await await apiService.get(
-          "course-creator/getCourses/course",
-          {}
-        );
-        const formattedCourses = response.data.map((course: any) => {
-          const formatDate = (dateString: string) => {
-            const options: Intl.DateTimeFormatOptions = {
-              year: "numeric",
-              month: "short",
-              day: "2-digit",
+        setLoading(true);
+        try {
+          const response = await apiService.get(
+            "course-creator/getCourses/course",
+            {}
+          );
+          const formattedCourses = response?.data?.map((course: any) => {
+            const formatDate = (dateString: string) => {
+              const options: Intl.DateTimeFormatOptions = {
+                year: "numeric",
+                month: "short",
+                day: "2-digit",
+              };
+              return new Date(dateString).toLocaleDateString(undefined, options);
             };
-            return new Date(dateString).toLocaleDateString(undefined, options);
-          };
 
-          return {
-            ID: course.course_id,
-            "Course Title": course.course_title,
-            Created: formatDate(course.createdAt),
-            Updated: formatDate(course.updatedAt),
-            Content: course.content,
-          };
-        });
-        setCourses(formattedCourses);
+            return {
+              ID: course.course_id,
+              "Course Title": course.course_title,
+              Created: formatDate(course.createdAt),
+              Updated: formatDate(course.updatedAt),
+              Content: course.content,
+            };
+          });
+          console.log(formattedCourses, "formattedCourses");
+
+          setCourses(formattedCourses);
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setLoading(false);
+        }
       };
       fetchData();
     }, []);
@@ -45,26 +55,31 @@ const CoursecreatorPage = () => {
     console.log(error);
   }
 
-
-
- 
+  console.log(courses, "courses");
 
   return (
     <>
       <GettingStarted
         button={false}
         title="Create a book with our AI"
-        description=" What do you want your book to be about?
-(don't worry, you can always change the content or name of your book later!)"
+        description="What do you want your book to be about? (don't worry, you can always change the content or name of your book later!)"
       />
-      <div className="flex items-center py-8 w-full ">
+
+      {loading && (
+        <div className="flex justify-center items-center w-full py-4">
+          <div className="loader border-t-4 border-blue-500 border-solid rounded-full w-10 h-10 animate-spin"></div>
+          <p className="ml-4">Loading...</p>
+        </div>
+      )}
+
+      <div className="flex items-center py-8 w-full">
         <Table
           data={courses}
           headers={["ID", "Course Name", "Created", "Updated"]}
           isAdd={true}
           addItem={addItem}
           deleteItem={deleteItem}
-          downloadItem={downloadItem}
+          downloadItem={(row: any) => downloadItem(row, setLoading)}
           editItem={editItem}
           setData={handleCourses}
         />
