@@ -104,7 +104,9 @@ const getCourses = async (req, res) => {
 
         if (type === 'course' || type === 'book') {
             courses = await Course.findAll({
-                where: { type: type },
+                where: { type: type  },
+                //neglect column content 
+                // attributes: { exclude: ['content'] },
                 order: [['createdAt', 'DESC']] // Sort by latest courses first
             });
         } else {
