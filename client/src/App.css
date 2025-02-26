@@ -853,3 +853,13 @@ select::-webkit-scrollbar-thumb {
 select::-webkit-scrollbar-track {
   background: hsl(0 0% 92% / 1) !important;
 }
+
+
+.image-generator-popover {
+  position: absolute;
+  top: 100%;  
+  right: 0;
+  margin-top: 0.5rem;  
+  z-index: 50;
+  width: 320px;
+}

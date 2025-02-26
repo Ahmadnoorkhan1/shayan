@@ -5,12 +5,13 @@ import { Book, ChevronDown, ChevronUp, FileText, BookOpen } from 'lucide-react';
 interface ChapterGalleryProps {
   chapters: string[];
   onSelectChapter: (chapter: string) => void;
-  onSelectSection?: (section: string) => void;
+  onSelectSection: (section: string) => void;
 }
 
 const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapter, onSelectSection }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
+  const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
   
   const parseChapter = (markdown: string) => {
     const clean = markdown.replace(/```markdown\s*/, "").replace(/```/, "").trim();
@@ -30,10 +31,24 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
     return { title, description, sections };
   };
 
-  return (
-    <div style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} className="w-full sm:w-[40%] h-[calc(100vh-4rem)] flex flex-col bg-white rounded-lg shadow-sm">
-     
+  const handleChapterClick = (chapter: string) => {
+    // Only select chapter content
+    onSelectChapter(chapter);
+  };
 
+  const handleExpandClick = (event: React.MouseEvent, index: number) => {
+    // Prevent the click event from bubbling up to the chapter card
+    event.stopPropagation();
+    setExpandedChapter(expandedChapter === index ? null : index);
+  };
+
+  const handleSectionClick = (chapterIndex: number, sectionIndex: number, content: string) => {
+    setSelectedSection({ chapter: chapterIndex, section: sectionIndex });
+    onSelectSection(content);
+  };
+
+  return (
+    <div style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} className="w-full sm:w-[40%] h-[calc(100vh-4rem)] flex flex-col bg-white rounded-lg shadow-lg">
       <div className=" top-0 bg-white z-20 px-4 py-3 border-b border-purple-100">
         <h3 className="text-lg font-semibold text-purple-800 flex items-center">
           <Book className="w-5 h-5 mr-2 text-purple-600" />
@@ -52,7 +67,7 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
               return (
                 <div key={index} className="group">
                   <div
-                    onClick={() => setExpandedChapter(isExpanded ? null : index)}
+                    onClick={() => handleChapterClick(chapter)}
                     onMouseEnter={() => setHoveredIndex(index)}
                     onMouseLeave={() => setHoveredIndex(null)}
                     className={`
@@ -74,38 +89,56 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
                           </p>
                         </div>
                       </div>
-                      {isExpanded ? 
-                        <ChevronUp className="w-4 h-4 text-purple-500" /> : 
-                        <ChevronDown className="w-4 h-4 text-purple-500" />
-                      }
+                      <button
+                        onClick={(e) => handleExpandClick(e, index)}
+                        className="p-1 hover:bg-purple-100 rounded-full transition-colors"
+                      >
+                        {isExpanded ? 
+                          <ChevronUp className="w-4 h-4 text-purple-500" /> : 
+                          <ChevronDown className="w-4 h-4 text-purple-500" />
+                        }
+                      </button>
                     </div>
                   </div>
 
-                  {isExpanded && sections && sections.length > 0 && (
-                    <div style={{ scrollbarWidth: "none", msOverflowStyle: "none"}}  className="mt-2 space-y-2 mx-2">
-                      {sections.map((section, sIdx) => (
-                        <div
-                          key={sIdx}
-                          onClick={() => onSelectSection?.(section.content)}
-                          className={`
-                            p-2.5 rounded-lg
-                            cursor-pointer text-sm text-gray-600
-                            hover:text-purple-700 
-                            transition-all duration-200
-                            border border-transparent
-                            hover:border-purple-200
-                            hover:bg-white
-                            hover:shadow-sm
-                            flex items-center gap-2
-                            ${isHovered ? 'bg-purple-50/30' : 'bg-purple-50/10'}
-                          `}
-                        >
-                          <div className="w-1.5 h-1.5 rounded-full bg-purple-400/50"></div>
-                          <span className="flex-1 truncate">
-                            {section.title}
-                          </span>
-                        </div>
-                      ))}
+                  {isExpanded && sections && sections?.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {sections.map((section, sIdx) => {
+                        const isSelected = selectedSection?.chapter === index && 
+                                        selectedSection?.section === sIdx;
+                        
+                        return (
+                          <div
+                            key={sIdx}
+                            onClick={() => handleSectionClick(index, sIdx, section.content)}
+                            className={`
+                              p-2.5 rounded-lg mx-4
+                              cursor-pointer text-sm
+                              transition-all duration-200
+                              border border-transparent
+                              flex items-center gap-2
+                              ${isSelected ? 
+                                'bg-purple-100 border-purple-300 text-purple-800 shadow-sm' : 
+                                'hover:bg-purple-50/70 hover:border-purple-200 text-gray-600 hover:text-purple-700'
+                              }
+                            `}
+                          >
+                            <div className={`
+                              w-1.5 h-1.5 rounded-full 
+                              ${isSelected ? 
+                                'bg-purple-500 ring-2 ring-purple-200' : 
+                                'bg-purple-400/50'
+                              }
+                            `} />
+                            <span className="flex-1 truncate">
+                              {section.title}
+                            </span>
+                            {isSelected && (
+                              <div className="w-1 h-4 bg-purple-500 rounded-full absolute -left-0.5" />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -119,6 +152,8 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
           </div>
         )}
       </div>
+
+      
     </div>
   );
 };
