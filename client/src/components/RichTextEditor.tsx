@@ -12,6 +12,8 @@ const RichTextEditor = ({ initialContent, imageUrl }: RichTextEditorProps) => {
   const quillRef = useRef<ReactQuill>(null);
   // const prevImageUrlRef = useRef<string | null>(null);
 
+  console.log(imageUrl, "Content");
+
   // Handle initial content
   useEffect(() => {
     if (initialContent) {
@@ -26,18 +28,18 @@ const RichTextEditor = ({ initialContent, imageUrl }: RichTextEditorProps) => {
   };
 
   // Existing image handler for manual uploads
-  function imageHandler() {
-    if (!quillRef.current) return;
+  // function imageHandler() {
+  //   if (!quillRef.current) return;
 
-    const editor = quillRef.current.getEditor();
-    const range = editor.getSelection();
-    const value = prompt(imageUrl as any);
+  //   const editor = quillRef.current.getEditor();
+  //   const range = editor.getSelection();
+  //   const value = prompt(imageUrl as any);
 
-    if (value && range) {
-      editor.insertEmbed(range.index, "image", value, "user");
-      editor.setSelection(range.index + 1, 0);
-    }
-  }
+  //   if (value && range) {
+  //     editor.insertEmbed(range.index, "image", value, "user");
+  //     editor.setSelection(range.index + 1, 0);
+  //   }
+  // }
 
   const modules = {
     toolbar: {
