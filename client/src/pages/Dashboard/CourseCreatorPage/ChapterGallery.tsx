@@ -4,48 +4,66 @@ import { Book, ChevronDown, ChevronUp, FileText, BookOpen } from 'lucide-react';
 
 interface ChapterGalleryProps {
   chapters: string[];
-  onSelectChapter: (chapter: string) => void;
-  onSelectSection: (section: string) => void;
+  onSelectChapter: (chapter: string, index: number) => void;
+  // onSelectSection: (section: string) => void;
 }
 
-const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapter, onSelectSection }) => {
+const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapter }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
   const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
-  
-  const parseChapter = (markdown: string) => {
-    const clean = markdown.replace(/```markdown\s*/, "").replace(/```/, "").trim();
-    const titleMatch = clean.match(/^#\s*(.*)/m);
-    const title = titleMatch ? titleMatch[1].replace(/[*_]/g, '') : "Untitled";
+  const [selectedChapterIndex, setSelectedChapterIndex] = useState<number | null>(null);
+
+  const parseChapter = (html: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
     
-    const sections = clean.split(/(?=##\s)/).slice(1).map(section => {
-      const sectionTitle = section.match(/^##\s*(.*)/m)?.[1] || "Untitled Section";
-      const content = section.split('\n').slice(1).join('\n').trim();
+    // Get chapter title (h1)
+    const titleElement = doc.querySelector('h1');
+    const title = titleElement ? titleElement.textContent || 'Untitled' : 'Untitled';
+    
+    // Get sections (h2)
+    const sectionElements = doc.querySelectorAll('h2');
+    const sections = Array.from(sectionElements).map(section => {
+      const sectionTitle = section.textContent || 'Untitled Section';
+      
+      // Get content between this h2 and the next h2 or end of document
+      let content = '';
+      let currentNode = section.nextElementSibling;
+      while (currentNode && currentNode.tagName !== 'H2') {
+        content += currentNode.outerHTML;
+        currentNode = currentNode.nextElementSibling;
+      }
+      
       return { title: sectionTitle, content };
     });
-
+  
+    // Get editable content (everything except h1)
+    let editableContent = '';
+    let currentNode = titleElement?.nextElementSibling;
+    while (currentNode) {
+      editableContent += currentNode.outerHTML;
+      currentNode = currentNode.nextElementSibling;
+    }
+  
     const description = sections.length > 0 ? 
       `${sections.length} ${sections.length === 1 ? 'section' : 'sections'} available` : 
       "No sections found";
-
-    return { title, description, sections };
+  
+    return { title, description, sections, editableContent };
   };
+  const handleChapterClick = (chapter: string, index: number) => {
+    onSelectChapter(chapter, index);
+    setSelectedChapterIndex(index);
 
-  const handleChapterClick = (chapter: string) => {
-    // Only select chapter content
-    onSelectChapter(chapter);
   };
 
   const handleExpandClick = (event: React.MouseEvent, index: number) => {
-    // Prevent the click event from bubbling up to the chapter card
     event.stopPropagation();
     setExpandedChapter(expandedChapter === index ? null : index);
   };
 
-  const handleSectionClick = (chapterIndex: number, sectionIndex: number, content: string) => {
-    setSelectedSection({ chapter: chapterIndex, section: sectionIndex });
-    onSelectSection(content);
-  };
+  
 
   return (
     <div style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} className="w-full sm:w-[40%] h-[calc(100vh-4rem)] flex flex-col bg-white rounded-lg shadow-lg">
@@ -66,82 +84,60 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
 
               return (
                 <div key={index} className="group">
-                  <div
-                    onClick={() => handleChapterClick(chapter)}
-                    onMouseEnter={() => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    className={`
-                      cursor-pointer p-3 bg-white rounded-lg
-                      hover:bg-purple-50/50 transition-all duration-200
-                      border border-purple-100 hover:border-purple-200
-                      ${isExpanded ? 'shadow-md bg-purple-50/30' : 'hover:shadow-sm'}
-                    `}
-                  >
-                    <div className="flex justify-between items-start gap-3">
-                      <div className="flex items-start gap-2 min-w-0">
-                        <FileText className={`w-4 h-4 mt-0.5 flex-shrink-0 ${isHovered ? 'text-purple-600' : 'text-purple-400'}`} />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-sm font-medium text-gray-800 truncate">
-                            {title}
-                          </h4>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {description}
-                          </p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={(e) => handleExpandClick(e, index)}
-                        className="p-1 hover:bg-purple-100 rounded-full transition-colors"
-                      >
-                        {isExpanded ? 
-                          <ChevronUp className="w-4 h-4 text-purple-500" /> : 
-                          <ChevronDown className="w-4 h-4 text-purple-500" />
-                        }
-                      </button>
-                    </div>
-                  </div>
-
-                  {isExpanded && sections && sections?.length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {sections.map((section, sIdx) => {
-                        const isSelected = selectedSection?.chapter === index && 
-                                        selectedSection?.section === sIdx;
-                        
-                        return (
-                          <div
-                            key={sIdx}
-                            onClick={() => handleSectionClick(index, sIdx, section.content)}
-                            className={`
-                              p-2.5 rounded-lg mx-4
-                              cursor-pointer text-sm
-                              transition-all duration-200
-                              border border-transparent
-                              flex items-center gap-2
-                              ${isSelected ? 
-                                'bg-purple-100 border-purple-300 text-purple-800 shadow-sm' : 
-                                'hover:bg-purple-50/70 hover:border-purple-200 text-gray-600 hover:text-purple-700'
-                              }
-                            `}
-                          >
-                            <div className={`
-                              w-1.5 h-1.5 rounded-full 
-                              ${isSelected ? 
-                                'bg-purple-500 ring-2 ring-purple-200' : 
-                                'bg-purple-400/50'
-                              }
-                            `} />
-                            <span className="flex-1 truncate">
-                              {section.title}
-                            </span>
-                            {isSelected && (
-                              <div className="w-1 h-4 bg-purple-500 rounded-full absolute -left-0.5" />
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+  <div
+    onClick={() => handleChapterClick(chapter, index)}
+    onMouseEnter={() => setHoveredIndex(index)}
+    onMouseLeave={() => setHoveredIndex(null)}
+    className={`
+      cursor-pointer p-3 bg-white rounded-lg
+      hover:bg-purple-50/50 transition-all duration-300 ease-in-out
+      border border-purple-100 hover:border-purple-300
+      transform hover:-translate-y-0.5
+      ${isExpanded ? 'shadow-md bg-purple-50/30' : 'hover:shadow-lg'}
+      ${selectedChapterIndex === index ? 
+        'border-purple-500 shadow-lg bg-purple-50 scale-[1.02]' : 
+        'hover:scale-[1.01]'}
+      relative
+      before:absolute before:inset-0 
+      before:rounded-lg before:transition-all before:duration-300
+      ${selectedChapterIndex === index ?
+        'before:bg-purple-100/10 before:border-2 before:border-purple-500/30' :
+        'before:border before:border-transparent before:hover:border-purple-200/50'}
+    `}
+  >
+    <div className="flex justify-between items-start gap-3 relative z-10">
+      <div className="flex items-start gap-2 min-w-0">
+        <FileText 
+          className={`w-4 h-4 mt-0.5 flex-shrink-0 transition-colors duration-200
+            ${isHovered ? 'text-purple-600' : 'text-purple-400'}
+            ${selectedChapterIndex === index ? 'text-purple-700' : ''}
+          `}
+        />
+        <div className="flex-1 min-w-0">
+          <h4 className={`text-sm font-medium truncate transition-colors duration-200
+            ${selectedChapterIndex === index ? 'text-purple-900' : 'text-gray-800'}
+          `}>
+            {title}
+          </h4>
+          <p className={`text-xs mt-1 transition-colors duration-200
+            ${selectedChapterIndex === index ? 'text-purple-600' : 'text-gray-500'}
+          `}>
+            {description}
+          </p>
+        </div>
+      </div>
+      <div className={`transition-opacity duration-200
+        ${isHovered || selectedChapterIndex === index ? 'opacity-100' : 'opacity-0'}
+      `}>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+            {index + 1}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
               );
             })}
           </div>
@@ -152,8 +148,6 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
           </div>
         )}
       </div>
-
-      
     </div>
   );
 };

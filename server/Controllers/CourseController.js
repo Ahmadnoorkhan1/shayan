@@ -80,10 +80,33 @@ const getNumberOfTitles = async(data)=>{
 
 const getCourseChapter = async (req, res) => {
     const data = req.body;
-    const question = `Write a paragraph of 800-1200 words for chapter ${data.prompt.chapterNo} of the chapter ${data.prompt.chapter} for the course title of mine = "${data.prompt.title}" for reference the summary is = ["${data.prompt.summary}"].....Make sure to return a markdown with headings bold italic and bullets....No extra text`;
+    const question = `Write a detailed educational chapter of 800-1200 words for Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter} 
+    of the course "${data.prompt.title}". Use HTML formatting with the following structure:
+    
+    <h1>Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter}</h1>
+    
+    <p>Introduction paragraph here...</p>
+    
+    <h2>Key Concepts</h2>
+    <p>Content here...</p>
+    
+    <h2>Main Topics</h2>
+    <p>Content with <strong>bold</strong> and <em>italic</em> text where needed.</p>
+    
+    <ul>
+        <li>Key points</li>
+        <li>Important concepts</li>
+    </ul>
+    
+    <h2>Summary</h2>
+    <p>Concluding paragraph here...</p>
+    
+    Make sure to use proper HTML tags and return only the formatted HTML content without any markdown.`;
+
     const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI response timed out")), 1800000) // 1800 sec (3 min)
+        setTimeout(() => reject(new Error("AI response timed out")), 1800000)
     );    
+
     try {
         const response = await Promise.race([letsAi(question, 4096), timeout]);
         if (!response) {

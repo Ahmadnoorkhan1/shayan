@@ -1,18 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import apiService from '../utilities/service/api'; // Import your API service
+import { Button } from './ui/button';
 
 interface RichTextEditorProps {
   initialContent: string;
   imageUrl?: string | null;
+  id: string | number;
+  onContentChange: (content: string) => void;
+  onSave: () => void;
 }
 
-const RichTextEditor = ({ initialContent, imageUrl }: RichTextEditorProps) => {
+
+const RichTextEditor = ({ initialContent, imageUrl , id, onContentChange, onSave }: RichTextEditorProps) => {
   const [content, setContent] = useState(initialContent);
   const quillRef = useRef<ReactQuill>(null);
-  // const prevImageUrlRef = useRef<string | null>(null);
-
-  console.log(imageUrl, "Content");
 
   // Handle initial content
   useEffect(() => {
@@ -21,25 +24,22 @@ const RichTextEditor = ({ initialContent, imageUrl }: RichTextEditorProps) => {
     }
   }, [initialContent]);
 
-  
+  // Handle dynamic image insertion
+  useEffect(() => {
+    if (imageUrl && quillRef.current) {
+      const editor = quillRef.current.getEditor();
+      const range = editor.getSelection();
+      const index = range ? range.index : editor.getLength();
+      editor.insertEmbed(index, 'image', imageUrl);
+      editor.setSelection(index + 1);
+      editor.insertText(index + 1, '\n'); // Add a new line after the image
+    }
+  }, [imageUrl]);
 
   const handleChange = (value: string) => {
     setContent(value);
+    onContentChange(value);
   };
-
-  // Existing image handler for manual uploads
-  // function imageHandler() {
-  //   if (!quillRef.current) return;
-
-  //   const editor = quillRef.current.getEditor();
-  //   const range = editor.getSelection();
-  //   const value = prompt(imageUrl as any);
-
-  //   if (value && range) {
-  //     editor.insertEmbed(range.index, "image", value, "user");
-  //     editor.setSelection(range.index + 1, 0);
-  //   }
-  // }
 
   const modules = {
     toolbar: {
@@ -52,73 +52,70 @@ const RichTextEditor = ({ initialContent, imageUrl }: RichTextEditorProps) => {
         [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
         [{ color: [] }, { background: [] }],
         [{ align: [] }],
-        ['link', 'video', 'code-block'],
+        ['link', 'video', 'image', 'code-block'],
         ['clean'],
-        // ['image'],
       ],
-      // handlers: {
-      //   image: imageHandler,
-      // },
     },
-  
   };
 
   return (
-    <div className="flex gap-6">
-       <style>
+    <div className="flex flex-col gap-6">
+      <style>
         {`
           .editor-wrapper {
             display: flex;
             flex-direction: column;
-            // height: 90vh;
           }
           .editor-wrapper .ql-toolbar {
             position: sticky;
             top: 0;
             z-index: 1;
             background: white;
-            // border-top: none;
+            border: 1px solid #ccc;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
           }
           .editor-wrapper .ql-container {
             flex: 1;
-            overflow-y: auto;
-            min-height: 0;
+            min-height: 200px;
+            border: 1px solid #ccc;
+            border-top: none;
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
           }
           .ql-editor {
+            min-height: 200px;
             color: black;
-            // min-height: 90vh;
           }
-          .ql-container::-webkit-scrollbar {
-            width: 6px;
-          }
-          .ql-container::-webkit-scrollbar-track {
-            background: #f1f1f1;
-          }
-          .ql-container::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 3px;
-          }
-          .ql-container::-webkit-scrollbar-thumb:hover {
-            background: #555;
+          .ql-editor img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 1em 0;
           }
         `}
       </style>
       <div className="flex-1">
         <div className="editor-wrapper">
-          <ReactQuill 
+          <ReactQuill
             ref={quillRef}
-            value={content} 
-            onChange={handleChange} 
-            modules={modules} 
-            theme="snow" 
+            value={content}
+            onChange={handleChange}
+            modules={modules}
+            theme="snow"
             preserveWhitespace
           />
         </div>
       </div>
+      <Button
+        onClick={onSave}
+        color="primary"
+        className="self-end text-white"
+      >
+        Save Content
+      </Button>
     </div>
   );
 };
 
 export default RichTextEditor;
-
-

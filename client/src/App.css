@@ -863,3 +863,32 @@ select::-webkit-scrollbar-track {
   z-index: 50;
   width: 320px;
 }
+
+
+/* Add to your global CSS file */
+@keyframes cardPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0.2);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(147, 51, 234, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(147, 51, 234, 0);
+  }
+}
+
+.chapter-scroll-container {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chapter-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* Add smooth transitions for all animations */
+* {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
