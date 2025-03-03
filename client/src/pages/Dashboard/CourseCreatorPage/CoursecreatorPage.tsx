@@ -40,7 +40,6 @@ const CoursecreatorPage = () => {
               Content: course.content,
             };
           });
-          console.log(formattedCourses, "formattedCourses");
 
           setCourses(formattedCourses);
         } catch (error) {
@@ -55,7 +54,6 @@ const CoursecreatorPage = () => {
     console.log(error);
   }
 
-  console.log(courses, "courses");
 
   return (
     <>
@@ -65,14 +63,13 @@ const CoursecreatorPage = () => {
         description="What do you want your book to be about? (don't worry, you can always change the content or name of your book later!)"
       />
 
-      {loading && (
+      {loading ? (
         <div className="flex justify-center items-center w-full py-4">
           <div className="loader border-t-4 border-blue-500 border-solid rounded-full w-10 h-10 animate-spin"></div>
           <p className="ml-4">Loading...</p>
         </div>
-      )}
-
-      <div className="flex items-center py-8 w-full">
+      ) : (
+        <div className="flex items-center py-8 w-full">
         <Table
           data={courses}
           headers={["ID", "Course Name", "Created", "Updated"]}
@@ -84,6 +81,9 @@ const CoursecreatorPage = () => {
           setData={handleCourses}
         />
       </div>
+      )}
+
+     
     </>
   );
 };

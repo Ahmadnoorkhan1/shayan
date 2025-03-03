@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import apiService from '../utilities/service/api'; // Import your API service
 import { Button } from './ui/button';
 
 interface RichTextEditorProps {

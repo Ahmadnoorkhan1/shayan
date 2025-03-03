@@ -49,7 +49,7 @@ function App() {
           {/* <Route path='/dashboard/course-creator/add' element={<AddCourseCreator/>}/> */}
           <Route path='/dashboard/course-creator/add' element={<AddCourseCreator/>}/>
           <Route path='/dashboard/book-creator' element={<BookcreatorPage />} />
-          <Route path='/dashboard/book-creator/edit' element={<EditBookCreator/>}/>
+          <Route path='/dashboard/book-creator/edit/:id' element={<EditBookCreator/>}/>
           <Route path='/dashboard/book-creator/add' element={<AddBookCreator/>}/>
           <Route path='/dashboard/ai-coach' element={<AiCoachPage />} />
           <Route path='/dashboard/easy-course-creator' element={<EasyCourseCreator />} />

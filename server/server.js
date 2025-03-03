@@ -7,12 +7,15 @@ const bookRoutes = require('./Routes/BookRoutes');
 const easyCourseRoutes = require('./Routes/EasyCourseRoutes');
 const cors = require("cors");
 const { generateImage } = require('./Utils/generateImage');
+const path = require('path');
 
 dotenv.config();
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(cors());
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
 
 syncDatabase(); // Now it will work
 app.use(express.json());

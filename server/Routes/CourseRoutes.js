@@ -10,6 +10,7 @@ router.post('/getCourseChapter', getCourseChapter);
 router.post('/addCourse/:type', addCourse);
 router.get('/getCourses/:type', getCourses);
 router.get('/getCourseById/:id/:type', getCourseById);
+
 router.post('/updateCourse/:id/:type', updateCourse);
 router.post('/deleteCourse/:id/:type', deleteCourse);
 

@@ -14,6 +14,9 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
   const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState<number | null>(null);
 
+
+  console.log(chapters, "chapters");
+
   const parseChapter = (html: string) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');

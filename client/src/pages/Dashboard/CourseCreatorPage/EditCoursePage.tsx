@@ -1,12 +1,14 @@
 // language: tsx
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
 import apiService from "../../../utilities/service/api";
 import ChapterGallery from "./ChapterGallery";
-import { Book, ImageIcon } from "lucide-react";
+import { Book, Edit2Icon, EditIcon, ImageIcon, ShieldCloseIcon } from "lucide-react";
 import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
+import Modal from "../../../components/ui/Modal";
+import ImageEditor from "../../../components/ui/ImageEditor/ImageEditor";
 // import { toast } from "react-toastify";
 
 const EditCoursePage = () => {
@@ -21,6 +23,7 @@ const EditCoursePage = () => {
   const [selectedChapterIndex, setSelectedChapterIndex] = useState<number>(-1);
   const [chapters, setChapters] = useState<string[]>([]); 
   const [selectedChapterTitle, setSelectedChapterTitle] = useState<string>("");
+  const [openEditor, setOpenEditor] = useState<boolean>(false);
 
 
 
@@ -173,6 +176,7 @@ useEffect(() => {
  
 
   return (
+    <React.Fragment>
     <div className="flex flex-col sm:flex-row p-4 space-y-6 sm:space-y-0 sm:space-x-6">
       <div className="flex-1 p-6 bg-white rounded-lg shadow-md ">
         <div className="flex items-center justify-between mb-4">
@@ -180,7 +184,23 @@ useEffect(() => {
             <Book className="w-5 h-5 text-purple-500" />
             <h2 className="text-xl font-bold text-purple-800">Edit Chapter</h2>
           </div>
-          <div className="relative">
+          <div className=" flex relative">
+          <Button
+              color="destructive"
+              variant="soft"
+              size="sm"
+              // ref={buttonRef}
+              onClick={() => setOpenEditor(!openEditor)}
+              // className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center gap-2"
+              // title={
+              //   showImageGenerator
+              //     ? "Hide AI Image Generator"
+              //     : "Generate AI Image"
+              // }
+            >
+              <EditIcon className="w-5 h-5 text-gray-600" />
+              <span className="text-sm ml-2 text-gray-700">Image Editor</span>
+            </Button>
             <Button
               color="destructive"
               variant="soft"
@@ -198,14 +218,13 @@ useEffect(() => {
               <span className="text-sm text-gray-700">AI Image</span>
             </Button>
 
-            {showImageGenerator && (
-              <div className="image-generator-popover">
-                <div className="relative">
-                  <div className="absolute w-3 h-3 bg-white transform rotate-45 right-4 top-0 -translate-y-1/2 border-l border-t border-purple-100"></div>
-                  <ImageGenerator onImageSelect={handleAIImageSelect} />
-                </div>
-              </div>
-            )}
+          <Modal 
+            isOpen={showImageGenerator}
+            onClose={() => setShowImageGenerator(false)}
+            title="AI Image Generator"
+          >
+            <ImageGenerator onImageSelect={handleAIImageSelect} />
+          </Modal>
           </div>
         </div>
         <RichTextEditor
@@ -222,6 +241,21 @@ useEffect(() => {
         // onSelectSection={handleSectionSelect}
       />
     </div>
+    <Modal
+        isOpen={openEditor}
+        onClose={() => setOpenEditor(false)}
+        title="Image Editor"
+      >
+
+        <ImageEditor
+          initialImageUrl={AIImage as any }
+          onImageSelect={handleAIImageSelect}
+        />
+      </Modal>
+    </React.Fragment>
+
+
+
   );
 };
 
