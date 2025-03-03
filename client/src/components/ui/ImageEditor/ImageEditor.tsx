@@ -1,57 +1,95 @@
-import React, { useEffect, useRef } from 'react';
-import { UIEvent, PhotoEditorSDKUI } from 'photoeditorsdk';
-import Image from "/images/auth/mountain.png";
+import React, { useState } from 'react';
+import FilerobotImageEditor, {
+  TABS,
+  TOOLS,
+  
+} from 'react-filerobot-image-editor';
 
 interface ImageEditorProps {
-  initialImageUrl: string;
-  onImageSelect?: (imageSrc: string) => void;
+  onSave?: (editedImageObject: any, designState: any) => void;
 }
 
-const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onImageSelect }) => {
-  const editorRef = useRef<any>(null);
+const ImageEditor: React.FC<ImageEditorProps> = ({ onSave }) => {
+  const [isImgEditorShown, setIsImgEditorShown] = useState<boolean>(false);
 
-  useEffect(() => {
-    let editor: any = null;
+  const openImgEditor = (): void => {
+    setIsImgEditorShown(true);
+  };
 
-    const initEditor = async () => {
-      try {
-        editor = await PhotoEditorSDKUI.init({
-          container: '#editor',
-          image: Image,
-          license: '', // Add your license key here
-        });
+  const closeImgEditor = (): void => {
+    setIsImgEditorShown(false);
+  };
 
-        console.log('PhotoEditorSDK for Web is ready!');
-
-        editor.on(UIEvent.EXPORT, (imageSrc: string) => {
-          console.log('Exported ', imageSrc);
-          onImageSelect?.(imageSrc);
-        });
-      } catch (error) {
-        console.error('Failed to initialize editor:', error);
-      }
-    };
-
-    initEditor();
-
-    // Cleanup function
-    return () => {
-      if (editor) {
-        try {
-          editor.dispose();
-        } catch (error) {
-          console.warn('Error disposing editor:', error);
-        }
-      }
-    };
-  }, [initialImageUrl, onImageSelect]);
+  const config: any = {
+    source: "https://scaleflex.airstore.io/demo/stephen-walker-unsplash.jpg",
+    // onSave: (editedImageObject, designState) => {
+    //   console.log('saved', editedImageObject, designState);
+    //   onSave?.(editedImageObject, designState);
+    // },
+    onClose: closeImgEditor,
+    annotationsCommon: {
+      fill: '#ff0000',
+    },
+    Text: { text: 'Filerobot...' },
+    Rotate: { angle: 90, componentType: 'slider' },
+    Crop: {
+      presetsItems: [
+        {
+          titleKey: 'classicTv',
+          descriptionKey: '4:3',
+          ratio: 4 / 3,
+        },
+        {
+          titleKey: 'cinemascope',
+          descriptionKey: '21:9',
+          ratio: 21 / 9,
+        },
+      ],
+      presetsFolders: [
+        {
+          titleKey: 'socialMedia',
+          groups: [
+            {
+              titleKey: 'facebook',
+              items: [
+                {
+                  titleKey: 'profile',
+                  width: 180,
+                  height: 180,
+                  descriptionKey: 'fbProfileSize',
+                },
+                {
+                  titleKey: 'coverPhoto',
+                  width: 820,
+                  height: 312,
+                  descriptionKey: 'fbCoverPhotoSize',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    tabsIds: [TABS.ADJUST, TABS.ANNOTATE, TABS.WATERMARK],
+    defaultTabId: TABS.ANNOTATE,
+    defaultToolId: TOOLS.TEXT,
+  };
 
   return (
-    <div
-      id="editor"
-      ref={editorRef}
-      className="w-full h-[400px] rounded-lg overflow-hidden"
-    />
+    <div>
+      <button 
+        onClick={openImgEditor}
+        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+      >
+        Open Image Editor
+      </button>
+      
+      {isImgEditorShown && (
+        <FilerobotImageEditor
+          {...config}
+        />
+      )}
+    </div>
   );
 };
 

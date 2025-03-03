@@ -249,8 +249,8 @@ useEffect(() => {
       >
 
         <ImageEditor
-          initialImageUrl={AIImage as any }
-          onImageSelect={handleAIImageSelect}
+          // initialImageUrl={AIImage as any }
+          // onImageSelect={handleAIImageSelect}
         />
       </Modal>
     </React.Fragment>
