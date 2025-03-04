@@ -44,7 +44,9 @@ const AddCourseCreator = () => {
       } else {
         toast.error(response.message);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
   const generateSummary = async () => {
     console.log("generateSummary");
@@ -64,7 +66,9 @@ const AddCourseCreator = () => {
       } else {
         toast.error(response.message);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
 
   let chapterTitles:any = [];
@@ -172,20 +176,21 @@ const AddCourseCreator = () => {
   };
 
   const saveCompleteCourse = async() =>{
+    console.log("saveCompleteCourse")
     try {
       const title = localStorage.getItem("selectedTitle");
       const body = {
         creator_id:1, // user._id,
         course_title:title,
-        content:chapatersData 
+        content: JSON.stringify(chapatersData)  
       }
       const response = await apiService.post('course-creator/addCourse/course',body,{});
       if(response.success){
-        
+        console.log(response)
       }
       
     } catch (error) {
-      
+      console.log(error)
     }
   }
   

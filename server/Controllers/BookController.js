@@ -83,7 +83,7 @@ const getNumberOfTitles = async(data)=>{
 
 const getBookChapter = async (req, res) => {
     const data = req.body;
-    const question = `Write a detailed educational chapter of 100-200 words for Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter} 
+    const question = `Write a detailed educational chapter of 800-1200 words for Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter} 
     of the book "${data.prompt.title}". Use HTML formatting with the following structure:
     
     <h1>Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter}</h1>
@@ -135,4 +135,58 @@ const getBookById = async (req, res) => {
         return res.status(500).json({ success: false, message: "Error occurred while fetching course", error: error.message });
     }
 };
-module.exports = { createBookTitle,createBookSummary,createCompleteBook, getBookChapter , getBookById};
+
+
+const updateBook = async (req, res) => {
+    try {
+        const { courseTitle, content, pdfLocation, blobLocation, coverLocation, quizLocation } = req.body;
+
+        // Find and update the book
+        const [updatedCount] = await Course.update(
+            {
+                course_title: courseTitle,
+                content: content,
+                pdf_location: pdfLocation,
+                blob_location: blobLocation,
+                cover_location: coverLocation,
+                quiz_location: quizLocation
+            },
+            {
+                where: { 
+                    course_id: req.params.id, 
+                    type: 'book' 
+                }
+            }
+        );
+
+        if (updatedCount === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Book not found or no changes made" 
+            });
+        }
+
+        // Fetch the updated book
+        const updatedBook = await Course.findOne({
+            where: { 
+                course_id: req.params.id, 
+                type: 'book' 
+            }
+        });
+
+        return res.status(200).json({ 
+            success: true, 
+            data: updatedBook, 
+            message: "Book updated successfully" 
+        });
+    } catch (error) {
+        console.error("Error:", error.message);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Error occurred while updating book", 
+            error: error.message 
+        });
+    }
+}
+
+module.exports = { createBookTitle,createBookSummary,createCompleteBook, getBookChapter , getBookById, updateBook};

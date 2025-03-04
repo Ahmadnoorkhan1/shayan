@@ -1,16 +1,31 @@
-// language: tsx
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
 import apiService from "../../../utilities/service/api";
-// import ChapterGallery from "./ChapterGallery";
-import { Book, Edit2Icon, EditIcon, ImageIcon, ShieldCloseIcon } from "lucide-react";
+import { Book, EditIcon, ImageIcon } from "lucide-react";
 import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
 import ImageEditor from "../../../components/ui/ImageEditor/ImageEditor";
 import ChapterGallery from "../CourseCreatorPage/ChapterGallery";
-// import { toast } from "react-toastify";
+import ReactQuill from "react-quill";
+
+interface QuillEditor {
+  getContents: () => Delta;
+  setContents: (delta: Delta) => void;
+  root: HTMLElement;
+  getSelection: () => { index: number; length: number } | null;
+  setSelection: (index: number, length: number) => void;
+}
+
+interface Delta {
+  ops: Operation[];
+}
+
+interface Operation {
+  insert?: string | { image: string } | any;
+  attributes?: Record<string, any>;
+}
 
 const EditBookCreator = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,8 +40,8 @@ const EditBookCreator = () => {
   const [chapters, setChapters] = useState<string[]>([]); 
   const [selectedChapterTitle, setSelectedChapterTitle] = useState<string>("");
   const [openEditor, setOpenEditor] = useState<boolean>(false);
-
-
+  const [currentEditingImage, setCurrentEditingImage] = useState<string | null>(null);
+  const quillRef = useRef<ReactQuill>(null);
 
   // Fetch course data
 // In the same file, update the useEffect for fetching course data
@@ -123,43 +138,33 @@ useEffect(() => {
         return;
       }
   
-      // Create a copy of chapters array
       const updatedChapters = [...chapters];
-      
-      // Only modify the selected chapter
       let updatedContent = `<h1>${selectedChapterTitle}</h1>${selectedChapter}`;
   
-      // Check if the content has proper HTML structure
       const hasHtmlStructure = selectedChapter.includes('<h1>') || selectedChapter.includes('<h2>');
       
       if (!hasHtmlStructure) {
-        // If no HTML structure, wrap the content properly
-        updatedContent = `<h1>${courseData?.course_title || 'Chapter ' + (selectedChapterIndex + 1)}</h1>
+        updatedContent = `<h1>${courseData?.book_title || 'Chapter ' + (selectedChapterIndex + 1)}</h1>
   <h2>Section 1</h2>
   ${selectedChapter}`;
       }
   
-      // Clean up any potential JSON stringify artifacts and escape characters
       updatedContent = updatedContent
-        .replace(/\\"/g, '"')  // Remove escaped quotes
-        .replace(/\\\\/g, '\\') // Remove double escapes
-        .replace(/\\n/g, '\n') // Convert escape sequences to actual newlines
+        .replace(/\\"/g, '"')
+        .replace(/\\\\/g, '\\')
+        .replace(/\\n/g, '\n')
         .trim();
       
-      // Update only the selected chapter
       updatedChapters[selectedChapterIndex] = updatedContent;
   
-      // Make API call to update
       const response = await apiService.post(
-        `/course-creator/updateCourse/${id}/course`,
+        `/course-creator/updateCourse/${id}/book`,
         {
-          // Don't stringify chapters array again if it's already stringified
           content: Array.isArray(updatedChapters) ? JSON.stringify(updatedChapters) : updatedChapters
         }
       );
   
       if (response.success) {
-        // Update local state with cleaned chapters
         setChapters(updatedChapters);
       } else {
         console.error("Failed to save content:", response.message);
@@ -169,7 +174,53 @@ useEffect(() => {
     }
   };
 
+  const handleImageClick = (imageUrl: string) => {
+    setCurrentEditingImage(imageUrl);
+    setOpenEditor(true);
+  };
 
+  const handleEditedImageSave = (editedImageUrl: string): void => {
+    if (!quillRef.current) return;
+    
+    const editor = quillRef.current.getEditor();
+    if (!editor || !currentEditingImage) return;
+  
+    // Get the current selection range
+    const range = editor.getSelection();
+  
+    // Find all images in the editor
+    const delta = editor.getContents();
+    const updatedDelta: Delta = { ops: [] };
+    let imageFound = false;
+  
+    // Replace the specific image while maintaining other content
+    delta.ops.forEach((op: Operation) => {
+      if (!imageFound && op.insert?.image === currentEditingImage) {
+        updatedDelta.ops.push({
+          insert: { image: editedImageUrl }
+        });
+        imageFound = true;
+      } else {
+        updatedDelta.ops.push(op);
+      }
+    });
+  
+    // Update editor content
+    editor.setContents(updatedDelta as any);
+    
+    // Restore selection if it existed
+    if (range) {
+      editor.setSelection(range.index, range.length);
+    }
+  
+    // Force editor update
+    const newContent = editor.root.innerHTML;
+    handleContentChange(newContent);
+    handleSave();
+  
+    setOpenEditor(false);
+    setCurrentEditingImage(null);
+  };
 
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
@@ -186,7 +237,7 @@ useEffect(() => {
             <h2 className="text-xl font-bold text-purple-800">Edit Chapter</h2>
           </div>
           <div className=" flex relative">
-          <Button
+          {/* <Button
               color="destructive"
               variant="soft"
               size="sm"
@@ -201,7 +252,7 @@ useEffect(() => {
             >
               <EditIcon className="w-5 h-5 text-gray-600" />
               <span className="text-sm ml-2 text-gray-700">Image Editor</span>
-            </Button>
+            </Button> */}
             <Button
               color="destructive"
               variant="soft"
@@ -229,11 +280,13 @@ useEffect(() => {
           </div>
         </div>
         <RichTextEditor
+          ref={quillRef}
           initialContent={selectedChapter}
           imageUrl={AIImage}
           id={Number(id)}
           onContentChange={handleContentChange}
           onSave={handleSave}
+          onImageClick={handleImageClick}
         />
       </div>
       <ChapterGallery
@@ -244,14 +297,25 @@ useEffect(() => {
     </div>
     <Modal
         isOpen={openEditor}
-        onClose={() => setOpenEditor(false)}
+        onClose={() => {
+          setOpenEditor(false);
+          setCurrentEditingImage(null);
+        }}
         title="Image Editor"
       >
-
-        <ImageEditor
-          // initialImageUrl={AIImage as any }
-          // onImageSelect={handleAIImageSelect}
-        />
+        {currentEditingImage && (
+          <ImageEditor
+            initialImageUrl={currentEditingImage}
+            onSave={handleEditedImageSave}
+          />
+        )}
+      </Modal>
+      <Modal 
+        isOpen={showImageGenerator}
+        onClose={() => setShowImageGenerator(false)}
+        title="AI Image Generator"
+      >
+        <ImageGenerator onImageSelect={handleAIImageSelect} />
       </Modal>
     </React.Fragment>
 

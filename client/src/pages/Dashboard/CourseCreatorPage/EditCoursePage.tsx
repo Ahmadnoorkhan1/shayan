@@ -9,7 +9,23 @@ import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
 import ImageEditor from "../../../components/ui/ImageEditor/ImageEditor";
+import ReactQuill from "react-quill";
 // import { toast } from "react-toastify";
+
+interface QuillEditor {
+  getContents: () => Delta;
+  setContents: (delta: Delta) => void;
+  root: HTMLElement;
+}
+
+interface Delta {
+  ops: Operation[];
+}
+
+interface Operation {
+  insert?: string | { image: string } | any;
+  attributes?: Record<string, any>;
+}
 
 const EditCoursePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,8 +40,57 @@ const EditCoursePage = () => {
   const [chapters, setChapters] = useState<string[]>([]); 
   const [selectedChapterTitle, setSelectedChapterTitle] = useState<string>("");
   const [openEditor, setOpenEditor] = useState<boolean>(false);
+  const [currentEditingImage, setCurrentEditingImage] = useState<string | null>(null);
+  const quillRef = useRef<ReactQuill>(null);
 
+  // Add handler for image click in editor
+  const handleImageClick = (imageUrl: string) => {
+    setCurrentEditingImage(imageUrl);
+    setOpenEditor(true);
+  };
 
+  const handleEditedImageSave = (editedImageUrl: string): void => {
+    if (!quillRef.current) return;
+    
+    const editor = quillRef.current.getEditor();
+    if (!editor || !currentEditingImage) return;
+  
+    // Get the current selection range
+    const range = editor.getSelection();
+  
+    // Find all images in the editor
+    const delta = editor.getContents();
+    const updatedDelta: Delta = { ops: [] };
+    let imageFound = false;
+  
+    // Replace the specific image while maintaining other content
+    delta.ops.forEach((op: Operation) => {
+      if (!imageFound && op.insert?.image === currentEditingImage) {
+        updatedDelta.ops.push({
+          insert: { image: editedImageUrl }
+        });
+        imageFound = true;
+      } else {
+        updatedDelta.ops.push(op);
+      }
+    });
+  
+    // Update editor content
+    editor.setContents(updatedDelta as any);
+    
+    // Restore selection if it existed
+    if (range) {
+      editor.setSelection(range.index, range.length);
+    }
+  
+    // Force editor update
+    const newContent = editor.root.innerHTML;
+    handleContentChange(newContent);
+    handleSave();
+  
+    setOpenEditor(false);
+    setCurrentEditingImage(null);
+  };
 
   // Fetch course data
 // In the same file, update the useEffect for fetching course data
@@ -42,7 +107,7 @@ useEffect(() => {
       if (response.data?.content) {
         try {
           // First, clean up the string
-          const cleanContent = response.data.content
+          const cleanContent = response?.data?.content
             .replace(/^"/, '') // Remove leading quote
             .replace(/"$/, '') // Remove trailing quote
             .replace(/\\\\/g, '\\') // Fix double escapes
@@ -168,12 +233,8 @@ useEffect(() => {
     }
   };
 
-
-
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
-
- 
 
   return (
     <React.Fragment>
@@ -185,7 +246,7 @@ useEffect(() => {
             <h2 className="text-xl font-bold text-purple-800">Edit Chapter</h2>
           </div>
           <div className=" flex relative">
-          <Button
+          {/* <Button
               color="destructive"
               variant="soft"
               size="sm"
@@ -200,7 +261,7 @@ useEffect(() => {
             >
               <EditIcon className="w-5 h-5 text-gray-600" />
               <span className="text-sm ml-2 text-gray-700">Image Editor</span>
-            </Button>
+            </Button> */}
             <Button
               color="destructive"
               variant="soft"
@@ -228,11 +289,13 @@ useEffect(() => {
           </div>
         </div>
         <RichTextEditor
+         ref={quillRef}
           initialContent={selectedChapter}
           imageUrl={AIImage}
           id={Number(id)}
           onContentChange={handleContentChange}
           onSave={handleSave}
+          onImageClick={handleImageClick}
         />
       </div>
       <ChapterGallery
@@ -248,14 +311,11 @@ useEffect(() => {
       >
 
         <ImageEditor
-          // initialImageUrl={AIImage as any }
-          // onImageSelect={handleAIImageSelect}
+          initialImageUrl={currentEditingImage || ''}
+          onSave={handleEditedImageSave}
         />
       </Modal>
     </React.Fragment>
-
-
-
   );
 };
 

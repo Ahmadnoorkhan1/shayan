@@ -46,7 +46,9 @@ const AddBookCreator = () => {
       } else {
         toast.error(response.message);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error:", error);
+    }
   };
   const generateSummary = async () => {
     console.log("generateSummary");
@@ -66,7 +68,10 @@ const AddBookCreator = () => {
       } else {
         toast.error(response.message);
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error:", error
+      );
+    }
   };
 
   let chapterTitles:any = [];
@@ -180,15 +185,15 @@ const AddBookCreator = () => {
       const body = {
         creator_id:1, // user._id,
         course_title:title,
-        content:chapatersData 
+        content: JSON.stringify(chapatersData)  
       }
       const response = await apiService.post('course-creator/addCourse/book',body,{});
       if(response.success){
-        
+        console.log(response.data)
       }
       
     } catch (error) {
-      
+      console.log(error)
     }
   }
   // Call the function

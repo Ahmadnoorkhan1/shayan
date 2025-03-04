@@ -2,35 +2,33 @@ import React, { useState } from 'react';
 import FilerobotImageEditor, {
   TABS,
   TOOLS,
-  
+  FilerobotImageEditorConfig,
 } from 'react-filerobot-image-editor';
 
 interface ImageEditorProps {
-  onSave?: (editedImageObject: any, designState: any) => void;
+  initialImageUrl: string; // Make this required
+  onSave: (editedImageUrl: string) => void;
 }
 
-const ImageEditor: React.FC<ImageEditorProps> = ({ onSave }) => {
-  const [isImgEditorShown, setIsImgEditorShown] = useState<boolean>(false);
+const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) => {
+  const [isImgEditorShown, setIsImgEditorShown] = useState<boolean>(true);
 
-  const openImgEditor = (): void => {
-    setIsImgEditorShown(true);
-  };
-
-  const closeImgEditor = (): void => {
-    setIsImgEditorShown(false);
+  const handleSave = (editedImageObject: any) => {
+    console.log('Edited Image Object:', editedImageObject);
+    
+    if (editedImageObject?.imageBase64) {
+      onSave(editedImageObject.imageBase64);
+      setIsImgEditorShown(false);
+    }
   };
 
   const config: any = {
-    source: "https://scaleflex.airstore.io/demo/stephen-walker-unsplash.jpg",
-    // onSave: (editedImageObject, designState) => {
-    //   console.log('saved', editedImageObject, designState);
-    //   onSave?.(editedImageObject, designState);
-    // },
-    onClose: closeImgEditor,
+    source: initialImageUrl || '', // Provide empty string as fallback
+    onSave: handleSave,
+    onClose: () => setIsImgEditorShown(false),
     annotationsCommon: {
-      fill: '#ff0000',
+      fill: '#ff0000'
     },
-    Text: { text: 'Filerobot...' },
     Rotate: { angle: 90, componentType: 'slider' },
     Crop: {
       presetsItems: [
@@ -38,55 +36,30 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ onSave }) => {
           titleKey: 'classicTv',
           descriptionKey: '4:3',
           ratio: 4 / 3,
-        },
-        {
-          titleKey: 'cinemascope',
-          descriptionKey: '21:9',
-          ratio: 21 / 9,
-        },
-      ],
-      presetsFolders: [
-        {
-          titleKey: 'socialMedia',
-          groups: [
-            {
-              titleKey: 'facebook',
-              items: [
-                {
-                  titleKey: 'profile',
-                  width: 180,
-                  height: 180,
-                  descriptionKey: 'fbProfileSize',
-                },
-                {
-                  titleKey: 'coverPhoto',
-                  width: 820,
-                  height: 312,
-                  descriptionKey: 'fbCoverPhotoSize',
-                },
-              ],
-            },
-          ],
-        },
-      ],
+        }
+      ]
     },
-    tabsIds: [TABS.ADJUST, TABS.ANNOTATE, TABS.WATERMARK],
-    defaultTabId: TABS.ANNOTATE,
-    defaultToolId: TOOLS.TEXT,
+    tabsIds: [TABS.ADJUST, TABS.ANNOTATE],
+    defaultTabId: TABS.ADJUST,
+    defaultToolId: TOOLS.CROP,
+    onBeforeComplete: () => true, // Add this to prevent double confirmation
+    showInModal: false, // Add this to prevent modal behavior
+    onBeforeSave: () => true,
+    translations: {
+      save: 'Apply Changes',
+      cancel: 'Cancel'
+    }
   };
 
+  // Only render if we have an initial URL
   return (
-    <div>
-      <button 
-        onClick={openImgEditor}
-        className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-      >
-        Open Image Editor
-      </button>
-      
-      {isImgEditorShown && (
+    <div className="h-[600px]">
+      {isImgEditorShown && initialImageUrl && (
         <FilerobotImageEditor
           {...config}
+          savingPixelRatio={4}
+          previewPixelRatio={4}
+          observePluginContainerSize
         />
       )}
     </div>
