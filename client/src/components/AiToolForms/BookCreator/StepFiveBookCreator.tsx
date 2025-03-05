@@ -4,68 +4,87 @@ import MarkdownEditor from "../../ui/markdowneditor";
 
 interface bookContentProps {
   chaptersContent: string[];
+  chapterFetchCount: number;
 }
 
-const StepFiveBookCreator: React.FC<bookContentProps> = ({ chaptersContent }) => {
+const StepFiveBookCreator: React.FC<bookContentProps> = ({ chaptersContent, chapterFetchCount }) => {
+  console.log("[StepFive] Rendering - chaptersContent:", chaptersContent, "chapterFetchCount:", chapterFetchCount);
   const title = localStorage.getItem("selectedBookTitle") || "";
-  const [content, setContent] = useState("");
+  const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
 
-  // Get stored chapter titles
   const chapter_titles = (localStorage.getItem("book_chapter_titles") || "")
-    .split(/,(?=\d+\.)/) // Split at numbered points
+    .split(/,(?=\d+\.)/)
     .map((item: string) => item.replace(/^\d+\.\s*/, "").trim());
 
-  useEffect(() => {
-    let storedIndex = parseInt(localStorage.getItem("bookChapterNumber") || "0", 10);
+  console.log("[StepFive] chaptersContent received:", chaptersContent, "chapterFetchCount:", chapterFetchCount);
 
-    // If new chapters are available, go to the latest one
-    const latestIndex = chaptersContent.length - 1;
-    if (latestIndex >= 0 && storedIndex < latestIndex) {
-      storedIndex = latestIndex; // Auto-set to latest chapter
-      localStorage.setItem("bookChapterNumber", latestIndex.toString()); // Update local storage
-    }
-
-    // Set content to the correct chapter
-    if (chaptersContent.length > storedIndex) {
-      setContent(chaptersContent[storedIndex]);
-      console.log("Switched to latest chapter:", storedIndex, chaptersContent[storedIndex]);
-    }
-  }, [chaptersContent.length]); // Runs when new chapters are added
- 
   useEffect(() => {
-    if (content) {
-      console.log("Content updated:", content);
+    console.log("[StepFive] useEffect triggered with chaptersContent:", chaptersContent, "chapterFetchCount:", chapterFetchCount);
+    if (chaptersContent.length > 0) {
+      // Find the latest index with content
+      let latestIndex = -1;
+      for (let i = chaptersContent.length - 1; i >= 0; i--) {
+        if (chaptersContent[i] && chaptersContent[i] !== "") {
+          latestIndex = i;
+          break;
+        }
+      }
+      console.log("[StepFive] Latest index with content:", latestIndex);
+      if (latestIndex !== -1 && latestIndex !== currentChapterIndex) {
+        setCurrentChapterIndex(latestIndex);
+        localStorage.setItem("bookChapterNumber", latestIndex.toString());
+        console.log(`[StepFive] Auto-set to chapter ${latestIndex + 1} with content:`, chaptersContent[latestIndex]);
+      } else {
+        console.log("[StepFive] No new content to switch to, keeping index at", currentChapterIndex);
+      }
     }
-  }, [content]);
+  }, [chaptersContent, chapterFetchCount]);
+
+  const hasContent = chaptersContent.length > 0 && !!chaptersContent[currentChapterIndex];
+  console.log("[StepFive] Rendering - currentChapterIndex:", currentChapterIndex, "hasContent:", hasContent, "content:", chaptersContent[currentChapterIndex]);
+
   return (
     <div className="flex flex-col items-center justify-center pb-8">
       <div className="flex lg:w-[720px] w-[325px] gap-2 items-center py-8 overflow-x-scroll">
-        {chapter_titles &&
-          chapter_titles.length &&
-          chapter_titles.map((title: any, index: any) => {
-            return (
-              <button
-                className={
-                  index <= chaptersContent.length
-                    ? "w-[175px] p-4 btn-primary flex gap-2"
-                    : "w-[175px] p-4 btn-secondary flex gap-2"
-                }
-                key={title}
-                disabled={index <= chaptersContent.length ? false : true}
-                onClick={() => {
-                  localStorage.setItem("bookChapterNumber", index.toString());
-                  setContent(chaptersContent[index] || "");
-                }}
-              >
-                <span>Chapter </span>
-                <span>{index + 1}</span>
-              </button>
-            );
-          })}
+        {chapter_titles?.map((title: string, index: number) => (
+          <button
+            key={index}
+            className={`w-[175px] p-4 ${
+              index === currentChapterIndex
+                ? "btn-primary"
+                : chaptersContent[index]
+                  ? "btn-secondary"
+                  : "btn-disabled"
+            } flex gap-2`}
+            disabled={!chaptersContent[index]}
+            onClick={() => {
+              setCurrentChapterIndex(index);
+              localStorage.setItem("bookChapterNumber", index.toString());
+              console.log(`[StepFive] Manually switched to chapter ${index + 1}`);
+            }}
+          >
+            <span>Chapter </span>
+            <span>{index + 1}</span>
+            {chaptersContent[index] && (
+              <span className="ml-2 text-xs">✓</span>
+            )}
+          </button>
+        ))}
       </div>
-      <h2 className="text-center text-primary">{title}</h2>
-      {content && <MarkdownEditor data={content || ""} />}
-      {!content && <Spinner />}
+
+      <h2 className="text-center mt-4 text-[36px] text-primary">{title}</h2>
+      {hasContent ? (
+        <div className="w-full">
+          <MarkdownEditor
+            key={`chapter-${currentChapterIndex}`}
+            data={chaptersContent[currentChapterIndex]}
+          />
+        </div>
+      ) : (
+        <div className="w-full flex justify-center items-center py-8">
+          <Spinner />
+        </div>
+      )}
     </div>
   );
 };

@@ -7,6 +7,7 @@ import StepTwoCourseCreatorTool from "../../../components/AiToolForms/CourseCrea
 import Stepper from "../../../components/ui/ToolSteps";
 import apiService from "../../../utilities/service/api";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router";
 
 const AddCourseCreator = () => {
   const [stepOneForm, setStepOneForm] = useState({});
@@ -14,6 +15,10 @@ const AddCourseCreator = () => {
   const [chapatersData, setChaptersData] = useState<any>([]);
   const [courseTitles, setCourseTitles] = useState([]);
   const [saveButton, setSaveButton] = useState(false);
+const [chapterFetchCount, setChapterFetchCount] = useState(0);
+
+const navigate = useNavigate()
+
   const steps = [
     { label: "Give A Topic", icon: true },
     { label: "Select Title", icon: true },
@@ -104,20 +109,19 @@ const AddCourseCreator = () => {
     }
   };
 
-  const fetchChaptersWithRateLimit = async (
-    getTitle: any,
-    savedCourseSummary: any
-  ) => {
+
+  const fetchChaptersWithRateLimit = async (getTitle: any, savedCourseSummary: any) => {
     const title = chapterTitles;
-    const MAX_RETRIES = 5; // Retry a maximum of 5 times per chapter
-  
-    console.log(title, "Are these the titles of my chapters?");
-  
+    const MAX_RETRIES = 5;
+
+    setChaptersData(new Array(title.length).fill(""));
+    console.log("[AddBook] Initialized chapatersData:", new Array(title.length).fill(""));
+
     for (let index = 0; index < title.length; index++) {
       const chapter = title[index];
       let attempts = 0;
       let success = false;
-  
+
       while (attempts < MAX_RETRIES && !success) {
         try {
           const chapterPayload = {
@@ -128,51 +132,40 @@ const AddCourseCreator = () => {
               summary: savedCourseSummary,
             },
           };
-  
-          console.log(
-            `📢 Fetching Chapter ${index + 1} (Attempt ${attempts + 1})...`
-          );
-  
+
+          console.log(`[AddBook] Fetching Chapter ${index + 1} (Attempt ${attempts + 1})...`);
+
           const chapterResponse = await apiService.post(
-            "/course-creator/getCourseChapter",
+          "/course-creator/getCourseChapter",
             chapterPayload,
             { timeout: 600000 }
           );
-  
+
           if (chapterResponse.success) {
-            setChaptersData((prevChapters: any) => [
-              ...prevChapters,
-              chapterResponse.data,
-            ]);
-            console.log(`✅ Chapter ${index + 1} fetched successfully.`);
-            success = true; // Mark as successful
+            setChaptersData((prev: any) => {
+              const newData = [...prev];
+              newData[index] = chapterResponse.data;
+              console.log(`[AddBook] Chapter ${index + 1} fetched:`, newData[index]);
+              console.log(`[AddBook] Updated chapatersData:`, newData);
+              return newData;
+            });
+            setChapterFetchCount((prev:any) => prev + 1); // Increment fetch count
+            success = true;
           } else {
             throw new Error(chapterResponse.message);
           }
-        } catch (error: any) {
-          console.error(`❌ Error fetching Chapter ${index + 1}:`, error);
-  
-          if (error.response?.status === 429) {
-            console.warn(`🚦 Rate limit reached. Retrying immediately...`);
-          } else {
-            console.warn(`🔁 Retrying immediately...`);
-          }
-  
+        } catch (error) {
+          console.error(`[AddBook] Error fetching Chapter ${index + 1}:`, error);
           attempts++;
         }
       }
-  
+
       if (!success) {
-        console.error(
-          `❌ Chapter ${index + 1} failed after ${MAX_RETRIES} attempts.`
-        );
         toast.error(`Chapter ${index + 1} could not be fetched.`);
       }
     }
 
-    setSaveButton(true)
-  
-    console.log("🎉 All chapters processed!");
+    setSaveButton(true);
   };
 
   const saveCompleteCourse = async() =>{
@@ -185,8 +178,11 @@ const AddCourseCreator = () => {
         content: JSON.stringify(chapatersData)  
       }
       const response = await apiService.post('course-creator/addCourse/course',body,{});
-      if(response.success){
-        console.log(response)
+      if (response.success) {
+        const courseId = response?.data?.course_id?.toString(); // Get the correct ID
+        toast.success('Course created successfully');
+        // Navigate with the correct ID
+        navigate(`/dashboard/course-creator?highlight=${courseId}`);
       }
       
     } catch (error) {
@@ -210,7 +206,7 @@ const AddCourseCreator = () => {
       case 3:
         return <StepFourCourseCreator />;
       case 4:
-        return <StepFiveCourseCreator chaptersContent={chapatersData} />;
+        return <StepFiveCourseCreator chaptersContent={chapatersData} chapterFetchCount={chapterFetchCount}  />;
       default:
         return null;
     }

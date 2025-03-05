@@ -1,78 +1,83 @@
 import { useEffect, useState } from "react";
 import Spinner from "../../ui/spinner";
 import MarkdownEditor from "../../ui/markdowneditor";
+
 interface courseContentProps {
   chaptersContent: string[];
+  chapterFetchCount: number;
 }
 
-const StepFiveCourseCreator: React.FC<courseContentProps> = ({ chaptersContent }) => {
+const StepFiveCourseCreator: React.FC<courseContentProps> = ({ chaptersContent, chapterFetchCount }) => {
   const title = localStorage.getItem("selectedTitleEasyCourse") || "";
-  const [content, setContent] = useState('');
+  const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
+
   const chapter_titles = (localStorage.getItem("easy_course_chapter_titles") || "")
-    .split(/,(?=\d+\.)/) // Split at numbered points
+    .split(/,(?=\d+\.)/)
     .map((item: string) => item.replace(/^\d+\.\s*/, "").trim());
-    useEffect(() => {
-      let storedIndex = parseInt(localStorage.getItem("easyCourseChapterNumber") || "0", 10);
-    
-      // If new chapters are available, go to the latest one
-      const latestIndex = chaptersContent.length - 1;
-      if (latestIndex >= 0 && storedIndex < latestIndex) {
-        storedIndex = latestIndex; // Auto-set to latest chapter
-        localStorage.setItem("easyCourseChapterNumber", latestIndex.toString()); // Update storage
+
+  // Watch for new chapters and automatically display the latest one
+  useEffect(() => {
+    if (chaptersContent.length > 0) {
+      // Find the latest index with content
+      let latestIndex = -1;
+      for (let i = chaptersContent.length - 1; i >= 0; i--) {
+        if (chaptersContent[i] && chaptersContent[i] !== "") {
+          latestIndex = i;
+          break;
+        }
       }
-    
-      // Set content to the correct chapter
-      if (chaptersContent.length > storedIndex) {
-        setContent(chaptersContent[storedIndex]);
-        console.log("Switched to latest chapter:", storedIndex, chaptersContent[storedIndex]);
+
+      if (latestIndex !== -1 && latestIndex !== currentChapterIndex) {
+        setCurrentChapterIndex(latestIndex);
+        localStorage.setItem("easyCourseChapterNumber", latestIndex.toString());
+        console.log(`Auto-set to chapter ${latestIndex + 1}`);
       }
-    }, [chaptersContent.length]); // Runs when new chapters are added
-    
-    useEffect(() => {
-      if (content) {
-        console.log("Content updated:", content);
-      }
-    }, [content]);
+    }
+  }, [chaptersContent, chapterFetchCount]); // Run when chaptersContent changes
+
+  const hasContent = chaptersContent.length > 0 && !!chaptersContent[currentChapterIndex];
 
   return (
     <div className="flex flex-col items-center justify-center pb-8">
       <div className="flex lg:w-[720px] w-[325px] gap-2 items-center py-8 overflow-x-scroll">
-        {chapter_titles &&
-          chapter_titles.length &&
-          chapter_titles.map((title: any, index: any) => {
-            return (
-              <button
-                className={index <= chaptersContent.length ? 'w-[175px] p-4 btn-primary flex gap-2 ' : 'w-[175px] p-4 btn-secondary flex gap-2 '}
-                key={title}
-                disabled={index <= chaptersContent.length ? false : true}
-                onClick={() => {
-                  console.log('clicked', chaptersContent[index]);
-                  localStorage.setItem('easyCourseChapterNumber', index);
-                  chaptersContent[index]?.length ? setContent(chaptersContent[index]) : setContent('');
-                }}
-              >
-                <span>Chapter </span><span>{index + 1}</span>
-              </button>
-            );
-          })}
+        {chapter_titles?.map((title: string, index: number) => (
+          <button
+            key={index}
+            className={`w-[175px] p-4 ${
+              index === currentChapterIndex 
+                ? "btn-primary" 
+                : chaptersContent[index] 
+                  ? "btn-secondary" 
+                  : "btn-disabled"
+            } flex gap-2`}
+            disabled={!chaptersContent[index]}
+            onClick={() => {
+              setCurrentChapterIndex(index);
+              localStorage.setItem("easyCourseChapterNumber", index.toString());
+            }}
+          >
+            <span>Chapter </span>
+            <span>{index + 1}</span>
+            {chaptersContent[index] && (
+              <span className="ml-2 text-xs">✓</span>
+            )}
+          </button>
+        ))}
       </div>
-      <h2 className="text-center text-primary">{title}</h2>
-      {/* <textarea
-        className="w-full px-4 py-2 my-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
-        name=""
-        id=""
-        rows={4}
-        cols={8}
-        value={content}
-      > */}
-      {/* {Object.keys(content).length > 0 ? content : <Spinner />} */}
-      {/* </textarea> */}
-      {/* <Markdown>{content}</Markdown> */}
-        <div className="flex flex-col mx-auto gap-4 p-4">
-        {content && <MarkdownEditor data={content || ''} />}
+
+      <h2 className="text-center mt-4 text-[36px] text-primary">{title}</h2>
+      {hasContent ? (
+        <div className="w-full">
+          <MarkdownEditor 
+            key={`chapter-${currentChapterIndex}`}
+            data={chaptersContent[currentChapterIndex]} 
+          />
         </div>
-      {!content && <Spinner />}
-      {/* <Spinner /> */}
+      ) : (
+        <div className="w-full flex justify-center items-center py-8">
+          <Spinner />
+        </div>
+      )}
     </div>
   );
 };

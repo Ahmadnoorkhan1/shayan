@@ -27,8 +27,8 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ onImageSelect }) => {
       const response: ApiResponse = await generateImage(prompt);
       if (response.success) {
         // setGeneratedImage(response.data);
-const Url = 'http://dev.minilessonsacademy.com'
-// const Url = 'http://localhost:5002'
+// const Url = 'http://dev.minilessonsacademy.com'
+const Url = 'http://localhost:5002'
 
         const imageUrl = `${Url}${response.data}`;
         setGeneratedImage(imageUrl);

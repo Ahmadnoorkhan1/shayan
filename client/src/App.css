@@ -954,3 +954,22 @@ select::-webkit-scrollbar-track {
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out forwards;
 }
+
+@keyframes highlight {
+  0% {
+    background-color: theme('colors.indigo.50');
+    transform: translateX(-4px);
+  }
+  50% {
+    background-color: theme('colors.purple.50');
+    transform: translateX(0);
+  }
+  100% {
+    background-color: theme('colors.indigo.50');
+    transform: translateX(-4px);
+  }
+}
+
+.animate-highlight {
+  animation: highlight 2s ease-in-out infinite;
+}

@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import GettingStarted from "../../../components/dashboard/GettingStarted";
 import Table from "../../../components/ui/Table";
 import { useEffect, useState } from "react";
@@ -10,6 +10,32 @@ import { downloadItem, editItem } from "../../../utilities/shared/tableUtils";
 const BookcreatorPage = () => {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const location = useLocation();
+
+ 
+ // Handle highlight from URL
+ useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  const highlight = searchParams.get('highlight');
+  
+  if (highlight) {
+    setHighlightedId(highlight);
+    
+    // Remove highlight parameter from URL without triggering navigation
+    searchParams.delete('highlight');
+    const newUrl = `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
+    
+    // Clear highlight after animation
+    const timer = setTimeout(() => {
+      setHighlightedId(null);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }
+}, [location.search]);
 
   const navigate = useNavigate();
   try {
@@ -249,7 +275,7 @@ const BookcreatorPage = () => {
         deleteItem={deleteItem}
         downloadItem={(row: any) => downloadItem(row, setLoading)}
         editItem={editItem}
-        
+        highlightedId={highlightedId}
         setData={()=>{}}
       />
       )}

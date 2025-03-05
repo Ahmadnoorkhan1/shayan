@@ -10,13 +10,17 @@ interface TableProps {
   downloadItem:CallableFunction,
   editItem:CallableFunction,
   setData:any
+  highlightedId?: string | null;
+
 
 }
 
-const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,setData }: TableProps) => {
+const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,setData , highlightedId}: TableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [optionsIndex, setOptionsIndex] = useState(null); // Store the index of the opened options
   const navigate = useNavigate();
+
+  console.log(highlightedId, "highlightedId");
 
   const showOptions = (index:any) => {
     setOptionsIndex(optionsIndex === index ? null : index); // Toggle the options visibility
@@ -28,6 +32,8 @@ const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,se
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+
+  console.log(filteredData, "filteredData");
 
   return (
     <section className="w-full" >
@@ -111,8 +117,12 @@ const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,se
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((item, index) => (
-                  <tr key={index} className="border-b">
+                {filteredData?.map((item, index) => (
+                  <tr key={index} className={`bg-white border-b hover:bg-gray-50 transition-all duration-300
+                     ${item.ID == highlightedId 
+    ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-l-4 border-l-purple-500 shadow-lg animate-highlight' 
+    : 'bg-white border-gray-200'
+  }`}>
                     {Object.keys(item).map((key, idx) => (
                       idx !== 4 &&
                       <td key={idx} className="px-4 py-3">

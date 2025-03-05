@@ -7,6 +7,7 @@ import StepFourBookCreator from "../../../components/AiToolForms/BookCreator/Ste
 import StepsThirdBookCreator from "../../../components/AiToolForms/BookCreator/StepThreeBookCreator";
 import StepOneBookCreator from "../../../components/AiToolForms/BookCreator/StepOneBookCreator";
 import StepTwoBookCreator from "../../../components/AiToolForms/BookCreator/StepTwoBookCreator";
+import { useNavigate } from "react-router";
 
 
 const AddBookCreator = () => {
@@ -15,6 +16,8 @@ const AddBookCreator = () => {
   const [chapatersData, setChaptersData] = useState<any>([]);
   const [bookTitles, setBookTitles] = useState([]);
   const [saveButton, setSaveButton] = useState(false);
+  const [chapterFetchCount, setChapterFetchCount] = useState(0); // New state
+  const navigate = useNavigate()
   const steps = [
     { label: "Give A Topic", icon: true },
     { label: "Select Title", icon: true },
@@ -110,20 +113,19 @@ const AddBookCreator = () => {
   
 
 
-  const fetchChaptersWithRateLimit = async (
-    getTitle: any,
-    savedCourseSummary: any
-  ) => {
+  // Modify the fetchChaptersWithRateLimit function
+  const fetchChaptersWithRateLimit = async (getTitle: any, savedCourseSummary: any) => {
     const title = chapterTitles;
-    const MAX_RETRIES = 5; // Retry a maximum of 5 times per chapter
-  
-    console.log(title, "Are these the titles of my chapters?");
-  
+    const MAX_RETRIES = 5;
+
+    setChaptersData(new Array(title.length).fill(""));
+    console.log("[AddBook] Initialized chapatersData:", new Array(title.length).fill(""));
+
     for (let index = 0; index < title.length; index++) {
       const chapter = title[index];
       let attempts = 0;
       let success = false;
-  
+
       while (attempts < MAX_RETRIES && !success) {
         try {
           const chapterPayload = {
@@ -134,51 +136,44 @@ const AddBookCreator = () => {
               summary: savedCourseSummary,
             },
           };
-  
-          console.log(
-            `📢 Fetching Chapter ${index + 1} (Attempt ${attempts + 1})...`
-          );
-  
+
+          console.log(`[AddBook] Fetching Chapter ${index + 1} (Attempt ${attempts + 1})...`);
+
           const chapterResponse = await apiService.post(
             "/book-creator/getBookChapter",
             chapterPayload,
             { timeout: 600000 }
           );
-  
+
           if (chapterResponse.success) {
-            setChaptersData((prevChapters: any) => [
-              ...prevChapters,
-              chapterResponse.data,
-            ]);
-            console.log(`✅ Chapter ${index + 1} fetched successfully.`);
-            success = true; // Mark as successful
+            setChaptersData((prev: any) => {
+              const newData = [...prev];
+              newData[index] = chapterResponse.data;
+              console.log(`[AddBook] Chapter ${index + 1} fetched:`, newData[index]);
+              console.log(`[AddBook] Updated chapatersData:`, newData);
+              return newData;
+            });
+            setChapterFetchCount((prev:any) => prev + 1); // Increment fetch count
+            success = true;
           } else {
             throw new Error(chapterResponse.message);
           }
-        } catch (error: any) {
-          console.error(`❌ Error fetching Chapter ${index + 1}:`, error);
-  
-          if (error.response?.status === 429) {
-            console.warn(`🚦 Rate limit reached. Retrying immediately...`);
-          } else {
-            console.warn(`🔁 Retrying immediately...`);
-          }
-  
+        } catch (error) {
+          console.error(`[AddBook] Error fetching Chapter ${index + 1}:`, error);
           attempts++;
         }
       }
-  
+
       if (!success) {
-        console.error(
-          `❌ Chapter ${index + 1} failed after ${MAX_RETRIES} attempts.`
-        );
         toast.error(`Chapter ${index + 1} could not be fetched.`);
       }
     }
+
     setSaveButton(true);
-    console.log("🎉 All chapters processed!");
   };
 
+  console.log(chapterFetchCount, "chapterFetchCount")
+ 
   const saveCompleteBook = async() =>{
     try {
       const title = localStorage.getItem("selectedBookTitle");
@@ -189,14 +184,21 @@ const AddBookCreator = () => {
       }
       const response = await apiService.post('course-creator/addCourse/book',body,{});
       if(response.success){
-        console.log(response.data)
-      }
+        if (response.success) {
+          toast.success('Book created successfully');
+          // Navigate to book list and highlight new book
+          navigate(`/dashboard/book-creator?highlight=${response.data.course_id}`);
+        }      }
       
     } catch (error) {
       console.log(error)
     }
   }
   // Call the function
+
+  // const [renderTrigger, setRenderTrigger] = useState(0);
+// In fetchChaptersWithRateLimit, after setChapterFetchCount:
+// setRenderTrigger(prev => prev + 1);
 
   const renderForm = () => {
     switch (currentStep) {
@@ -211,8 +213,8 @@ const AddBookCreator = () => {
       case 3:
         return <StepFourBookCreator />;
       case 4:
-        return <StepFiveBookCreator chaptersContent={chapatersData} />;
-      default:
+        return <StepFiveBookCreator chaptersContent={chapatersData} chapterFetchCount={chapterFetchCount}  />;
+              default:
         return null;
     }
   };

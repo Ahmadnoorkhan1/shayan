@@ -4,11 +4,15 @@ import StepOneCourseCreator from "../../components/AiToolForms/EasyCourseCreator
 import Stepper from "../../components/ui/ToolSteps";
 import apiService from "../../utilities/service/api";
 import toast from "react-hot-toast";
+import { useNavigate } from "react-router";
 
 const EasyCourseCreator = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [chapatersData, setChaptersData] = useState<any>([]);
   const [saveButton, setSaveButton] = useState(false);
+  const [chapterFetchCount, setChapterFetchCount] = useState(0);
+
+  const navigate = useNavigate()
 
   const steps = [
     { label: "Give A Topic", icon: true },
@@ -83,12 +87,17 @@ const EasyCourseCreator = () => {
           );
   
           if (chapterResponse.success) {
-            setChaptersData((prevChapters: any) => [
-              ...prevChapters,
-              chapterResponse.data,
-            ]);
+            setChaptersData((prev: any) => {
+              const newData = [...prev];
+              newData[index] = chapterResponse.data;
+              console.log(`[AddBook] Chapter ${index + 1} fetched:`, newData[index]);
+              console.log(`[AddBook] Updated chapatersData:`, newData);
+              return newData;
+            });
+            setChapterFetchCount((prev:any) => prev + 1); // Increment fetch count
             console.log(`✅ Chapter ${index + 1} fetched successfully.`);
-            success = true; // Mark as successful
+            success = true;
+
           } else {
             throw new Error(chapterResponse.message);
           }
@@ -126,11 +135,14 @@ const EasyCourseCreator = () => {
       }
       const response = await apiService.post('course-creator/addCourse/course',body,{});
       if(response.success){
-        
+        const courseId = response?.data?.course_id?.toString();
+        toast.success("Course Created Successfully");
+        navigate(`/dashboard/course-creator?highlight=${courseId}`);
+
       }
       
     } catch (error) {
-      
+      console.error("Error:", error);
     }
   }
 
@@ -141,7 +153,7 @@ const EasyCourseCreator = () => {
       case 0:
         return <StepOneCourseCreator handleStepChange={handleChildStepChange} />;
       case 1:
-        return <StepFiveCourseCreator chaptersContent={chapatersData} />;
+        return <StepFiveCourseCreator chaptersContent={chapatersData} chapterFetchCount={chapterFetchCount} />;
       default:
         return null;
     }

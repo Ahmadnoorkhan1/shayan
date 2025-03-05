@@ -4,11 +4,39 @@ import { useEffect, useState } from "react";
 
 import apiService from "../../../utilities/service/api";
 import { addItem, deleteItem, downloadItem, editItem } from "../../../utilities/shared/tableUtils";
+import { useLocation, useNavigate } from "react-router";
 
 const CoursecreatorPage = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  
+ // Handle highlight from URL
+ useEffect(() => {
+  const searchParams = new URLSearchParams(location.search);
+  const highlight = searchParams.get('highlight');
+  
+  if (highlight) {
+    setHighlightedId(highlight);
+    
+    // Remove highlight parameter from URL without triggering navigation
+    searchParams.delete('highlight');
+    const newUrl = `${location.pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    window.history.replaceState({}, '', newUrl);
+    
+    // Clear highlight after animation
+    const timer = setTimeout(() => {
+      setHighlightedId(null);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }
+}, [location.search]);
+  
   const handleCourses = (item: any) => {
     setCourses(item);
   };
@@ -79,6 +107,7 @@ const CoursecreatorPage = () => {
           downloadItem={(row: any) => downloadItem(row, setLoading)}
           editItem={editItem}
           setData={handleCourses}
+          highlightedId={highlightedId}
         />
       </div>
       )}
