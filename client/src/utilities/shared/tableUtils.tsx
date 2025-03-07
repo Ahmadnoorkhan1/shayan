@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, PDFPage } from "pdf-lib";
 import { marked } from "marked";
 import apiService from "../service/api";
 
@@ -31,6 +31,64 @@ const fetchImage = async (url: string): Promise<{ buffer: ArrayBuffer; type: str
   }
 };
 
+// First update the processCoverPage function
+const processCoverPage = async (pdfDoc: PDFDocument, chapter: string) => {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(chapter, 'text/html');
+    // Update selector to match the actual class we're using
+    const coverImage = doc.querySelector('.book-cover-image');
+    
+    if (coverImage) {
+      const imgSrc = coverImage.getAttribute('src')?.replace(/&amp;/g, '&');
+      if (imgSrc) {
+        const imageData = await fetchImage(imgSrc);
+        if (imageData) {
+          let image;
+          if (imageData.type.includes('png')) {
+            image = await pdfDoc.embedPng(imageData.buffer);
+          } else if (imageData.type.includes('jpeg') || imageData.type.includes('jpg')) {
+            image = await pdfDoc.embedJpg(imageData.buffer);
+          }
+
+          if (image) {
+            // Create the first page for cover
+            const page = pdfDoc.addPage([pdfConfig.pageWidth, pdfConfig.pageHeight]);
+            const { width: pageWidth, height: pageHeight } = page.getSize();
+            
+            // Calculate dimensions for full-page cover
+            const imgDims = image.scale(1);
+            let scaledWidth = pageWidth * 0.95;
+            let scaledHeight = (scaledWidth / imgDims.width) * imgDims.height;
+
+            if (scaledHeight > pageHeight * 0.95) {
+              scaledHeight = pageHeight * 0.95;
+              scaledWidth = (scaledHeight / imgDims.height) * imgDims.width;
+            }
+
+            // Center the image
+            const x = (pageWidth - scaledWidth) / 2;
+            const y = (pageHeight - scaledHeight) / 2;
+
+            // Draw only the image
+            page.drawImage(image, {
+              x,
+              y,
+              width: scaledWidth,
+              height: scaledHeight
+            });
+
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error('Error processing cover page:', error);
+    return false;
+  }
+};
 
 // Config object with enhanced styling options
 const pdfConfig = {
@@ -111,34 +169,43 @@ export const downloadItem = async (row: any, setLoading: any) => {
     const timesBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const timesItalicFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
 
-    // Create cover page with enhanced styling
+console.log(chapters[0], "see the cover image")
+    // Process cover first, before any other pages
+    const hasCover = chapters[0] && chapters[0].includes('book-cover-image');
+    if (hasCover) {
+      const coverProcessed = await processCoverPage(pdfDoc, chapters[0]);
+      if (coverProcessed) {
+        chapters = chapters.slice(1); // Remove cover chapter from further processing
+      }
+    }
     let page = pdfDoc.addPage([pdfConfig.pageWidth, pdfConfig.pageHeight]);
     const { height } = page.getSize();
+    // Now add title page as second page
+    if (!hasCover || chapters.length > 0) { // Ensure title page isn't added unnecessarily
+     
 
-    // Add course title
-    const titleText = row["Course Title"];
-    const titleFontSize = 16;
-    const titleWidth = timesBoldFont.widthOfTextAtSize(titleText, titleFontSize);
-    
-    // Center and draw title
-    page.drawText(titleText, {
-      x: (pdfConfig.pageWidth - titleWidth) / 2,
-      y: height - 200,
-      size: titleFontSize,
-      font: timesBoldFont,
-      color: rgb(0.2, 0.2, 0.2),
-    });
+      const titleText = row["Course Title"];
+      const titleFontSize = 16;
+      const titleWidth = timesBoldFont.widthOfTextAtSize(titleText, titleFontSize);
 
-    // Add date and metadata
-    const dateText = new Date().toLocaleDateString();
-    const dateWidth = timesRomanFont.widthOfTextAtSize(dateText, 12);
-    page.drawText(dateText, {
-      x: (pdfConfig.pageWidth - dateWidth) / 2,
-      y: height - 250,
-      size: 12,
-      font: timesItalicFont,
-      color: rgb(0.5, 0.5, 0.5),
-    });
+      page.drawText(titleText, {
+        x: (pdfConfig.pageWidth - titleWidth) / 2,
+        y: height - 200,
+        size: titleFontSize,
+        font: timesBoldFont,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+
+      const dateText = new Date().toLocaleDateString();
+      const dateWidth = timesRomanFont.widthOfTextAtSize(dateText, 12);
+      page.drawText(dateText, {
+        x: (pdfConfig.pageWidth - dateWidth) / 2,
+        y: height - 250,
+        size: 12,
+        font: timesItalicFont,
+        color: rgb(0.5, 0.5, 0.5),
+      });
+    }
 
     // Helper function for text wrapping
     const drawWrappedText = (text: string, font: any, fontSize: number, startX: number, startY: number, indent = 0) => {
@@ -186,6 +253,16 @@ export const downloadItem = async (row: any, setLoading: any) => {
     // Process chapters with enhanced formatting
     for (let i = 0; i < chapters.length; i++) {
       console.log(`Processing chapter ${i + 1}`);
+
+      
+  // // Check if this is the cover chapter
+  // if (i === 0 && chapters[i].includes('book-cover-image')) {
+  //   const coverProcessed = await processCoverPage(pdfDoc, chapters[i]);
+  //   if (coverProcessed) {
+  //     continue; // Skip normal chapter processing for cover
+  //   }
+  // }
+  
       
       // New page for each chapter
       page = pdfDoc.addPage([pdfConfig.pageWidth, pdfConfig.pageHeight]);
@@ -196,16 +273,18 @@ export const downloadItem = async (row: any, setLoading: any) => {
         const chapterContent = cleanHtmlContent(chapters[i]);
         const doc = parser.parseFromString(chapterContent, 'text/html');
 
-        // Add chapter number
-        const chapterNum = `Chapter ${i + 1}`;
-        page.drawText(chapterNum, {
-          x: pdfConfig.margin,
-          y: currentY,
-          size: 14,
-          font: timesBoldFont,
-          color: rgb(0.4, 0.4, 0.4),
-        });
-        currentY -= pdfConfig.chapterSpacing;
+       // Skip chapter number for cover page
+    if (!chapters[i].includes('book-cover-image')) {
+      const chapterNum = `Chapter ${i}`;
+      page.drawText(chapterNum, {
+        x: pdfConfig.margin,
+        y: currentY,
+        size: 14,
+        font: timesBoldFont,
+        color: rgb(0.4, 0.4, 0.4),
+      });
+      currentY -= pdfConfig.chapterSpacing;
+    }
 
         const elements = doc.body.querySelectorAll('h1, h2, h3, h4, h5, h6, p, ul, ol, img');
         

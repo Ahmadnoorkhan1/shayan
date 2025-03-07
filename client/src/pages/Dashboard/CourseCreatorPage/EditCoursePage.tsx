@@ -10,6 +10,8 @@ import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
 import ImageEditor from "../../../components/ui/ImageEditor/ImageEditor";
 import ReactQuill from "react-quill";
+import { GenerateCover } from "../../../components/AiToolForms/BookCreator/GenerateCover";
+import toast from "react-hot-toast";
 // import { toast } from "react-toastify";
 
 interface QuillEditor {
@@ -233,6 +235,61 @@ useEffect(() => {
     }
   };
 
+  const handleAddCoverImage = async (imageUrl: string) => {
+    try {
+      // Create properly structured HTML content for cover image - optimized for PDF export
+      const coverContent = `
+        <h1>Course Cover</h1>
+        <div class="content">
+          <img 
+            src="${imageUrl}" 
+            alt="Course Cover" 
+            class="book-cover-image"
+            style="display: block; width: 100%; max-height: 600px; object-fit: contain;"
+          >
+        </div>`;
+  
+      // Handle chapters array modification
+      let updatedChapters = [...chapters];
+      
+      if (updatedChapters.length === 0) {
+        updatedChapters = [coverContent];
+      } else if (updatedChapters[0].includes('book-cover-image')) {
+        updatedChapters[0] = coverContent;
+      } else {
+        updatedChapters.unshift(coverContent);
+      }
+  
+      // Make API call to update
+      const response = await apiService.post(
+        `/course-creator/updateCourse/${id}/course`,
+        {
+          content: JSON.stringify(updatedChapters)
+        }
+      );
+  
+      if (response.success) {
+        // Update local state
+        setChapters(updatedChapters);
+        
+        // Auto-select cover chapter
+        handleChapterSelect(coverContent, 0);
+        
+        // Update title
+        setSelectedChapterTitle('Course Cover');
+        
+        toast.success('Course cover added successfully');
+      } else {
+        toast.error('Failed to save course cover');
+      }
+  
+    } catch (error) {
+      console.error('Error saving course cover:', error);
+      toast.error('Error saving course cover');
+    }
+  };
+
+
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
@@ -262,6 +319,8 @@ useEffect(() => {
               <EditIcon className="w-5 h-5 text-gray-600" />
               <span className="text-sm ml-2 text-gray-700">Image Editor</span>
             </Button> */}
+
+            <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
             <Button
               color="destructive"
               variant="soft"
