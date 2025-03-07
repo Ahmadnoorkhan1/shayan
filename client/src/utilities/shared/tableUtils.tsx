@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, PDFPage } from "pdf-lib";
 import { marked } from "marked";
 import apiService from "../service/api";
+import toast from "react-hot-toast";
 
 // Add utility function to fetch images
 const fetchImage = async (url: string): Promise<{ buffer: ArrayBuffer; type: string } | null> => {
@@ -31,66 +32,87 @@ const fetchImage = async (url: string): Promise<{ buffer: ArrayBuffer; type: str
   }
 };
 
-// First update the processCoverPage function
-const processCoverPage = async (pdfDoc: PDFDocument, chapter: string) => {
+
+
+
+const processCoverPage = async (
+  page: PDFPage,
+  chapter: string,
+  pdfDoc: PDFDocument,
+  title: string
+) => {
+  console.log("...............................title", title);
+
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(chapter, 'text/html');
-    // Update selector to match the actual class we're using
     const coverImage = doc.querySelector('.book-cover-image');
-    
-    if (coverImage) {
-      const imgSrc = coverImage.getAttribute('src')?.replace(/&amp;/g, '&');
-      if (imgSrc) {
-        const imageData = await fetchImage(imgSrc);
-        if (imageData) {
-          let image;
-          if (imageData.type.includes('png')) {
-            image = await pdfDoc.embedPng(imageData.buffer);
-          } else if (imageData.type.includes('jpeg') || imageData.type.includes('jpg')) {
-            image = await pdfDoc.embedJpg(imageData.buffer);
-          }
+    if (!coverImage) return false;
 
-          if (image) {
-            // Create the first page for cover
-            const page = pdfDoc.addPage([pdfConfig.pageWidth, pdfConfig.pageHeight]);
-            const { width: pageWidth, height: pageHeight } = page.getSize();
-            
-            // Calculate dimensions for full-page cover
-            const imgDims = image.scale(1);
-            let scaledWidth = pageWidth * 0.95;
-            let scaledHeight = (scaledWidth / imgDims.width) * imgDims.height;
+    // Ensure we have a title
+    const displayTitle = title || "Untitled Document";
 
-            if (scaledHeight > pageHeight * 0.95) {
-              scaledHeight = pageHeight * 0.95;
-              scaledWidth = (scaledHeight / imgDims.height) * imgDims.width;
-            }
-
-            // Center the image
-            const x = (pageWidth - scaledWidth) / 2;
-            const y = (pageHeight - scaledHeight) / 2;
-
-            // Draw only the image
-            page.drawImage(image, {
-              x,
-              y,
-              width: scaledWidth,
-              height: scaledHeight
-            });
-
-            return true;
-          }
-        }
-      }
+    // Fetch and embed image
+    const imgSrc = coverImage.getAttribute('src')?.replace(/&amp;/g, '&');
+    if (!imgSrc) return false;
+    const imageData = await fetchImage(imgSrc);
+    if (!imageData) return false;
+    let image;
+    if (imageData.type.includes('png')) {
+      image = await pdfDoc.embedPng(imageData.buffer);
+    } else if (imageData.type.includes('jpeg') || imageData.type.includes('jpg')) {
+      image = await pdfDoc.embedJpg(imageData.buffer);
     }
-    return false;
+    if (!image) return false;
+
+    // Fonts
+    const timesBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
+    const timesRomanFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
+
+    // Get page dimensions
+    const { width: pageWidth, height: pageHeight } = page.getSize();
+
+    // Draw image at top third of page
+    const imgDims = image.scale(1);
+    const scaledWidth = pageWidth * 0.4;
+    const scaledHeight = pageHeight * 0.4 * (imgDims.height / imgDims.width);
+    const imageX = (pageWidth - scaledWidth) / 2;
+    const imageY = pageHeight * 0.25; // Increased from 0.65 to 0.75 (higher placement)
+    
+    page.drawImage(image, {
+      x: imageX,
+      y: imageY,
+      width: scaledWidth,
+      height: scaledHeight
+    });
+
+    // // Draw title in middle of page (direct approach)
+    console.log("Drawing title:", displayTitle);
+    page.drawText(displayTitle, {
+      x: 100,
+      y: pageHeight * 0.4,
+      size: 24,
+      font: timesBoldFont,
+      color: rgb(0, 0, 0),
+    });
+
+    // Draw date at bottom
+    const dateText = new Date().toLocaleDateString();
+    page.drawText(dateText, {
+      x: (pageWidth - timesRomanFont.widthOfTextAtSize(dateText, 12)) / 2,
+      y: pageHeight * 0.2,
+      size: 12,
+      font: timesRomanFont,
+      color: rgb(0.5, 0.5, 0.5),
+    });
+    
+    return true;
   } catch (error) {
-    console.error('Error processing cover page:', error);
+    console.error("Error processing cover page:", error);
     return false;
   }
 };
 
-// Config object with enhanced styling options
 const pdfConfig = {
   pageWidth: 595,
   pageHeight: 842,
@@ -169,43 +191,33 @@ export const downloadItem = async (row: any, setLoading: any) => {
     const timesBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
     const timesItalicFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
 
-console.log(chapters[0], "see the cover image")
-    // Process cover first, before any other pages
-    const hasCover = chapters[0] && chapters[0].includes('book-cover-image');
-    if (hasCover) {
-      const coverProcessed = await processCoverPage(pdfDoc, chapters[0]);
-      if (coverProcessed) {
-        chapters = chapters.slice(1); // Remove cover chapter from further processing
-      }
-    }
-    let page = pdfDoc.addPage([pdfConfig.pageWidth, pdfConfig.pageHeight]);
-    const { height } = page.getSize();
+     // 1) Process cover first if needed
+     let hasCover = false;
+     const coverIndex = chapters.findIndex(ch =>
+       ch.includes('book-cover-image') || ch.includes('data-cover="true"')
+     );
+     if (coverIndex >= 0) {
+       // Create page for cover first
+       console.log("=======================>",hasCover, coverIndex)
+       const coverPage = pdfDoc.addPage([pdfConfig.pageWidth, pdfConfig.pageHeight]);
+       hasCover = await processCoverPage(coverPage, chapters[coverIndex], pdfDoc,   row["Course Title"]);
+       if (hasCover) {
+         chapters.splice(coverIndex, 1);
+       } else {
+         // Remove if no valid image was found
+         pdfDoc.removePage(pdfDoc.getPageCount() - 1);
+       }
+     }
+    
+    let page: PDFPage;
     // Now add title page as second page
-    if (!hasCover || chapters.length > 0) { // Ensure title page isn't added unnecessarily
+    // if (!hasCover || chapters.length > 0) { // Ensure title page isn't added unnecessarily
      
-
-      const titleText = row["Course Title"];
-      const titleFontSize = 16;
-      const titleWidth = timesBoldFont.widthOfTextAtSize(titleText, titleFontSize);
-
-      page.drawText(titleText, {
-        x: (pdfConfig.pageWidth - titleWidth) / 2,
-        y: height - 200,
-        size: titleFontSize,
-        font: timesBoldFont,
-        color: rgb(0.2, 0.2, 0.2),
-      });
-
-      const dateText = new Date().toLocaleDateString();
-      const dateWidth = timesRomanFont.widthOfTextAtSize(dateText, 12);
-      page.drawText(dateText, {
-        x: (pdfConfig.pageWidth - dateWidth) / 2,
-        y: height - 250,
-        size: 12,
-        font: timesItalicFont,
-        color: rgb(0.5, 0.5, 0.5),
-      });
-    }
+    // const titlePage = pdfDoc.addPage([pdfConfig.pageWidth, pdfConfig.pageHeight]);
+    // const { height } = titlePage.getSize();
+    const height = 900;
+//  console.log("==========================?aaaaahhh")
+//    
 
     // Helper function for text wrapping
     const drawWrappedText = (text: string, font: any, fontSize: number, startX: number, startY: number, indent = 0) => {
@@ -255,13 +267,7 @@ console.log(chapters[0], "see the cover image")
       console.log(`Processing chapter ${i + 1}`);
 
       
-  // // Check if this is the cover chapter
-  // if (i === 0 && chapters[i].includes('book-cover-image')) {
-  //   const coverProcessed = await processCoverPage(pdfDoc, chapters[i]);
-  //   if (coverProcessed) {
-  //     continue; // Skip normal chapter processing for cover
-  //   }
-  // }
+ 
   
       
       // New page for each chapter
@@ -429,10 +435,10 @@ if (tagName === 'img') {
       }
     }
 
-    // Add page numbers
-    for (let i = 0; i < pdfDoc.getPageCount(); i++) {
+    const pagesOffset = hasCover ? 2 : 1; // Skip cover and title page for numbering
+    for (let i = pagesOffset; i < pdfDoc.getPageCount(); i++) {
       const page = pdfDoc.getPage(i);
-      const pageNum = `${i + 1}`;
+      const pageNum = `${i - pagesOffset + 1}`;
       const pageNumWidth = timesRomanFont.widthOfTextAtSize(pageNum, 10);
       page.drawText(pageNum, {
         x: (pdfConfig.pageWidth - pageNumWidth) / 2,
@@ -442,6 +448,7 @@ if (tagName === 'img') {
         color: rgb(0.5, 0.5, 0.5),
       });
     }
+
 
     // Save and download PDF
     console.log("Generating final PDF...");
@@ -454,7 +461,7 @@ if (tagName === 'img') {
     link.click();
     document.body.removeChild(link);
     
-    // toast.success("PDF downloaded successfully");
+    toast.success("PDF downloaded successfully");
 
   } catch (error) {
     console.error("PDF generation error:", error);

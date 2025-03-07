@@ -15,15 +15,20 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
   const [selectedChapterIndex, setSelectedChapterIndex] = useState<number | null>(null);
 
 
-  console.log(chapters, "chapters");
+  // console.log(chapters, "chapters");
 
   const parseChapter = (html: string) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
+    // Check if this is a cover chapter
+    const isCover = html.includes('data-cover="true"') || 
+                    html.includes('book-cover-image');
+    
     // Get chapter title (h1)
     const titleElement = doc.querySelector('h1');
-    const title = titleElement ? titleElement.textContent || 'Untitled' : 'Untitled';
+    const title = isCover ? 'Course Cover' : 
+                  (titleElement ? titleElement.textContent || 'Untitled' : 'Untitled');
     
     // Get sections (h2)
     const sectionElements = doc.querySelectorAll('h2');
@@ -49,12 +54,16 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
       currentNode = currentNode.nextElementSibling;
     }
   
-    const description = sections.length > 0 ? 
-      `${sections.length} ${sections.length === 1 ? 'section' : 'sections'} available` : 
-      "No sections found";
+    const description = isCover ? 'Course cover image' : 
+      (sections.length > 0 ? 
+        `${sections.length} ${sections.length === 1 ? 'section' : 'sections'} available` : 
+        "No sections found");
   
     return { title, description, sections, editableContent };
   };
+  
+  
+  
   const handleChapterClick = (chapter: string, index: number) => {
     onSelectChapter(chapter, index);
     setSelectedChapterIndex(index);
@@ -143,6 +152,8 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
 </div>
               );
             })}
+
+            
           </div>
         ) : (
           <div className="text-center py-8 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
@@ -152,6 +163,8 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({ chapters, onSelectChapt
         )}
       </div>
     </div>
+
+    
   );
 };
 

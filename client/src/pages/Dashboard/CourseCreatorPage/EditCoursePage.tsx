@@ -166,9 +166,48 @@ useEffect(() => {
     setSelectedChapter(newContent);
   };
 
+  // const handleChapterSelect = (chapterContent: string, index: number) => {
+  //   const parser = new DOMParser();
+  //   const doc = parser.parseFromString(chapterContent, 'text/html');
+  //   const titleElement = doc.querySelector('h1');
+  //   const title = titleElement?.textContent || `Chapter ${index + 1}`;
+    
+  //   // Remove h1 from content before setting it
+  //   if (titleElement) {
+  //     titleElement.remove();
+  //   }
+    
+  //   setSelectedChapterTitle(title);
+  //   setSelectedChapter(doc.body.innerHTML);
+  //   setSelectedChapterIndex(index);
+  // };
+  
+
   const handleChapterSelect = (chapterContent: string, index: number) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(chapterContent, 'text/html');
+    
+    // Special handling for cover pages
+    const isCover = chapterContent.includes('data-cover="true"') || 
+                    chapterContent.includes('book-cover-image');
+    
+    if (isCover) {
+      // For cover images, we set a placeholder text in editor
+      const coverImg = doc.querySelector('.book-cover-image');
+      const imgSrc = coverImg?.getAttribute('src') || '';
+      
+      // Create a simplified representation for the editor
+      const placeholder = `<div style="text-align: center; padding: 20px;">
+        <img src="${imgSrc}" style="max-width: 100%; max-height: 400px; margin: 0 auto;" />
+      </div>`;
+      
+      setSelectedChapterTitle('Course Cover');
+      setSelectedChapter(placeholder);
+      setSelectedChapterIndex(index);
+      return;
+    }
+    
+    // Normal chapter handling
     const titleElement = doc.querySelector('h1');
     const title = titleElement?.textContent || `Chapter ${index + 1}`;
     
@@ -181,7 +220,7 @@ useEffect(() => {
     setSelectedChapter(doc.body.innerHTML);
     setSelectedChapterIndex(index);
   };
-  
+
   const handleSave = async () => {
     try {
       if (selectedChapterIndex === -1) {
@@ -237,29 +276,35 @@ useEffect(() => {
 
   const handleAddCoverImage = async (imageUrl: string) => {
     try {
-      // Create properly structured HTML content for cover image - optimized for PDF export
+      // Create a clean cover chapter structure - simple with just the necessary elements
       const coverContent = `
-        <h1>Course Cover</h1>
-        <div class="content">
+        <div data-cover="true">
           <img 
             src="${imageUrl}" 
-            alt="Course Cover" 
+            alt="Cover Image" 
             class="book-cover-image"
             style="display: block; width: 100%; max-height: 600px; object-fit: contain;"
+            data-cover="true"
           >
         </div>`;
-  
+    
       // Handle chapters array modification
       let updatedChapters = [...chapters];
       
-      if (updatedChapters.length === 0) {
-        updatedChapters = [coverContent];
-      } else if (updatedChapters[0].includes('book-cover-image')) {
-        updatedChapters[0] = coverContent;
+      // Check if a cover already exists
+      const coverIndex = updatedChapters.findIndex(chapter => 
+        chapter.includes('data-cover="true"') || 
+        chapter.includes('book-cover-image')
+      );
+      
+      if (coverIndex >= 0) {
+        // Replace existing cover
+        updatedChapters[coverIndex] = coverContent;
       } else {
+        // Insert new cover at beginning
         updatedChapters.unshift(coverContent);
       }
-  
+    
       // Make API call to update
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/course`,
@@ -267,28 +312,81 @@ useEffect(() => {
           content: JSON.stringify(updatedChapters)
         }
       );
-  
+    
       if (response.success) {
         // Update local state
         setChapters(updatedChapters);
         
-        // Auto-select cover chapter
-        handleChapterSelect(coverContent, 0);
+        // Select the cover chapter
+        const targetIndex = coverIndex >= 0 ? coverIndex : 0;
         
-        // Update title
+        // Call handleChapterSelect with special handling for cover
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(coverContent, 'text/html');
+        
+        // For cover pages, we don't want to display text in the editor
         setSelectedChapterTitle('Course Cover');
+        setSelectedChapter(''); // Empty content for editor
+        setSelectedChapterIndex(targetIndex);
         
         toast.success('Course cover added successfully');
       } else {
         toast.error('Failed to save course cover');
       }
-  
     } catch (error) {
       console.error('Error saving course cover:', error);
       toast.error('Error saving course cover');
     }
   };
 
+  // Add this function to remove cover image
+const handleRemoveCoverImage = async () => {
+  try {
+    // Find the cover chapter
+    const coverIndex = chapters.findIndex(chapter => 
+      chapter.includes('data-cover="true"') || 
+      chapter.includes('book-cover-image')
+    );
+    
+    if (coverIndex < 0) {
+      toast.error('No cover image found');
+      return;
+    }
+
+    // Create a copy of chapters without the cover
+    const updatedChapters = [...chapters];
+    updatedChapters.splice(coverIndex, 1);
+
+    // Make API call to update
+    const response = await apiService.post(
+      `/course-creator/updateCourse/${id}/course`,
+      {
+        content: JSON.stringify(updatedChapters)
+      }
+    );
+
+    if (response.success) {
+      // Update local state
+      setChapters(updatedChapters);
+      
+      // Select the first chapter if available
+      if (updatedChapters.length > 0) {
+        handleChapterSelect(updatedChapters[0], 0);
+      } else {
+        setSelectedChapter('');
+        setSelectedChapterTitle('');
+        setSelectedChapterIndex(-1);
+      }
+      
+      toast.success('Course cover removed successfully');
+    } else {
+      toast.error('Failed to remove course cover');
+    }
+  } catch (error) {
+    console.error('Error removing course cover:', error);
+    toast.error('Error removing course cover');
+  }
+};
 
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
@@ -320,6 +418,8 @@ useEffect(() => {
               <span className="text-sm ml-2 text-gray-700">Image Editor</span>
             </Button> */}
 
+            
+
             <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
             <Button
               color="destructive"
@@ -337,6 +437,23 @@ useEffect(() => {
               <ImageIcon className="w-5 h-5 text-gray-600" />
               <span className="text-sm text-gray-700">AI Image</span>
             </Button>
+
+{selectedChapterIndex !== -1 && 
+  chapters[selectedChapterIndex] && 
+  (chapters[selectedChapterIndex].includes('data-cover="true"') || 
+   chapters[selectedChapterIndex].includes('book-cover-image')) && (
+    <Button
+      color="destructive"
+      variant="soft"
+      size="sm"
+      onClick={handleRemoveCoverImage}
+      className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex items-center gap-2 ml-2"
+      title="Remove cover image"
+    >
+      <ShieldCloseIcon className="w-5 h-5 text-red-600" />
+      <span className="text-sm text-red-700">Remove Cover</span>
+    </Button>
+)}
 
           <Modal 
             isOpen={showImageGenerator}
