@@ -401,22 +401,7 @@ const handleRemoveCoverImage = async () => {
             <h2 className="text-xl font-bold text-purple-800">Edit Chapter</h2>
           </div>
           <div className=" flex relative">
-          {/* <Button
-              color="destructive"
-              variant="soft"
-              size="sm"
-              // ref={buttonRef}
-              onClick={() => setOpenEditor(!openEditor)}
-              // className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center gap-2"
-              // title={
-              //   showImageGenerator
-              //     ? "Hide AI Image Generator"
-              //     : "Generate AI Image"
-              // }
-            >
-              <EditIcon className="w-5 h-5 text-gray-600" />
-              <span className="text-sm ml-2 text-gray-700">Image Editor</span>
-            </Button> */}
+         
 
             
 

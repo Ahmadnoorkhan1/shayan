@@ -33,7 +33,6 @@ const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,se
     )
   );
 
-  console.log(filteredData, "filteredData");
 
   return (
     <section className="w-full" >

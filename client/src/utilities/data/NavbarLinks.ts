@@ -14,5 +14,9 @@ export const NAVLINKS: any = [
     {
         title: 'Contact Us',
         href: '/contact-us'
+    },
+    {
+        title: 'Dashboard',
+        href: '/dashboard'
     }
 ]

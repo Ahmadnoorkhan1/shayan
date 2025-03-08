@@ -177,12 +177,15 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
           />
         </div>
 
-        <button 
+        <Button 
           onClick={onSave} 
-          className="btn-primary self-end text-white px-6 py-2.5 rounded-full hover:bg-opacity-90 transition-all duration-200 shadow-sm hover:shadow-md"
+          // color="primary"
+          // variant="soft"
+          // size="sm"
+          className="btn-primary "
         >
           Save Content
-        </button>
+        </Button>
       </div>
     );
   }
