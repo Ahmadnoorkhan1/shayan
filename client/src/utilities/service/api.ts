@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 const baseURL =
   window.location.hostname === 'localhost'
     ? 'http://localhost:5002/api/'
-    : 'http://dev.minilessonsacademy.com/api/';
+    : 'https://minilessonsacademy.onrender.com/api/';
 
 // Create an axios instance
 const api = axios.create({

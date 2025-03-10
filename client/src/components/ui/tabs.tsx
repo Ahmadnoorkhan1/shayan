@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import Table from "./Table";
 import apiService from "../../utilities/service/api";
+import { addItem, deleteItem, downloadItem, editItem } from "../../utilities/shared/tableUtils";
 
 const Tabs = () => {
   const [courses,setCourses] = useState([]);
   const [books,setBooks] = useState([]);
   const [showBook, setShowBook] = useState(false);
   const [tab,setTab] = useState('course')
+  const [loading, setLoading] = useState(false);
+
   try {
     useEffect(() => {
       const fetchData = async () => {
@@ -83,12 +86,12 @@ const Tabs = () => {
             headers={["Name", "Description", "Created At", "Updated At"]}
             data={courses}
             isAdd={false}
-            addItem={()=>{}}
-            deleteItem={()=>{}}
-            downloadItem={()=>{}}
+            addItem={addItem}
+            deleteItem={deleteItem}
             setData={handleCourses}
-            editItem={()=>{}}
-
+            downloadItem={(row: any) => downloadItem(row, setLoading)}
+            editItem={editItem}
+            pre={"course-creator"}
           />
         </>
       ) : (
@@ -98,11 +101,12 @@ const Tabs = () => {
             headers={["Name", "Description", "Created At", "Updated At"]}
             data={books}
             isAdd={false}
-            addItem={()=>{}}
-            deleteItem={()=>{}}
-            downloadItem={()=>{}}
+            addItem={addItem}
+            deleteItem={deleteItem}
             setData={handleBooks}
-            editItem={()=>{}}
+            downloadItem={(row: any) => downloadItem(row, setLoading)}
+            editItem={editItem}
+            pre={"book-creator"}
           />
         </>
       )}

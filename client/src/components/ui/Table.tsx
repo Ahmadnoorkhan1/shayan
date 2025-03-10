@@ -10,16 +10,16 @@ interface TableProps {
   downloadItem:CallableFunction,
   editItem:CallableFunction,
   setData:any
-  highlightedId?: string | null;
-
+  highlightedId?: string | null,
+  pre:any
 
 }
 
-const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,setData , highlightedId}: TableProps) => {
+const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,setData , highlightedId,pre}: TableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [optionsIndex, setOptionsIndex] = useState(null); // Store the index of the opened options
   const navigate = useNavigate();
-
+  console.log(pre)
   console.log(highlightedId, "highlightedId");
 
   const showOptions = (index:any) => {
@@ -176,7 +176,7 @@ const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,se
                               <button
                                 className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 role="menuitem"
-                                onClick={()=>editItem(navigate,item)}
+                                onClick={()=>editItem(navigate,item,pre)}
                               >
                                 Edit
                               </button>

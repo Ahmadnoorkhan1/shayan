@@ -13,7 +13,9 @@ const BookcreatorPage = () => {
 
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const location = useLocation();
-
+  const handleBooks = (item: any) => {
+    setBooks(item);
+  };
  
  // Handle highlight from URL
  useEffect(() => {
@@ -276,7 +278,8 @@ const BookcreatorPage = () => {
         downloadItem={(row: any) => downloadItem(row, setLoading)}
         editItem={editItem}
         highlightedId={highlightedId}
-        setData={()=>{}}
+        setData={handleBooks}
+        pre={""}
       />
       )}
        

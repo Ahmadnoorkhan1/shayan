@@ -108,6 +108,7 @@ const CoursecreatorPage = () => {
           editItem={editItem}
           setData={handleCourses}
           highlightedId={highlightedId}
+          pre={""}
         />
       </div>
       )}

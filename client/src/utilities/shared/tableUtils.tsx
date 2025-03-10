@@ -475,10 +475,14 @@ export const addItem = (navigate:any) => {
   navigate("add");
 };
 
-export const editItem = (navigate:any,link:any) =>{
+export const editItem = (navigate:any,link:any,pre:any) =>{
   // navigate(link)
   console.log(link)
-  navigate('edit/'+link.ID)
+  if(pre){
+    navigate(pre+'/'+'edit/'+link.ID)
+  }else{
+    navigate('edit/'+link.ID) 
+  }
 }
 
 export const deleteItem = async (item: any,setCourses:any) => {

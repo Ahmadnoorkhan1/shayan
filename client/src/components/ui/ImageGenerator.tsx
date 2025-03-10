@@ -28,7 +28,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({ onImageSelect }) => {
       if (response.success) {
         // setGeneratedImage(response.data);
 // const Url = 'http://dev.minilessonsacademy.com'
-const Url = 'http://localhost:5002'
+const Url = 'https://minilessonsacademy.onrender.com'
 
         const imageUrl = `${Url}${response.data}`;
         setGeneratedImage(imageUrl);
