@@ -32,26 +32,45 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
       }
     }, [imageUrl, ref]);
 
-    useEffect(() => {
-      if (ref && 'current' in ref && ref.current) {
-        const editor = ref.current.getEditor();
+   // In RichTextEditor.tsx, update the image click handler
+// Update the image click handler to specifically handle cover images
+useEffect(() => {
+  if (ref && 'current' in ref && ref.current) {
+    const editor = ref.current.getEditor();
+    
+    const handleImageClick = (event: Event) => {
+      const target = event.target as HTMLElement;
+      
+      // Check if the clicked element is an image
+      if (target.tagName === 'IMG') {
+        const imageUrl = target.getAttribute('src');
         
-        const handleImageClick = (event: Event) => {
-          const target = event.target as HTMLElement;
-          if (target.tagName === 'IMG') {
-            const imageUrl = target.getAttribute('src');
-            if (imageUrl && onImageClick) {
-              onImageClick(imageUrl);
-            }
-          }
-        };
-
-        editor.root.addEventListener('click', handleImageClick);
-        return () => {
-          editor.root.removeEventListener('click', handleImageClick);
-        };
+        if (imageUrl && onImageClick) {
+          // Important: prevent default behavior and stop propagation
+          event.preventDefault();
+          event.stopPropagation();
+          
+          // Check if this is a cover image (has the data attribute)
+          const isCoverImage = target.hasAttribute('data-cover-image') || 
+                              target.classList.contains('book-cover-image-preview');
+          
+          // Call the click handler with the image URL
+          onImageClick(imageUrl);
+          
+          // Return false to prevent further handling
+          return false;
+        }
       }
-    }, [ref, onImageClick]);
+    };
+
+    // Use capture phase to ensure we get the event first
+    editor.root.addEventListener('click', handleImageClick, true);
+    
+    return () => {
+      editor.root.removeEventListener('click', handleImageClick, true);
+    };
+  }
+}, [ref, onImageClick]);
 
     const handleChange = (value: string) => {
       setContent(value);

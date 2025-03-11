@@ -12,7 +12,10 @@ import ImageEditor from "../../../components/ui/ImageEditor/ImageEditor";
 import ReactQuill from "react-quill";
 import { GenerateCover } from "../../../components/AiToolForms/BookCreator/GenerateCover";
 import toast from "react-hot-toast";
+import AlertDialog from "../../../components/AlertDialog";
 // import { toast } from "react-toastify";
+
+
 
 interface QuillEditor {
   getContents: () => Delta;
@@ -44,11 +47,39 @@ const EditCoursePage = () => {
   const [openEditor, setOpenEditor] = useState<boolean>(false);
   const [currentEditingImage, setCurrentEditingImage] = useState<string | null>(null);
   const quillRef = useRef<ReactQuill>(null);
+  const [showEditConfirmation, setShowEditConfirmation] = useState<boolean>(false);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
+  const [chapterToDelete, setChapterToDelete] = useState<number>(-1);
 
-  // Add handler for image click in editor
-  const handleImageClick = (imageUrl: string) => {
-    setCurrentEditingImage(imageUrl);
-    setOpenEditor(true);
+
+  // Update the handleImageClick function to handle all image clicks consistently
+// Update the handleImageClick function to ensure it always shows the dialog
+const handleImageClick = (imageUrl: string) => {
+  // We need to ensure we're not directly opening the editor
+  console.log('Image clicked:', imageUrl); // Add for debugging
+  
+  // Always set the pending image and show confirmation dialog
+  setPendingImageUrl(imageUrl);
+  setShowEditConfirmation(true);
+  
+  // Important: prevent any direct editing
+  setOpenEditor(false);
+  setCurrentEditingImage(null);
+};
+
+  // Add these handlers for the dialog
+  const handleConfirmEdit = () => {
+    if (pendingImageUrl) {
+      setCurrentEditingImage(pendingImageUrl);
+      setOpenEditor(true);
+    }
+    setShowEditConfirmation(false);
+  };
+
+  const handleCancelEdit = () => {
+    setPendingImageUrl(null);
+    setShowEditConfirmation(false);
   };
 
   const handleEditedImageSave = (editedImageUrl: string): void => {
@@ -166,22 +197,7 @@ useEffect(() => {
     setSelectedChapter(newContent);
   };
 
-  // const handleChapterSelect = (chapterContent: string, index: number) => {
-  //   const parser = new DOMParser();
-  //   const doc = parser.parseFromString(chapterContent, 'text/html');
-  //   const titleElement = doc.querySelector('h1');
-  //   const title = titleElement?.textContent || `Chapter ${index + 1}`;
-    
-  //   // Remove h1 from content before setting it
-  //   if (titleElement) {
-  //     titleElement.remove();
-  //   }
-    
-  //   setSelectedChapterTitle(title);
-  //   setSelectedChapter(doc.body.innerHTML);
-  //   setSelectedChapterIndex(index);
-  // };
-  
+ 
 
   const handleChapterSelect = (chapterContent: string, index: number) => {
     const parser = new DOMParser();
@@ -221,6 +237,54 @@ useEffect(() => {
     setSelectedChapterIndex(index);
   };
 
+
+  // const handleChapterSelect = (chapterContent: string, index: number) => {
+  //   const parser = new DOMParser();
+  //   const doc = parser.parseFromString(chapterContent, 'text/html');
+    
+  //   // Special handling for cover pages
+  //   const isCover = chapterContent.includes('data-cover="true"') || 
+  //                   chapterContent.includes('book-cover-image');
+    
+  //   if (isCover) {
+  //     // For cover images, we set a placeholder text in editor
+  //     const coverImg = doc.querySelector('.book-cover-image');
+  //     const imgSrc = coverImg?.getAttribute('src') || '';
+      
+  //     // Create a simplified representation for the editor that will work with our click handler
+  //     // The key here is to ensure the image doesn't have special styling that might intercept clicks
+  //     const placeholder = `
+  //       <div style="text-align: center; padding: 20px;" class="cover-image-container">
+  //         <p style="margin-bottom: 10px; color: #6b7280; font-style: italic;">Course Cover Image (Click to edit)</p>
+  //         <img 
+  //           src="${imgSrc}" 
+  //           class="editor-image book-cover-image-preview" 
+  //           style="max-width: 100%; max-height: 400px; margin: 0 auto; cursor: pointer; border: 1px dashed #e5e7eb; padding: 4px;" 
+  //           alt="Cover Image"
+  //           data-cover-image="true"
+  //         />
+  //       </div>
+  //     `;
+      
+  //     setSelectedChapterTitle('Course Cover');
+  //     setSelectedChapter(placeholder);
+  //     setSelectedChapterIndex(index);
+  //     return;
+  //   }
+    
+  //   // Normal chapter handling
+  //   const titleElement = doc.querySelector('h1');
+  //   const title = titleElement?.textContent || `Chapter ${index + 1}`;
+    
+  //   // Remove h1 from content before setting it
+  //   if (titleElement) {
+  //     titleElement.remove();
+  //   }
+    
+  //   setSelectedChapterTitle(title);
+  //   setSelectedChapter(doc.body.innerHTML);
+  //   setSelectedChapterIndex(index);
+  // };
   const handleSave = async () => {
     try {
       if (selectedChapterIndex === -1) {
@@ -388,6 +452,66 @@ const handleRemoveCoverImage = async () => {
   }
 };
 
+  const handleDeleteChapter = (index: number) => {
+    setChapterToDelete(index);
+    setShowDeleteConfirmation(true);
+  };
+
+  // Add confirmation handlers
+  const handleConfirmDelete = async () => {
+    if (chapterToDelete === -1) return;
+
+    try {
+      // Create a copy of chapters without the one to delete
+      const updatedChapters = [...chapters];
+      updatedChapters.splice(chapterToDelete, 1);
+
+      // Make API call to update
+      const response = await apiService.post(
+        `/course-creator/updateCourse/${id}/course`,
+        {
+          content: JSON.stringify(updatedChapters)
+        }
+      );
+
+      if (response.success) {
+        // Update local state
+        setChapters(updatedChapters);
+        
+        // If the currently selected chapter was deleted
+        if (chapterToDelete === selectedChapterIndex) {
+          // Select the first available chapter, or clear selection if none left
+          if (updatedChapters.length > 0) {
+            handleChapterSelect(updatedChapters[0], 0);
+          } else {
+            setSelectedChapter('');
+            setSelectedChapterTitle('');
+            setSelectedChapterIndex(-1);
+          }
+        } 
+        // If a chapter before the selected one was deleted, adjust the index
+        else if (chapterToDelete < selectedChapterIndex) {
+          setSelectedChapterIndex(selectedChapterIndex - 1);
+        }
+        
+        toast.success('Chapter deleted successfully');
+      } else {
+        toast.error('Failed to delete chapter');
+      }
+    } catch (error) {
+      console.error('Error deleting chapter:', error);
+      toast.error('Error deleting chapter');
+    } finally {
+      setShowDeleteConfirmation(false);
+      setChapterToDelete(-1);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmation(false);
+    setChapterToDelete(-1);
+  };
+
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
@@ -440,13 +564,16 @@ const handleRemoveCoverImage = async () => {
     </Button>
 )}
 
-          <Modal 
-            isOpen={showImageGenerator}
-            onClose={() => setShowImageGenerator(false)}
-            title="AI Image Generator"
-          >
-            <ImageGenerator onImageSelect={handleAIImageSelect} />
-          </Modal>
+<Modal 
+  isOpen={showImageGenerator}
+  onClose={() => setShowImageGenerator(false)}
+  title="AI Image Generator"
+>
+  <ImageGenerator 
+    onImageSelect={handleAIImageSelect} 
+    isEditorContext={true} // Set to true for text editor usage
+  />
+</Modal>
           </div>
         </div>
         <RichTextEditor
@@ -462,7 +589,7 @@ const handleRemoveCoverImage = async () => {
       <ChapterGallery
         chapters={chapters}
         onSelectChapter={handleChapterSelect}
-        // onSelectSection={handleSectionSelect}
+        onDeleteChapter={handleDeleteChapter} // Add this prop
       />
     </div>
     <Modal
@@ -476,8 +603,58 @@ const handleRemoveCoverImage = async () => {
           onSave={handleEditedImageSave}
         />
       </Modal>
+
+        {/* Add the Alert Dialog for image editing confirmation */}
+        <AlertDialog
+        isOpen={showEditConfirmation}
+        onClose={handleCancelEdit}
+        title="Edit Image"
+        description="Would you like to edit this image using the Image Editor?"
+        onConfirm={handleConfirmEdit}
+        confirmText="Edit Image"
+        cancelText="Cancel"
+        showImage={true}
+        imageUrl={pendingImageUrl || ''}
+      />
+      
+      {/* Chapter delete confirmation dialog */}
+      <AlertDialog
+        isOpen={showDeleteConfirmation}
+        onClose={handleCancelDelete}
+        title="Delete Chapter"
+        description={`Are you sure you want to delete ${
+          chapterToDelete !== -1 && chapters[chapterToDelete] ? 
+            parseChapterTitle(chapters[chapterToDelete]) : 
+            'this chapter'
+        }? This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        confirmText="Delete Chapter"
+        cancelText="Cancel"
+        showImage={false}
+        confirmStyle="outline"
+      />
     </React.Fragment>
   );
+  
+  // Helper function to extract title for the confirmation dialog
+  function parseChapterTitle(html: string): string {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      
+      // Check if this is a cover chapter
+      const isCover = html.includes('data-cover="true"') || 
+                      html.includes('book-cover-image');
+      
+      if (isCover) return 'Course Cover';
+      
+      // Get chapter title from h1
+      const titleElement = doc.querySelector('h1');
+      return titleElement?.textContent || 'this chapter';
+    } catch (e) {
+      return 'this chapter';
+    }
+  }
 };
 
 export default EditCoursePage;

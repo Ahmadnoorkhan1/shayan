@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '../../ui/button';
 import { Book, ImageIcon, Edit2, CheckCircle } from 'lucide-react';
 import Modal from '../../ui/Modal';
@@ -13,10 +13,14 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState<'generate' | 'edit'>('generate');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleImageGenerated = (imageUrl: string) => {
+  // Use useCallback to ensure this function maintains reference stability
+  const handleImageGenerated = useCallback((imageUrl: string) => {
+    console.log("Image generated:", imageUrl); // Debug log
     setGeneratedImage(imageUrl);
-  };
+    setIsGenerating(false);
+  }, []);
 
   const handleDirectUse = () => {
     if (generatedImage && onCoverImageGenerated) {
@@ -36,7 +40,17 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
     setShowModal(false);
     setCurrentStep('generate');
     setGeneratedImage(null);
+    setIsGenerating(false);
   };
+
+  // Track when generation starts
+  const handleGenerationStart = useCallback(() => {
+    console.log("Generation started"); // Debug log
+    setIsGenerating(true);
+  }, []);
+
+  // Debug helper
+  console.log("State:", { generatedImage, isGenerating });
 
   return (
     <>
@@ -62,30 +76,36 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
               <p className="text-sm text-gray-600">
                 Generate a cover image for your book using AI.
               </p>
-              <ImageGenerator onImageSelect={handleImageGenerated} />
+              <ImageGenerator 
+                onImageSelect={handleImageGenerated} 
+                onGenerateStart={handleGenerationStart}
+              />
               
-              {generatedImage && (
-                <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentStep('edit')}
-                    className="flex items-center gap-2"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Edit Image
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDirectUse}
-                    className="flex items-center gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Use This Cover
-                  </Button>
-                </div>
-              )}
+              <div className="flex justify-end gap-3 mt-4 pt-4 border-t">
+                {/* Always show buttons, but disable when appropriate */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentStep('edit')}
+                 className='btn-primary'  
+                  disabled={!generatedImage || isGenerating}
+                >
+                  <Edit2 className="w-4 h-4 mr-1" />
+                  Edit Image
+                </Button>
+                <Button
+                  variant="soft"
+                  size="sm"
+                  onClick={handleDirectUse}
+                  className='btn-primary'  
+
+                 
+                  disabled={!generatedImage || isGenerating}
+                >
+                  <CheckCircle className="w-4 h-4 mr-1 btn-primary" />
+                  Use This Cover
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">

@@ -21,47 +21,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) =>
     }
   };
 
-  // const config = {
-  //   source: initialImageUrl,
-  //   onSave: handleSave,
-  //   onClose: () => setIsImgEditorShown(false),
-  //   annotationsCommon: {
-  //     fill: '#ff0000',
-  //     stroke: '#000000',
-  //     strokeWidth: 2,
-  //   },
-  //   Rotate: { 
-  //     angle: 90, 
-  //     componentType: 'slider' 
-  //   },
-  //   Crop: {
-  //     presetsItems: [
-  //       {
-  //         titleKey: 'classicTv',
-  //         descriptionKey: '4:3',
-  //         ratio: 4 / 3,
-  //       },
-  //       {
-  //         titleKey: 'widescreen',
-  //         descriptionKey: '16:9',
-  //         ratio: 16 / 9,
-  //       },
-  //     ],
-  //     minWidth: 100,
-  //     minHeight: 100,
-  //   },
-  //   tabsIds: [TABS.ADJUST, TABS.ANNOTATE, TABS.FILTERS],
-  //   defaultTabId: TABS.ADJUST,
-  //   defaultToolId: TOOLS.CROP,
-  //   onBeforeComplete: () => true,
-  //   showInModal: false,
-  //   translations: {
-  //     save: 'Apply Changes',
-  //     cancel: 'Cancel',
-  //     reset: 'Reset All',
-  //   },
-  // };
-
+ 
   const config: any = {
     source: initialImageUrl,
     onSave: handleSave,
@@ -92,8 +52,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) =>
       minHeight: 100,
     },
     tabsIds: [TABS.ADJUST, TABS.ANNOTATE, TABS.FILTERS],
-    defaultTabId: TABS.ADJUST,
-    defaultToolId: TOOLS.CROP,
+    defaultTabId: TABS.ANNOTATE, // Changed from TABS.ADJUST to TABS.ANNOTATE
+    defaultToolId: TOOLS.TEXT, // Changed from TOOLS.CROP to TOOLS.TEXT (or any other annotation tool)
     onBeforeComplete: () => true,
     showInModal: false,
     translations: {
