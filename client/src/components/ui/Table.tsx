@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { ShareItem } from "../../utilities/shared/tableUtils";
 
 interface TableProps {
   headers: string[];
@@ -168,6 +169,7 @@ const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,se
                               <button
                                 className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 role="menuitem"
+                                onClick={() =>ShareItem(item)}
                               >
                                 Share
                               </button>

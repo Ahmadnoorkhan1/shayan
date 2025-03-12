@@ -4,7 +4,7 @@ import { useParams } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
 import apiService from "../../../utilities/service/api";
 import ChapterGallery from "./ChapterGallery";
-import { Book, Edit2Icon, EditIcon, ImageIcon, ShieldCloseIcon } from "lucide-react";
+import { Book, Edit2Icon, EditIcon, ImageIcon, PackagePlus, Paperclip, ShieldCloseIcon } from "lucide-react";
 import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
@@ -13,6 +13,7 @@ import ReactQuill from "react-quill";
 import { GenerateCover } from "../../../components/AiToolForms/BookCreator/GenerateCover";
 import toast from "react-hot-toast";
 import AlertDialog from "../../../components/AlertDialog";
+import { GenerateQuiz } from "../../../components/GenerateQuiz";
 // import { toast } from "react-toastify";
 
 
@@ -51,7 +52,12 @@ const EditCoursePage = () => {
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
   const [chapterToDelete, setChapterToDelete] = useState<number>(-1);
+  const [OpenQuizModal, setOpenQuizModal] = useState<boolean>(false);
 
+
+  const toggleQuizModal = () => {
+    setOpenQuizModal(!OpenQuizModal)
+  }
 
   // Update the handleImageClick function to handle all image clicks consistently
 // Update the handleImageClick function to ensure it always shows the dialog
@@ -515,6 +521,80 @@ const handleRemoveCoverImage = async () => {
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
+
+  const handleSaveQuiz = (editorQuizHTML: string, sharedQuizHTML: string) => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    if (!editor) return;
+
+    console.log('Saving quiz to chapter:', editorQuizHTML, sharedQuizHTML);
+  
+    // Get the current selection range
+    const range = editor.getSelection();
+    const index = range ? range.index : editor.getLength();
+    
+    // Append the editor version of the quiz to the current chapter content
+    editor.clipboard.dangerouslyPasteHTML(editor.getLength(), editorQuizHTML);
+    
+    // Update the content
+    const newContent = editor.root.innerHTML;
+    handleContentChange(newContent);
+    
+    // Now, we need to update our chapters array to store both versions
+    // First, get the current chapter's HTML
+    const updatedChapters = [...chapters];
+    const currentChapter = updatedChapters[selectedChapterIndex];
+    
+    // Parse the current chapter to extract its content without any quiz elements
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(currentChapter, 'text/html');
+    
+    // Remove any existing quiz elements (for updating scenarios)
+    const existingQuizzes = doc.querySelectorAll('.quiz-container, [data-quiz-id], .shared-quiz-data');
+    existingQuizzes.forEach(quiz => quiz.remove());
+    
+    // Extract the chapter title
+    const title = selectedChapterTitle || 'Chapter';
+  
+    // Instead of putting the entire shared quiz HTML in a data attribute,
+    // let's create a special comment-based marker that can handle large strings
+    const sharedQuizMarker = `
+    <!-- SHARED_QUIZ_START -->
+    ${sharedQuizHTML}
+    <!-- SHARED_QUIZ_END -->
+    `;
+    
+    // Combine everything: chapter with title + editor quiz content + shared quiz marker
+    const finalChapterContent = `<h1>${title}</h1>${newContent}${sharedQuizMarker}`;
+    
+    // Update the chapter in the array
+    updatedChapters[selectedChapterIndex] = finalChapterContent;
+
+    console.log('Updated chapters:', updatedChapters);
+    
+    // Save the updated chapter
+    apiService.post(
+      `/course-creator/updateCourse/${id}/course`,
+      {
+        content: JSON.stringify(updatedChapters)
+      }
+    ).then(response => {
+      if (response.success) {
+        // Update local state with the modified chapters
+        setChapters(updatedChapters);
+        toast.success('Quiz added to chapter successfully!');
+      } else {
+        toast.error('Failed to save quiz to chapter');
+      }
+    }).catch(error => {
+      console.error('Error saving quiz:', error);
+      toast.error('Error saving quiz');
+    });
+    
+    // Close the quiz modal
+    setOpenQuizModal(false);
+  };
+
   return (
     <React.Fragment>
     <div className="flex flex-col sm:flex-row p-4 space-y-6 sm:space-y-0 sm:space-x-6">
@@ -527,6 +607,16 @@ const handleRemoveCoverImage = async () => {
           <div className=" flex relative">
          
 
+<Button
+color="destructive"
+variant="soft"
+size="sm"
+className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center gap-2"
+onClick={toggleQuizModal}
+
+>
+<PackagePlus className="w-5 h-5 text-gray-600" />
+<span className="text-[12px] text-gray-700">Create Quiz</span></Button>
             
 
             <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
@@ -544,7 +634,7 @@ const handleRemoveCoverImage = async () => {
               }
             >
               <ImageIcon className="w-5 h-5 text-gray-600" />
-              <span className="text-sm text-gray-700">AI Image</span>
+              <span className="text-[12px] text-gray-700">AI Image</span>
             </Button>
 
 {selectedChapterIndex !== -1 && 
@@ -560,7 +650,7 @@ const handleRemoveCoverImage = async () => {
       title="Remove cover image"
     >
       <ShieldCloseIcon className="w-5 h-5 text-red-600" />
-      <span className="text-sm text-red-700">Remove Cover</span>
+      <span className="text-[12px] text-red-700">Remove Cover</span>
     </Button>
 )}
 
@@ -603,7 +693,9 @@ const handleRemoveCoverImage = async () => {
           onSave={handleEditedImageSave}
         />
       </Modal>
-
+      <Modal isOpen={OpenQuizModal} onClose={toggleQuizModal} title="Create Quiz">
+  <GenerateQuiz  selectedChapter={selectedChapter} onSaveQuiz={handleSaveQuiz} />
+</Modal>
         {/* Add the Alert Dialog for image editing confirmation */}
         <AlertDialog
         isOpen={showEditConfirmation}

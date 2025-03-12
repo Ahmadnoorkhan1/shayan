@@ -45,8 +45,13 @@ const Course = sequelize?.define(
     content: {
       type: DataTypes.JSON,
       allowNull: false,
-    }
     },
+    is_shared: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true,
+      defaultValue: false,
+    },
+  },
     {
     timestamps: true, // Adds createdAt and updatedAt fields
     tableName: 'courses', // Explicitly set the table name

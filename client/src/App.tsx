@@ -21,6 +21,7 @@ import EditBookCreator from './pages/Dashboard/BookCreatorPage/EditBookCreator'
 import AddBookCreator from './pages/Dashboard/BookCreatorPage/AddBookCreator'
 import AddCourseCreator from './pages/Dashboard/CourseCreatorPage/AddCourseCreator'
 import EditCoursePage from './pages/Dashboard/CourseCreatorPage/EditCoursePage'
+import SharedContent from './components/shared/SharedContent'
 
 function App() {
 
@@ -53,6 +54,7 @@ function App() {
           <Route path='/dashboard/book-creator/add' element={<AddBookCreator/>}/>
           <Route path='/dashboard/ai-coach' element={<AiCoachPage />} />
           <Route path='/dashboard/easy-course-creator' element={<EasyCourseCreator />} />
+
         </Route>
         {/* <Route element={<DashboardLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
@@ -62,6 +64,8 @@ function App() {
           <Route path="/dashboard/history" element={<HistoryPage />} />
           <Route path="/dashboard/news" element={<NewsPage />} />
         </Route> */}
+          <Route path="/shared/:type/:id" element={<SharedContent />} />
+
       </Routes>
     </>
   )
