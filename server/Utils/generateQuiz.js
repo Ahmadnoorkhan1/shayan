@@ -104,6 +104,38 @@ const generateQuiz = async (data) => {
             }
             
             Make sure terms are simple nouns or short phrases, and definitions are clear sentences that will render properly in HTML without extra formatting characters.`;
+        } else if (quizType === 'flip-card') {
+            prompt += ` Create a set of flip cards with a term on the front and its definition on the back. Format the quiz in JSON as follows:
+            {
+                "quizTitle": "Flip Cards on [Topic from Content]",
+                "quizType": "flip-card",
+                "instructions": "Click each card to flip between the term and its definition",
+                "cards": [
+                    {
+                        "id": 1,
+                        "front": "Term or concept name",
+                        "back": "Definition or explanation of the term"
+                    }
+                ]
+            }
+            
+            Ensure there are exactly ${numQuestions} cards, with clear, concise terms on the front and detailed but brief definitions on the back. Avoid bullet points or special characters.`;
+        } else if (quizType === 'short-answer') {
+            prompt += ` Create short question and answer pairs. Format the quiz in JSON as follows:
+            {
+                "quizTitle": "Short Answer Quiz on [Topic from Content]",
+                "quizType": "short-answer",
+                "questions": [
+                    {
+                        "id": 1,
+                        "question": "Concise question about a key concept?",
+                        "correctAnswer": "Brief model answer that addresses the question",
+                        "explanation": "Additional context or clarification about the answer"
+                    }
+                ]
+            }
+            
+            Ensure there are exactly ${numQuestions} questions, with clear questions and concise model answers. Avoid bullet points, numbering, or special characters that might cause formatting issues.`;
         }
         
         prompt += `\n\nChapter content: ${chapterContent}\n\nReturn ONLY valid JSON with no extra text, markdown, or bullet points. The text must be clean and compatible with React Quill editor and PDF generation.`;
@@ -166,45 +198,27 @@ const generateQuiz = async (data) => {
 const sanitizeQuizData = (data, quizType) => {
     // Clean up any potential issues in the quiz data
     try {
-        // Handle both quiz and questions array format
-        let questions = data.questions || (data.quiz ? (Array.isArray(data.quiz) ? data.quiz : []) : []);
-        
-        if (quizType !== 'matching') {
-            // For question-based quizzes
-            questions = questions.map((q, index) => {
-                // Clean the question text
-                const cleanQuestion = q.question.replace(/•|–|—|\*|\-/g, '').trim();
-                
-                // Clean options if they exist
-                const cleanOptions = q.options ? 
-                    Object.fromEntries(
-                        Object.entries(q.options).map(([key, value]) => 
-                            [key, value.replace(/•|–|—|\*|\-/g, '').trim()]
-                        )
-                    ) : undefined;
-                
-                // Clean explanation
-                const cleanExplanation = q.explanation ? 
-                    q.explanation.replace(/•|–|—|\*|\-/g, '').trim() : 
-                    '';
-                
+        // Special handling for flip cards
+        if (quizType === 'flip-card') {
+            const cards = data.cards || [];
+            
+            const cleanCards = cards.map((card, index) => {
                 return {
                     id: index + 1,
-                    question: cleanQuestion,
-                    ...(cleanOptions && { options: cleanOptions }),
-                    correctAnswer: q.correctAnswer,
-                    explanation: cleanExplanation
+                    front: card.front.replace(/•|–|—|\*|\-/g, '').trim(),
+                    back: card.back.replace(/•|–|—|\*|\-/g, '').trim()
                 };
             });
             
-            // Build standardized output
             return {
-                quizTitle: data.quizTitle || `Quiz on ${quizType}`,
-                quizType: quizType,
-                questions: questions
+                quizTitle: data.quizTitle || "Flip Cards",
+                quizType: "flip-card",
+                instructions: data.instructions || "Click each card to flip between the term and its definition",
+                cards: cleanCards
             };
-        } else {
-            // For matching quizzes
+        } 
+        // Handle matching quiz specially
+        else if (quizType === 'matching') {
             const matchingData = data.quiz || data;
             
             // Clean terms and definitions
@@ -228,6 +242,50 @@ const sanitizeQuizData = (data, quizType) => {
                 terms: cleanTerms,
                 definitions: cleanDefinitions,
                 correctMatches: matchingData.correctMatches || {}
+            };
+        }
+        // Handle all other question-based quiz types
+        else {
+            // Handle both quiz and questions array format
+            let questions = data.questions || (data.quiz ? (Array.isArray(data.quiz) ? data.quiz : []) : []);
+            
+            // For question-based quizzes
+            questions = questions.map((q, index) => {
+                // Clean the question text
+                const cleanQuestion = q.question.replace(/•|–|—|\*|\-/g, '').trim();
+                
+                // Clean options if they exist
+                const cleanOptions = q.options ? 
+                    Object.fromEntries(
+                        Object.entries(q.options).map(([key, value]) => 
+                            [key, value.replace(/•|–|—|\*|\-/g, '').trim()]
+                        )
+                    ) : undefined;
+                
+                // Clean explanation
+                const cleanExplanation = q.explanation ? 
+                    q.explanation.replace(/•|–|—|\*|\-/g, '').trim() : 
+                    '';
+
+                // Clean correctAnswer
+                const cleanAnswer = q.correctAnswer ? 
+                    q.correctAnswer.replace(/•|–|—|\*|\-/g, '').trim() : 
+                    q.correctAnswer;
+                
+                return {
+                    id: index + 1,
+                    question: cleanQuestion,
+                    ...(cleanOptions && { options: cleanOptions }),
+                    correctAnswer: cleanAnswer,
+                    explanation: cleanExplanation
+                };
+            });
+            
+            // Build standardized output
+            return {
+                quizTitle: data.quizTitle || `Quiz on ${quizType}`,
+                quizType: quizType,
+                questions: questions
             };
         }
     } catch (error) {

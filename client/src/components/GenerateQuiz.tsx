@@ -15,6 +15,9 @@ interface QuizQuestion {
   options: Record<string, string>;
   correctAnswer: string;
   explanation?: string;
+  // For flash cards
+  frontContent?: string;
+  backContent?: string;
 }
 
 interface QuizResponse {
@@ -23,7 +26,7 @@ interface QuizResponse {
   questions: QuizQuestion[];
 }
 
-type QuizType = 'multiple-choice' | 'true-false' | 'fill-in-the-blank';
+type QuizType = 'multiple-choice' | 'true-false' | 'fill-in-the-blank' | 'flip-card' | 'short-answer';
 
 export const GenerateQuiz: React.FC<GenerateQuizProps> = ({ selectedChapter, onSaveQuiz }) => {
   const [step, setStep] = useState<'select' | 'generating' | 'error'>('select');
@@ -68,7 +71,7 @@ export const GenerateQuiz: React.FC<GenerateQuizProps> = ({ selectedChapter, onS
           onSaveQuiz(editorQuizHTML, sharedQuizHTML);
         }
 
-        toast.success('Quiz added to chapter successfully!');
+        // toast.success('Quiz added to chapter successfully!');
         setStep('select');
       } else if (response.data?.error) {
         setErrorMessage(response.data.error);
@@ -104,31 +107,92 @@ export const GenerateQuiz: React.FC<GenerateQuizProps> = ({ selectedChapter, onS
     sharedQuizHTML += `<div class="quiz-container" id="${quizId}" data-quiz-type="${quizData.quizType}" data-quiz-title="${quizData.quizTitle}">`;
 
     quizData.questions.forEach((question, index) => {
-      editorQuizHTML += `<p style="font-weight: bold; margin-top: 20px;">Question ${index + 1}: ${question.question}</p>`;
-      sharedQuizHTML += `<div class="quiz-question" id="${quizId}-q${index}" data-question-id="${question.id}" data-correct-answer="${question.correctAnswer}"><p style="font-weight: bold; margin-top: 20px;">Question ${index + 1}: ${question.question}</p>`;
+      if (quizData.quizType === 'flip-card') {
+        // Flash Cards format
+        const front = question.frontContent || question.question;
+        const back = question.backContent || question.correctAnswer;
+        
+        // Editor version (static)
+        editorQuizHTML += `
+          <div style="margin: 20px 0; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+            <div style="background-color: #f9fafb; padding: 12px; border-bottom: 1px solid #e5e7eb;">
+              <p style="font-weight: bold; margin: 0;">Card ${index + 1}</p>
+            </div>
+            <div style="padding: 16px;">
+              <p><strong>Front:</strong> ${front}</p>
+              <p><strong>Back:</strong> ${back}</p>
+            </div>
+          </div>
+        `;
+        
+        // Shared version (interactive)
+        sharedQuizHTML += `
+          <div class="flash-card" id="${quizId}-card${index}" data-card-id="${question.id}" style="margin: 20px 0; perspective: 1000px;">
+            <div class="flash-card-inner" style="position: relative; width: 100%; height: 200px; transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer;">
+              <div class="flash-card-front" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 24px; display: flex; align-items: center; justify-content: center; background-color: #f9fafb; border: 1px solid #e5e7eb;">
+                <p style="font-size: 1.1rem; text-align: center;">${front}</p>
+              </div>
+              <div class="flash-card-back" style="position: absolute; width: 100%; height: 100%; backface-visibility: hidden; transform: rotateY(180deg); border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 24px; display: flex; align-items: center; justify-content: center; background-color: #f0f7ff; border: 1px solid #e5e7eb;">
+                <p style="font-size: 1.1rem; text-align: center;">${back}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (quizData.quizType === 'short-answer') {
+        // Short Answer format
+        editorQuizHTML += `<p style="font-weight: bold; margin-top: 20px;">Question ${index + 1}: ${question.question}</p>`;
+        editorQuizHTML += `<p style="margin: 10px 0;">Answer: ${question.correctAnswer}</p>`;
+        
+        sharedQuizHTML += `<div class="quiz-question short-answer-question" id="${quizId}-q${index}" data-question-id="${question.id}" data-correct-answer="${question.correctAnswer}">
+          <p style="font-weight: bold; margin-top: 20px;">Question ${index + 1}: ${question.question}</p>
+          <div style="margin: 10px 0;">
+            <textarea class="short-answer-field" placeholder="Type your answer here" style="width: 100%; min-height: 100px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px; resize: vertical;"></textarea>
+          </div>
+          <div class="quiz-feedback correct-feedback" style="display: none; margin-top: 10px; padding: 8px 12px; background-color: #d1fae5; border-radius: 4px; color: #065f46;">
+            <p><strong>Suggested Answer:</strong> ${question.correctAnswer}</p>
+            <p>${question.explanation || ''}</p>
+          </div>
+        </div>`;
+      } else {
+        // Standard question formats (multiple choice, true/false, fill-in-blank)
+        editorQuizHTML += `<p style="font-weight: bold; margin-top: 20px;">Question ${index + 1}: ${question.question}</p>`;
+        sharedQuizHTML += `<div class="quiz-question" id="${quizId}-q${index}" data-question-id="${question.id}" data-correct-answer="${question.correctAnswer}"><p style="font-weight: bold; margin-top: 20px;">Question ${index + 1}: ${question.question}</p>`;
 
-      if (question.options && (quizData.quizType === 'multiple-choice' || quizData.quizType === 'true-false')) {
-        editorQuizHTML += '<ul style="list-style-type: upper-alpha; padding-left: 20px; margin: 10px 0;">';
-        sharedQuizHTML += '<ul style="list-style-type: none; padding-left: 0; margin: 10px 0;">';
+        if (question.options && (quizData.quizType === 'multiple-choice' || quizData.quizType === 'true-false')) {
+          editorQuizHTML += '<ul style="list-style-type: upper-alpha; padding-left: 20px; margin: 10px 0;">';
+          sharedQuizHTML += '<ul style="list-style-type: none; padding-left: 0; margin: 10px 0;">';
 
-        Object.entries(question.options).forEach(([key, option]) => {
-          editorQuizHTML += `<li style="margin-bottom: 5px;">${option}</li>`;
-          sharedQuizHTML += `<li style="margin-bottom: 8px; display: flex; align-items: center;"><div class="circle-marker" data-option="${key}" style="display: inline-block; width: 18px; height: 18px; border: 1px solid #ccc; border-radius: 50%; margin-right: 8px;"></div><span><strong>${key}.</strong> ${option}</span></li>`;
-        });
+          Object.entries(question.options).forEach(([key, option]) => {
+            editorQuizHTML += `<li style="margin-bottom: 5px;">${option}</li>`;
+            sharedQuizHTML += `<li style="margin-bottom: 8px; display: flex; align-items: center;"><div class="circle-marker" data-option="${key}" style="display: inline-block; width: 18px; height: 18px; border: 1px solid #ccc; border-radius: 50%; margin-right: 8px;"></div><span><strong>${key}.</strong> ${option}</span></li>`;
+          });
 
-        editorQuizHTML += '</ul>';
-        sharedQuizHTML += '</ul>';
-      } else if (quizData.quizType === 'fill-in-the-blank') {
-        editorQuizHTML += `<p style="margin: 10px 0;">Answer: <span style="text-decoration: underline; padding: 0 30px;">&nbsp;</span></p>`;
-        sharedQuizHTML += `<div style="margin: 10px 0;"><input type="text" placeholder="Type your answer here" class="quiz-answer-field" style="border: 1px solid #e5e7eb; padding: 8px 12px; border-radius: 4px; width: 100%; max-width: 300px;" /></div>`;
+          editorQuizHTML += '</ul>';
+          sharedQuizHTML += '</ul>';
+        } else if (quizData.quizType === 'fill-in-the-blank') {
+          editorQuizHTML += `<p style="margin: 10px 0;">Answer: <span style="text-decoration: underline; padding: 0 30px;">&nbsp;</span></p>`;
+          sharedQuizHTML += `<div style="margin: 10px 0;"><input type="text" placeholder="Type your answer here" class="quiz-answer-field" style="border: 1px solid #e5e7eb; padding: 8px 12px; border-radius: 4px; width: 100%; max-width: 300px;" /></div>`;
+        }
+
+        sharedQuizHTML += `<div class="quiz-feedback correct-feedback" style="display: none; margin-top: 10px; padding: 8px 12px; background-color: #d1fae5; border-radius: 4px; color: #065f46;"><p><strong>Correct!</strong> ${question.explanation || ''}</p></div><div class="quiz-feedback incorrect-feedback" style="display: none; margin-top: 10px; padding: 8px 12px; background-color: #fee2e2; border-radius: 4px; color: #7f1d1d;"><p><strong>Incorrect.</strong> The correct answer is ${question.correctAnswer}. ${question.explanation || ''}</p></div></div>`;
       }
-
-      sharedQuizHTML += `<div class="quiz-feedback correct-feedback" style="display: none; margin-top: 10px; padding: 8px 12px; background-color: #d1fae5; border-radius: 4px; color: #065f46;"><p><strong>Correct!</strong> ${question.explanation || ''}</p></div><div class="quiz-feedback incorrect-feedback" style="display: none; margin-top: 10px; padding: 8px 12px; background-color: #fee2e2; border-radius: 4px; color: #7f1d1d;"><p><strong>Incorrect.</strong> The correct answer is ${question.correctAnswer}. ${question.explanation || ''}</p></div></div>`;
     });
 
-    sharedQuizHTML += `<div class="quiz-controls" style="margin-top: 20px;"><button type="button" class="quiz-submit-btn" data-quiz-id="${quizId}" style="background-color: #4338ca; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Check Answers</button></div><div class="quiz-results" style="display: none; margin-top: 20px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;"><h4 style="margin-bottom: 10px;">Quiz Results</h4><p class="quiz-score">You scored: <span class="score-value">0</span>/<span class="total-questions">${quizData.questions.length}</span></p></div></div>`;
+    // Add controls for standard quiz types (not needed for flash cards)
+    if (quizData.quizType !== 'flip-card') {
+      sharedQuizHTML += `<div class="quiz-controls" style="margin-top: 20px;"><button type="button" class="quiz-submit-btn" data-quiz-id="${quizId}" style="background-color: #4338ca; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Check Answers</button></div>`;
+    }
+    
+    // Results section for standard and short answer quizzes
+    if (quizData.quizType !== 'flip-card') {
+      sharedQuizHTML += `<div class="quiz-results" style="display: none; margin-top: 20px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;"><h4 style="margin-bottom: 10px;">Quiz Results</h4><p class="quiz-score">You scored: <span class="score-value">0</span>/<span class="total-questions">${quizData.questions.length}</span></p></div>`;
+    }
+    
+    // Close the quiz container
+    sharedQuizHTML += `</div>`;
 
     return { editorQuizHTML, sharedQuizHTML };
+    
   };
 
   if (!selectedChapter) {
@@ -166,6 +230,8 @@ export const GenerateQuiz: React.FC<GenerateQuizProps> = ({ selectedChapter, onS
                 <option value="multiple-choice">Multiple Choice</option>
                 <option value="true-false">True/False</option>
                 <option value="fill-in-the-blank">Fill in the Blank</option>
+                <option value="flip-card">Flip Cards</option>
+                <option value="short-answer">Short Answer</option>
               </select>
             </div>
             

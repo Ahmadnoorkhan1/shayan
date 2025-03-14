@@ -312,6 +312,7 @@ if(typeof(parsed) === "string") {
   //   setSelectedChapterIndex(index);
   // };
   const handleSave = async () => {
+    console.log("buton clciked ===================================>")
     try {
       if (selectedChapterIndex === -1) {
         console.error("No chapter selected");
@@ -320,8 +321,8 @@ if(typeof(parsed) === "string") {
   
       // Create a copy of chapters array
       const updatedChapters = [...chapters];
-      console.log(updatedChapters)
-      return
+      // console.log(updatedChapters)
+      // return
       
       // Only modify the selected chapter
       let updatedContent = `<h1>${selectedChapterTitle}</h1>${selectedChapter}`;
