@@ -146,29 +146,49 @@ useEffect(() => {
       if (response.data?.content) {
         try {
           // First, clean up the string
-          const parsedContent = JSON.parse(response?.data?.content);
-          setChapters(parsedContent);
+// console.log(typeof (response?.data?.content)  , "===================>")
+
+const parsed = JSON.parse(response?.data?.content);
+
+if(typeof(parsed) === "string") {
+  const again = JSON.parse(parsed)
+  console.log(again, "again")
+  setChapters(again) ;
+} else {
+  setChapters(parsed) ;
+}
+
+// const again = JSON.parse(parsed)
+
+
+      // const validJsonStr = again?.replace(/'/g, '"');
+
+      // console.log(again, "again")
+      // const parsedContent = JSON.parse(again);
+
+          // const parsedContent = (response?.data?.content);
+          // setChapters(again) ;
           
-          return
-          const cleanContent = response?.data?.content
-            .replace(/^"/, '') // Remove leading quote
-            .replace(/"$/, '') // Remove trailing quote
-            .replace(/\\\\/g, '\\') // Fix double escapes
-            .replace(/\\"/g, '"'); // Fix escaped quotes
-          let parsedChapters = JSON.parse(cleanContent);
-          // Ensure it's an array and clean up each chapter
-          if (Array.isArray(parsedChapters)) {
-            parsedChapters = parsedChapters.map((chapter: string) => {
-              return chapter
-                .replace(/\\n/g, '\n')
-                .replace(/\\\\/g, '\\')
-                .replace(/\\"/g, '"')
-                .trim();
-            });
-          } else {
-            // If not an array, create one with the single chapter
-            parsedChapters = [parsedChapters];
-          }
+          // return
+          // const cleanContent = response?.data?.content
+          //   .replace(/^"/, '') // Remove leading quote
+          //   .replace(/"$/, '') // Remove trailing quote
+          //   .replace(/\\\\/g, '\\') // Fix double escapes
+          //   .replace(/\\"/g, '"'); // Fix escaped quotes
+          // let parsedChapters = JSON.parse(cleanContent);
+          // // Ensure it's an array and clean up each chapter
+          // if (Array.isArray(parsedChapters)) {
+          //   parsedChapters = parsedChapters.map((chapter: string) => {
+          //     return chapter
+          //       .replace(/\\n/g, '\n')
+          //       .replace(/\\\\/g, '\\')
+          //       .replace(/\\"/g, '"')
+          //       .trim();
+          //   });
+          // } else {
+          //   // If not an array, create one with the single chapter
+          //   parsedChapters = [parsedChapters];
+          // }
           
         } catch (e) {
           console.error("Error parsing course content", e);

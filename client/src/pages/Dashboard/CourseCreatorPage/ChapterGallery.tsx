@@ -13,6 +13,9 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
   onSelectChapter,
   onDeleteChapter 
 }) => {
+
+  console.log(chapters, "see chapters");
+
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
   const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
@@ -80,6 +83,7 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
     }
   };
 
+
   return (
     <div style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} className="w-full sm:w-[40%] h-[calc(100vh-4rem)] flex flex-col bg-white rounded-lg shadow-lg">
       <div className=" top-0 bg-white z-20 px-4 py-3 border-b border-purple-100">
@@ -92,7 +96,7 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
       <div style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} className="flex-1 overflow-y-auto chapter-scroll-container p-4 space-y-3">
         {chapters?.length > 0 ? (
           <div className="space-y-4">
-            {chapters?.map((chapter, index) => {
+            { chapters?.map((chapter, index) => {
               const { title, description, sections, isCover } = parseChapter(chapter);
               const isHovered = hoveredIndex === index;
               const isExpanded = expandedChapter === index;
