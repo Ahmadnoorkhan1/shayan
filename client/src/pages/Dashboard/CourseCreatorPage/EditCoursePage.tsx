@@ -146,15 +146,16 @@ useEffect(() => {
       if (response.data?.content) {
         try {
           // First, clean up the string
+          const parsedContent = JSON.parse(response?.data?.content);
+          setChapters(parsedContent);
+          
+          return
           const cleanContent = response?.data?.content
             .replace(/^"/, '') // Remove leading quote
             .replace(/"$/, '') // Remove trailing quote
             .replace(/\\\\/g, '\\') // Fix double escapes
             .replace(/\\"/g, '"'); // Fix escaped quotes
-
-          // Parse the content
           let parsedChapters = JSON.parse(cleanContent);
-          
           // Ensure it's an array and clean up each chapter
           if (Array.isArray(parsedChapters)) {
             parsedChapters = parsedChapters.map((chapter: string) => {
@@ -169,7 +170,6 @@ useEffect(() => {
             parsedChapters = [parsedChapters];
           }
           
-          setChapters(parsedChapters);
         } catch (e) {
           console.error("Error parsing course content", e);
           setChapters([]);
@@ -300,6 +300,8 @@ useEffect(() => {
   
       // Create a copy of chapters array
       const updatedChapters = [...chapters];
+      console.log(updatedChapters)
+      return
       
       // Only modify the selected chapter
       let updatedContent = `<h1>${selectedChapterTitle}</h1>${selectedChapter}`;
@@ -325,6 +327,8 @@ useEffect(() => {
       updatedChapters[selectedChapterIndex] = updatedContent;
   
       // Make API call to update
+
+
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/course`,
         {
@@ -526,7 +530,7 @@ const handleRemoveCoverImage = async () => {
     if (!quillRef.current) return;
     const editor = quillRef.current.getEditor();
     if (!editor) return;
-
+    
     console.log('Saving quiz to chapter:', editorQuizHTML, sharedQuizHTML);
   
     // Get the current selection range
@@ -544,7 +548,6 @@ const handleRemoveCoverImage = async () => {
     // First, get the current chapter's HTML
     const updatedChapters = [...chapters];
     const currentChapter = updatedChapters[selectedChapterIndex];
-    
     // Parse the current chapter to extract its content without any quiz elements
     const parser = new DOMParser();
     const doc = parser.parseFromString(currentChapter, 'text/html');
@@ -563,6 +566,7 @@ const handleRemoveCoverImage = async () => {
     ${sharedQuizHTML}
     <!-- SHARED_QUIZ_END -->
     `;
+
     
     // Combine everything: chapter with title + editor quiz content + shared quiz marker
     const finalChapterContent = `<h1>${title}</h1>${newContent}${sharedQuizMarker}`;
@@ -571,7 +575,6 @@ const handleRemoveCoverImage = async () => {
     updatedChapters[selectedChapterIndex] = finalChapterContent;
 
     console.log('Updated chapters:', updatedChapters);
-    
     // Save the updated chapter
     apiService.post(
       `/course-creator/updateCourse/${id}/course`,

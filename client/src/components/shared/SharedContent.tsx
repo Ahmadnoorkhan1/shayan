@@ -37,7 +37,6 @@ const SharedContent: React.FC<SharedContentProps> = () => {
           }
           
           console.log('Processing content for formatting:', processedContent);
-          
           // Use the formatting and sanitization function from tableUtils
           const html = formatSharedContent(
             processedContent, 

@@ -510,41 +510,12 @@ export const deleteItem = async (item: any,setCourses:any) => {
 
 
 
-export const ShareItem = async (item: any) => {
+export const ShareItem = async (navigate:any,item: any) => {
   const courseId = item["ID"];
   // Determine courseType from the row data structure
-  const courseType = item["Content"] && 
-    typeof item["Content"] === "string" && 
-    item["Content"].includes("book-cover-image") ? "book" : "course";
-
-  try {
-    // Call the API to get a share link
-    const response = await apiService.post(
-      `course-creator/shareCourse/${courseId}/${courseType}`,
-      {}
-    );
-
-    if (response.success) {
-      // Get the share URL from the response
-      const shareUrl = response.data?.shareUrl || 
-        `${window.location.origin}/shared/${courseType}/${courseId}`;
-      
-      // Copy link to clipboard
-      await navigator.clipboard.writeText(shareUrl);
-      
-      // Show success message
-      toast.success(`${courseType === 'book' ? 'Book' : 'Course'} shared successfully! Link copied to clipboard.`);
-      
-      // Open the shared page in a new tab
-      window.open(shareUrl, '_blank');
-    } else {
-      toast.error(`Failed to share ${courseType}: ${response.message}`);
-      console.error(`Failed to share ${courseType}:`, response.message);
-    }
-  } catch (error) {
-    toast.error(`Error sharing ${courseType}. Please try again.`);
-    console.error(`Error sharing ${courseType}:`, error);
-  }
+  const courseType = item["type"];
+  
+  navigate('/shared/'+courseType+'/'+courseId)
 };
 
 /**
@@ -554,10 +525,11 @@ export const ShareItem = async (item: any) => {
    export const formatSharedContent = (content: string, title: string, type: 'course' | 'book'): string => {
    try {
     // Parse the content
+    const stringContent = JSON.stringify(content);
     let chapters = [];
     try {
       // Clean and parse the content
-      const cleanedContent = content
+      const cleanedContent = stringContent
         .replace(/^"|"$/g, '')
         .replace(/\\"/g, '"')
         .replace(/\\\\/g, '\\')
@@ -632,6 +604,8 @@ export const ShareItem = async (item: any) => {
       // Process chapter content
       const processedChapter = processChapterForSharing(chapter, index);
       chaptersHtml += processedChapter;
+      chaptersHtml = chaptersHtml.replace(/\["|"\]/g, '');
+
     });
     
     // Assemble the complete HTML
@@ -1190,11 +1164,11 @@ function processChapterForSharing(chapter: string, index: number): string {
     exercisesHeaders.forEach(header => {
       if (header.textContent?.trim() === 'Exercises') {
         // Found an exercises section, remove it and all content until the next h2 or end
-        let currentNode = header;
+        let currentNode:any = header;
         const nodesToRemove = [currentNode];
         
         // Collect nodes to remove
-        currentNode = currentNode.nextElementSibling;
+        currentNode = currentNode.nextElementSibling || null;
         while (currentNode && currentNode.tagName !== 'H2') {
           nodesToRemove.push(currentNode);
           currentNode = currentNode.nextElementSibling;

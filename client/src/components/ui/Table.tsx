@@ -169,7 +169,7 @@ const Table = ({ headers, data,addItem,isAdd,deleteItem,downloadItem,editItem,se
                               <button
                                 className="block w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 role="menuitem"
-                                onClick={() =>ShareItem(item)}
+                                onClick={() =>ShareItem(navigate,item)}
                               >
                                 Share
                               </button>

@@ -66,6 +66,7 @@ const CoursecreatorPage = () => {
               Created: formatDate(course.createdAt),
               Updated: formatDate(course.updatedAt),
               Content: course.content,
+              type:course.type,
             };
           });
 
@@ -100,7 +101,7 @@ const CoursecreatorPage = () => {
         <div className="flex items-center py-8 w-full">
         <Table
           data={courses}
-          headers={["ID", "Course Name", "Created", "Updated"]}
+          headers={["ID", "Course Name", "Created", "Updated","type"]}
           isAdd={true}
           addItem={addItem}
           deleteItem={deleteItem}

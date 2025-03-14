@@ -33,6 +33,7 @@ const Tabs = () => {
             Created: formatDate(course.createdAt),
             Updated: formatDate(course.updatedAt),
             Content: course.content,
+            type:course.type
           };
         });
         tab==='course' ? setCourses(formattedCourses) : setBooks(formattedCourses);
@@ -83,7 +84,7 @@ const Tabs = () => {
       {!showBook ? (
         <>
           <Table
-            headers={["Name", "Description", "Created At", "Updated At"]}
+            headers={["Name", "Description", "Created At", "Updated At","Type"]}
             data={courses}
             isAdd={false}
             addItem={addItem}
@@ -98,7 +99,7 @@ const Tabs = () => {
         <>
           {" "}
           <Table
-            headers={["Name", "Description", "Created At", "Updated At"]}
+            headers={["Name", "Description", "Created At", "Updated At","Type"]}
             data={books}
             isAdd={false}
             addItem={addItem}
