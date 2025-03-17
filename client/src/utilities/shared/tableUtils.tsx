@@ -383,12 +383,14 @@ if (tagName === 'img') {
               currentY -= pdfConfig.headerSpacing;
               break;
 
-            case 'h2':
-              currentY -= pdfConfig.fonts.h2.spacing;
-              currentY = drawWrappedText(text, timesBoldFont, pdfConfig.fonts.h2.size, 
-                pdfConfig.margin, currentY);
-              currentY -= pdfConfig.headerSpacing * 0.8;
-              break;
+              case 'h2':
+                currentY -= pdfConfig.fonts.h2.spacing;
+                // Clean text before rendering
+                text = cleanHeadingText(text, i); // Pass chapter number (i) for context
+                currentY = drawWrappedText(text, timesBoldFont, pdfConfig.fonts.h2.size, 
+                  pdfConfig.margin, currentY);
+                currentY -= pdfConfig.headerSpacing * 0.8;
+                break;
 
             case 'h3':
             case 'h4':
@@ -1440,7 +1442,7 @@ function processChapterForSharing(chapter: string, index: number): string {
     let quizHtml = '';
     
     // Method 1: Look for quiz content with various escape patterns
-    const tryExtractQuiz = (text) => {
+    const tryExtractQuiz = (text:any) => {
       const patterns = [
         { start: '<!-- SHARED_QUIZ_START -->', end: '<!-- SHARED_QUIZ_END -->' },
         { start: '\\n    <!-- SHARED_QUIZ_START -->', end: '<!-- SHARED_QUIZ_END -->' },
@@ -1492,7 +1494,7 @@ function processChapterForSharing(chapter: string, index: number): string {
     
     exercisesHeaders.forEach(header => {
       if (header.textContent?.trim() === 'Exercises') {
-        let currentNode = header;
+        let currentNode = header as any;
         const nodesToRemove = [];
         
         while (currentNode) {
@@ -1571,7 +1573,7 @@ function processChapterForSharing(chapter: string, index: number): string {
 }
 
 // Helper function to escape special characters for RegExp
-function escapeRegExp(string) {
+function escapeRegExp(string:any) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
@@ -1686,7 +1688,7 @@ function enhanceQuizElements(rootElement: Element): void {
 
 
 // Add this function to your code - it will wrap flash cards in a grid container
-function wrapFlashCardsInGrid(html) {
+function wrapFlashCardsInGrid(html:any) {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   
@@ -1702,7 +1704,7 @@ function wrapFlashCardsInGrid(html) {
     while (currentCard) {
       // Start a new sequence
       cardSequence = [];
-      let card = currentCard;
+      let card = currentCard as any;
       
       // Collect adjacent flash cards
       while (card && card.classList.contains('flash-card')) {
@@ -1741,4 +1743,20 @@ function wrapFlashCardsInGrid(html) {
   }
   
   return doc.body.innerHTML;
+}
+
+
+function cleanHeadingText(text: string, chapterNumber?: number): string {
+  // Remove duplicate number patterns like "2.2", "3.3", etc.
+  let cleaned = text.replace(/^(\d+)\.(\1)/, '$1.$2');
+  
+  // If there's a number followed by the same number (e.g. "2 2"), fix it
+  cleaned = cleaned.replace(/^(\d+)\s+\1/, '$1');
+
+  // If we have chapter number, remove redundant chapter numbers from section titles
+  if (chapterNumber !== undefined) {
+    cleaned = cleaned.replace(new RegExp(`^${chapterNumber}\\.\\s*`), '');
+  }
+  
+  return cleaned;
 }

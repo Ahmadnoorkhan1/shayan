@@ -72,13 +72,39 @@ module.exports = {
       },
       animation: {
         'infinite-scroll': 'infinite-scroll 25s linear infinite',
+        'progress-indeterminate': 'progress-indeterminate 1.5s ease-in-out infinite',
+        'enter': 'enter 0.2s ease-out',
+        'leave': 'leave 0.15s ease-in forwards',
+        'pulse-gradient': 'pulseGradient 2s ease infinite',
+        loader: 'loader 1.5s ease-in-out infinite',
       },
       keyframes: {
         'infinite-scroll': {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(-100%)' },
-        }
-      }
+        },
+        'progress-indeterminate': {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(200%)' }
+        },
+        'enter': {
+          '0%': { transform: 'scale(0.9)', opacity: '0' },
+          '100%': { transform: 'scale(1)', opacity: '1' }
+        },
+        'leave': {
+          '0%': { transform: 'scale(1)', opacity: '1' },
+          '100%': { transform: 'scale(0.9)', opacity: '0' }
+        },
+        pulseGradient: {
+          '0%, 100%': { opacity: 1 },
+          '50%': { opacity: 0.5 },
+        },
+        loader: {
+          '0%': { width: '0%', marginLeft: '0%' },
+          '50%': { width: '40%', marginLeft: '30%' },
+          '100%': { width: '0%', marginLeft: '100%' },
+        },
+      },
     },
   },
   plugins: [

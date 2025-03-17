@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, ImageIcon, Plus, XCircle, RefreshCw, LightbulbIcon } from 'lucide-react';
 import { generateImage } from '../../utilities/service/imageService';
 import { Button } from './button';
+// import Tooltip from
+//  '../../ui/tooltip';
+import Tooltip from './tooltip';
+
 
 interface ImageGeneratorProps {
   onImageSelect: (imageUrl: string) => void;
   isEditorContext?: boolean;
   // New prop to notify when generation starts
   onGenerateStart?: () => void;
+  uploadedImage?: string;
 }
 
 interface ApiResponse {
@@ -19,13 +24,21 @@ interface ApiResponse {
 const ImageGenerator: React.FC<ImageGeneratorProps> = ({ 
   onImageSelect,
   isEditorContext = false,
-  onGenerateStart
+  onGenerateStart,
+  uploadedImage
 }) => {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
 
+
+useEffect(() => {
+    if (uploadedImage) {
+      setPrompt('');
+      setGeneratedImage(uploadedImage);
+    }
+  }, [uploadedImage]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -46,7 +59,10 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
         setGeneratedImage(imageUrl);
         
         // Immediately call the onImageSelect callback when image is available
-        onImageSelect(imageUrl);
+        if(!isEditorContext) {
+          onImageSelect(imageUrl);
+        }
+        // onImageSelect(imageUrl);
         console.log("Image generated and callback called");
       } else {
         setError(response.message || 'Failed to generate image');
@@ -86,8 +102,9 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                 onClick={handleGenerate}
                 disabled={loading || !prompt.trim()}
                 variant='outline'
-                className = "btn-primary w-full"
-              >
+                className="btn-primary w-full flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-md
+                shadow-lg hover:shadow-xl
+                transform transition-all duration-200 hover:-translate-y-0.5 text-base"              >
                 {loading ? (
                   <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</>
                 ) : (
@@ -96,13 +113,18 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
               </Button>
               
               {generatedImage && (
+                
                 <button
                   onClick={() => setGeneratedImage(null)}
                   className="px-4 rounded-lg border border-purple-200 
                            hover:bg-purple-50 transition-colors"
                   title="Generate New Image"
                 >
+                                  <Tooltip width="auto" content="Start over with a new image">
+
                   <RefreshCw className="w-5 h-5 text-gray-700" />
+                  </Tooltip>
+
                 </button>
               )}
             </div>

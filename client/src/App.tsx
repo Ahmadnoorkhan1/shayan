@@ -22,12 +22,15 @@ import AddBookCreator from './pages/Dashboard/BookCreatorPage/AddBookCreator'
 import AddCourseCreator from './pages/Dashboard/CourseCreatorPage/AddCourseCreator'
 import EditCoursePage from './pages/Dashboard/CourseCreatorPage/EditCoursePage'
 import SharedContent from './components/shared/SharedContent'
+import GlobalLoader from './components/shared/GlobalLoader'
 
 function App() {
 
   return (
     <>
       <Toaster position="bottom-center" reverseOrder={false} />
+      <GlobalLoader/>
+
       <Routes>
         {/* Public Layout */}
         <Route element={<PublicLayout />}>

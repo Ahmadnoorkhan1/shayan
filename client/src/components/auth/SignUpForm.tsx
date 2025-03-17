@@ -87,7 +87,7 @@ const SignUpForm: React.FC = () => {
     <div className="w-full">
       <div className="flex justify-center">
         <NavLink to="/">
-          <img src="/images/logo.png" height="30" width="147" alt="logo" />
+          <img src="/images/logo_minilessons.png" height="30" width="147" alt="logo" />
         </NavLink>
       </div>
       <h2 className="mt-6 text-2xl font-bold text-gray-900">Hey, Hello 👋</h2>

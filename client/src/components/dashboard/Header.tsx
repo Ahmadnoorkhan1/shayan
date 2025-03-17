@@ -1,4 +1,6 @@
 import React from 'react';
+import { Button } from '../ui/button';
+import { User } from 'lucide-react';
 interface HeaderProps {
   toggleSidebar: () => void;
 }
@@ -15,9 +17,17 @@ const Header: React.FC<HeaderProps>  = ({ toggleSidebar }) => {
       </button>
       <h1 className="text-lg font-semibold">Dashboard</h1>
       <div>
-        <button className="btn-primary text-white px-4 py-2 rounded-md hover:btn-secondary">
-          Profile
-        </button>
+        <Button 
+        size="md"
+        
+  className="btn-primary flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-md
+                      shadow-lg hover:shadow-xl
+                      transform transition-all duration-200 hover:-translate-y-0.5 text-base"
+                      
+                      >
+                        <User className="w-4 h-4" />
+                        Profile
+        </Button>
       </div>
     </header>
   );

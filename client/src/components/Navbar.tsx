@@ -17,7 +17,7 @@ const Navbar: React.FC = () => {
         {/* Logo */}
         <div className="order-0">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/images/logo.png" height="30" width="40" alt="logo" />
+            <img src="/images/logo_minilessons.png" height="30" width="40" alt="logo" />
             <span className="lg:text-[32px] text-lg font-bold text-[#650AAA]">
               Mini Lessons Academy
             </span>

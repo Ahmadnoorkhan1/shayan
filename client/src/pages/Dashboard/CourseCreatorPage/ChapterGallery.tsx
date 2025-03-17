@@ -37,7 +37,24 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
     // Get sections (h2)
     const sectionElements = doc.querySelectorAll('h2');
     const sections = Array.from(sectionElements).map(section => {
-      const sectionTitle = section.textContent || 'Untitled Section';
+      // Clean up section title to remove number prefixes like "2.2", "3.3"
+      let sectionTitle = section.textContent || 'Untitled Section';
+      
+      // Remove duplicate number patterns like "2.2", "3.3", etc.
+      sectionTitle = sectionTitle.replace(/^(\d+)\.(\1)/, '$1.$2');
+      
+      // If there's a number followed by the same number (e.g. "2 2"), fix it
+      sectionTitle = sectionTitle.replace(/^(\d+)\s+\1/, '$1');
+
+      // For non-covered case, also handle when title has <chapter>.<section> format
+      if (!isCover && title) {
+        const chapterMatch = title.match(/^Chapter\s+(\d+)/i);
+        if (chapterMatch) {
+          const chapterNum = chapterMatch[1];
+          // Remove redundant chapter numbers from section titles
+          sectionTitle = sectionTitle.replace(new RegExp(`^${chapterNum}\\.\\s*`), '');
+        }
+      }
       
       // Get content between this h2 and the next h2 or end of document
       let content = '';

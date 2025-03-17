@@ -644,6 +644,7 @@ onClick={toggleQuizModal}
             
 
             <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
+
             <Button
               color="destructive"
               variant="soft"
@@ -658,7 +659,7 @@ onClick={toggleQuizModal}
               }
             >
               <ImageIcon className="w-5 h-5 text-gray-600" />
-              <span className="text-[12px] text-gray-700">AI Image</span>
+              <span className="text-[12px] text-gray-700">Generate AI Image</span>
             </Button>
 
 {selectedChapterIndex !== -1 && 

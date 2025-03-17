@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
 import apiService from "../../../utilities/service/api";
-import { Book, EditIcon, ImageIcon, ShieldCloseIcon } from "lucide-react";
+import { Book, EditIcon, ImageIcon, ShieldCloseIcon, PackagePlus } from "lucide-react";
 import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
@@ -12,6 +12,7 @@ import ReactQuill from "react-quill";
 import { GenerateCover } from "../../../components/AiToolForms/BookCreator/GenerateCover";
 import toast from "react-hot-toast";
 import AlertDialog from "../../../components/AlertDialog";
+import { GenerateQuiz } from "../../../components/GenerateQuiz";
 
 interface QuillEditor {
   getContents: () => Delta;
@@ -49,6 +50,11 @@ const EditBookCreator = () => {
   const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
   const [chapterToDelete, setChapterToDelete] = useState<number>(-1);
+  const [OpenQuizModal, setOpenQuizModal] = useState<boolean>(false);
+
+  const toggleQuizModal = () => {
+    setOpenQuizModal(!OpenQuizModal);
+  };
 
   // Image click handler with confirmation dialog
   const handleImageClick = (imageUrl: string) => {
@@ -449,6 +455,69 @@ const EditBookCreator = () => {
     setChapterToDelete(-1);
   };
 
+  const handleSaveQuiz = (editorQuizHTML: string, sharedQuizHTML: string) => {
+    if (!quillRef.current) return;
+    const editor = quillRef.current.getEditor();
+    if (!editor) return;
+    
+    // Get the current selection range
+    const range = editor.getSelection();
+    const index = range ? range.index : editor.getLength();
+    
+    // Append the editor version of the quiz to the current chapter content
+    editor.clipboard.dangerouslyPasteHTML(editor.getLength(), editorQuizHTML);
+    
+    // Update the content
+    const newContent = editor.root.innerHTML;
+    handleContentChange(newContent);
+    
+    // Update our chapters array to store both versions
+    const updatedChapters = [...chapters];
+    const currentChapter = updatedChapters[selectedChapterIndex];
+    
+    // Parse the current chapter
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(currentChapter, 'text/html');
+    
+    // Remove existing quizzes
+    const existingQuizzes = doc.querySelectorAll('.quiz-container, [data-quiz-id], .shared-quiz-data');
+    existingQuizzes.forEach(quiz => quiz.remove());
+    
+    // Extract chapter title
+    const title = selectedChapterTitle || 'Chapter';
+  
+    // Create quiz marker with comments
+    const sharedQuizMarker = `
+    <!-- SHARED_QUIZ_START -->
+    ${sharedQuizHTML}
+    <!-- SHARED_QUIZ_END -->
+    `;
+    
+    // Combine everything
+    const finalChapterContent = `<h1>${title}</h1>${newContent}${sharedQuizMarker}`;
+    updatedChapters[selectedChapterIndex] = finalChapterContent;
+
+    // Save to API
+    apiService.post(
+      `/course-creator/updateCourse/${id}/book`,
+      {
+        content: JSON.stringify(updatedChapters)
+      }
+    ).then(response => {
+      if (response.success) {
+        setChapters(updatedChapters);
+        toast.success('Quiz added to chapter successfully!');
+      } else {
+        toast.error('Failed to save quiz to chapter');
+      }
+    }).catch(error => {
+      console.error('Error saving quiz:', error);
+      toast.error('Error saving quiz');
+    });
+    
+    setOpenQuizModal(false);
+  };
+
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
@@ -462,6 +531,17 @@ const EditBookCreator = () => {
             <h2 className="text-xl font-bold text-purple-800">Edit Chapter</h2>
           </div>
           <div className="flex relative">
+            <Button
+              color="destructive"
+              variant="soft"
+              size="sm"
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center gap-2"
+              onClick={toggleQuizModal}
+            >
+              <PackagePlus className="w-5 h-5 text-gray-600" />
+              <span className="text-[12px] text-gray-700">Create Quiz</span>
+            </Button>
+
             <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
             <Button
               color="destructive"
@@ -477,7 +557,7 @@ const EditBookCreator = () => {
               }
             >
               <ImageIcon className="w-5 h-5 text-gray-600" />
-              <span className="text-sm text-gray-700">AI Image</span>
+              <span className="text-sm text-gray-700">Generate AI Image</span>
             </Button>
 
             {selectedChapterIndex !== -1 && 
@@ -573,6 +653,18 @@ const EditBookCreator = () => {
       showImage={false}
       confirmStyle="outline"
     />
+
+    {/* Add Quiz Modal */}
+    <Modal 
+      isOpen={OpenQuizModal} 
+      onClose={toggleQuizModal} 
+      title="Create Quiz"
+    >
+      <GenerateQuiz 
+        selectedChapter={selectedChapter} 
+        onSaveQuiz={handleSaveQuiz} 
+      />
+    </Modal>
     </React.Fragment>
   );
 

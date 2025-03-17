@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
         <div className="row gx-5 pb-10 pt-[52px]">
           <div className="col-12 mt-12 md:col-6 lg:col-3">
             <a href="index.html" className='flex items-center gap-2'>
-              <img src="/images/logo.png" height="30" width="40" alt="logo" />
+              <img src="/images/logo_minilessons.png" height="30" width="40" alt="logo" />
               <span className='lg:text-[24px] text-lg font-bold text-[#650AAA]'>Mini Lessons Academy</span>
             </a>
             <p className="mt-6">

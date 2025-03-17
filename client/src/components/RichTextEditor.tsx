@@ -1,7 +1,21 @@
-import React, { useState, useEffect, forwardRef } from 'react';
+import React, { useState, useEffect, forwardRef, useRef } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Button } from './ui/button';
+import EditorStyles from './EditorStyles';
+import EditorToolbar from './EditorToolbar';
+import BlotFormatter from 'quill-blot-formatter';
+import { Save } from 'lucide-react'; // Import Save icon
+
+// Register the BlotFormatter module with Quill
+if (typeof window !== 'undefined') {
+  const Quill = ReactQuill.Quill;
+  // Make sure we only register once
+  if (!Quill.imports['modules/blotFormatter']) {
+    Quill.register('modules/blotFormatter', BlotFormatter);
+    console.log('BlotFormatter registered successfully');
+  }
+}
 
 interface RichTextEditorProps {
   initialContent: string;
@@ -15,6 +29,8 @@ interface RichTextEditorProps {
 const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
   ({ initialContent, imageUrl, id, onContentChange, onSave, onImageClick }, ref) => {
     const [content, setContent] = useState(initialContent);
+    const isResizingRef = useRef(false);
+    const editorRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
       if (initialContent) {
@@ -32,49 +48,140 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
       }
     }, [imageUrl, ref]);
 
-   // In RichTextEditor.tsx, update the image click handler
-// Update the image click handler to specifically handle cover images
-useEffect(() => {
-  if (ref && 'current' in ref && ref.current) {
-    const editor = ref.current.getEditor();
-    
-    const handleImageClick = (event: Event) => {
-      const target = event.target as HTMLElement;
-      
-      // Check if the clicked element is an image
-      if (target.tagName === 'IMG') {
-        const imageUrl = target.getAttribute('src');
+    // Setup image double-click handler for editing
+    useEffect(() => {
+      // Function to add event listeners to all images
+      const addImageListeners = () => {
+        // If no editor or no onImageClick handler, skip
+        if (!ref || !('current' in ref) || !ref.current || !onImageClick) return;
+        
+        // Get the editor element
+        const editor = ref.current.getEditor();
+        const editorEl = editor.root;
+        
+        // Find all images in the editor
+        const images = editorEl.querySelectorAll('img');
+        
+        // Add double-click handlers to each image
+        images.forEach(img => {
+          // Remove existing listeners first to avoid duplicates
+          img.removeEventListener('dblclick', handleImageDblClick);
+          
+          // Add the double-click handler
+          img.addEventListener('dblclick', handleImageDblClick);
+          
+          // Mark the image as having a listener
+          img.setAttribute('data-has-listener', 'true');
+        });
+      };
+
+      // Handler for double-clicks
+      const handleImageDblClick = (event: Event) => {
+        // Only process if we're not currently resizing
+        // if (isResizingRef.current) return;
+        
+        event.preventDefault();
+        event.stopPropagation();
+        
+        const imgEl = event.target as HTMLImageElement;
+        const imageUrl = imgEl.getAttribute('src');
         
         if (imageUrl && onImageClick) {
-          // Important: prevent default behavior and stop propagation
-          event.preventDefault();
-          event.stopPropagation();
-          
-          // Check if this is a cover image (has the data attribute)
-          const isCoverImage = target.hasAttribute('data-cover-image') || 
-                              target.classList.contains('book-cover-image-preview');
-          
-          // Call the click handler with the image URL
+          console.log('Double click detected on image:', imageUrl);
           onImageClick(imageUrl);
-          
-          // Return false to prevent further handling
-          return false;
         }
+      };
+      
+      // Call function to add listeners initially
+      addImageListeners();
+      
+      // Set up a mutation observer to watch for new images
+      if (ref && 'current' in ref && ref.current) {
+        const editor = ref.current.getEditor();
+        const editorEl = editor.root;
+        
+        // Create a mutation observer
+        const observer = new MutationObserver((mutations) => {
+          // Check if any images were added
+          let shouldAddListeners = false;
+          
+          mutations.forEach(mutation => {
+            if (mutation.type === 'childList') {
+              mutation.addedNodes.forEach(node => {
+                // Check direct node
+                if (node.nodeName === 'IMG') {
+                  shouldAddListeners = true;
+                }
+                
+                // Check children of added nodes
+                if (node.nodeType === 1) {
+                  const el = node as Element;
+                  if (el.querySelector('img')) {
+                    shouldAddListeners = true;
+                  }
+                }
+              });
+            }
+          });
+          
+          // If images were added, update listeners
+          if (shouldAddListeners) {
+            addImageListeners();
+          }
+        });
+        
+        // Start observing
+        observer.observe(editorEl, { 
+          childList: true, 
+          subtree: true 
+        });
+        
+        // Cleanup
+        return () => {
+          observer.disconnect();
+          const images = editorEl.querySelectorAll('img');
+          images.forEach(img => {
+            img.removeEventListener('dblclick', handleImageDblClick);
+          });
+        };
       }
-    };
+    }, [ref, onImageClick]);
 
-    // Use capture phase to ensure we get the event first
-    editor.root.addEventListener('click', handleImageClick, true);
-    
-    return () => {
-      editor.root.removeEventListener('click', handleImageClick, true);
-    };
-  }
-}, [ref, onImageClick]);
+    // Track resize operations
+    useEffect(() => {
+      const handleMouseDown = (e: MouseEvent) => {
+        // Check if clicking on a resize handle
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('blot-formatter__resize-handle')) {
+          isResizingRef.current = true;
+        }
+      };
+
+      const handleMouseUp = () => {
+        if (isResizingRef.current) {
+          // Add a slight delay before allowing clicks again
+          setTimeout(() => {
+            isResizingRef.current = false;
+          }, 100);
+        }
+      };
+
+      document.addEventListener('mousedown', handleMouseDown);
+      document.addEventListener('mouseup', handleMouseUp);
+
+      return () => {
+        document.removeEventListener('mousedown', handleMouseDown);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }, []);
 
     const handleChange = (value: string) => {
       setContent(value);
       onContentChange(value);
+    };
+
+    const handleSaveClick = () => {
+      onSave();
     };
 
     const modules = {
@@ -91,101 +198,38 @@ useEffect(() => {
           ['clean'],
         ],
       },
+      blotFormatter: {
+        // Configuration for the BlotFormatter
+        overlay: {
+          style: {
+            border: '1px dashed #650AAA',
+            boxSizing: 'border-box'
+          },
+          className: 'blot-formatter__overlay'
+        },
+        resize: {
+          enabled: true,
+          handleStyle: {
+            backgroundColor: '#650AAA',
+            border: '1px solid white',
+            boxSizing: 'border-box'
+          },
+          interactionRate: 40
+        }
+      }
     };
 
     return (
       <div className="flex flex-col mx-auto gap-4 mt-8 w-full">
-        <style>
-          {`
-            .editor-wrapper {
-              display: flex;
-              flex-direction: column;
-              background: white;
-              border-radius: 8px;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-              transition: box-shadow 0.3s ease;
-            }
-            .editor-wrapper:hover {
-              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            }
-            .editor-wrapper .ql-toolbar {
-              position: sticky;
-              top: 0;
-              z-index: 1;
-              background: white;
-              border: 1px solid #e5e7eb;
-              border-top-left-radius: 8px;
-              border-top-right-radius: 8px;
-              padding: 12px;
-            }
-            .editor-wrapper .ql-container {
-              flex: 1;
-              min-height: 200px;
-              border: 1px solid #e5e7eb;
-              border-top: none;
-              border-bottom-left-radius: 8px;
-              border-bottom-right-radius: 8px;
-            }
-            .ql-editor {
-              min-height: 200px;
-              padding: 24px;
-              font-size: 16px;
-              line-height: 1.75;
-              color: #374151;
-            }
-            .ql-editor h1 {
-              font-size: 2em;
-              font-weight: 700;
-              color: #111827;
-              margin-bottom: 1rem;
-            }
-            .ql-editor h2 {
-              font-size: 1.5em;
-              font-weight: 600;
-              color: #1f2937;
-              margin-top: 1.5rem;
-              margin-bottom: 0.75rem;
-            }
-            .ql-editor p {
-              margin-bottom: 1rem;
-              line-height: 1.75;
-            }
-            .ql-editor ul, .ql-editor ol {
-              padding-left: 1.5rem;
-              margin-bottom: 1rem;
-            }
-            .ql-editor li {
-              margin-bottom: 0.5rem;
-            }
-            .ql-editor img {
-              max-width: 100%;
-              height: auto;
-              display: block;
-              margin: 1.5rem 0;
-              border-radius: 4px;
-            }
-            .ql-editor blockquote {
-              border-left: 4px solid #e5e7eb;
-              padding-left: 1rem;
-              margin: 1.5rem 0;
-              color: #4b5563;
-            }
-            .ql-editor code {
-              background-color: #f3f4f6;
-              padding: 0.2em 0.4em;
-              border-radius: 4px;
-              font-family: monospace;
-            }
-            .ql-snow .ql-toolbar button:hover,
-            .ql-snow .ql-toolbar button:focus {
-              color: #6366f1;
-            }
-            .ql-snow .ql-toolbar button.ql-active {
-              color: #4f46e5;
-            }
-          `}
-        </style>
-        <div className="editor-wrapper">
+        <EditorStyles />
+        
+        {/* Top save button */}
+        <div className="flex justify-between items-center mb-4">
+          <EditorToolbar editorRef={ref as React.RefObject<ReactQuill>} />
+       
+        </div>
+        
+        <div className="editor-wrapper" ref={editorRef}>
           <ReactQuill
             ref={ref}
             value={content}
@@ -196,15 +240,18 @@ useEffect(() => {
           />
         </div>
 
-        <Button 
-          onClick={onSave} 
-          // color="primary"
-          // variant="soft"
-          // size="sm"
-          className="btn-primary "
-        >
-          Save Content
-        </Button>
+        {/* Bottom save button - more prominent */}
+        <div className="flex justify-end mt-6">
+          <Button 
+            onClick={handleSaveClick} 
+            className="btn-primary flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-md
+                      shadow-lg hover:shadow-xl
+                      transform transition-all duration-200 hover:-translate-y-0.5 text-base"
+          >
+            <Save className="w-6 h-6" />
+            Save Content
+          </Button>
+        </div>
       </div>
     );
   }

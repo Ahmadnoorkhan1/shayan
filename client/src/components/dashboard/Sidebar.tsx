@@ -50,7 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <div className="p-4">
           <div className="flex gap-4 justify-center">
             <div className="flex justify-center w-full">
-              <img className="mx-auto" src="/images/logo.png" alt="logo" />
+              <img className="mx-auto" src="/images/logo_minilessons.png" alt="logo" />
               {isOpen && (
                 <button className="flex md:hidden" onClick={toggleSidebar}>
                   <img src="/images/icons/cross.svg" alt="close" width={25} height={25} />
