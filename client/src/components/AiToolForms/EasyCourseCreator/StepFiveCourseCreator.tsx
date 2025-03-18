@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Spinner from "../../ui/spinner";
 import MarkdownEditor from "../../ui/markdowneditor";
+import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
 
 interface courseContentProps {
   chaptersContent: string[];
@@ -8,17 +9,18 @@ interface courseContentProps {
 }
 
 const StepFiveCourseCreator: React.FC<courseContentProps> = ({ chaptersContent, chapterFetchCount }) => {
+  console.log("[StepFive] Rendering - chaptersContent:", chaptersContent, "chapterFetchCount:", chapterFetchCount);
   const title = localStorage.getItem("selectedTitleEasyCourse") || "";
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
+  const [viewMode, setViewMode] = useState<'scroll' | 'grid'>('scroll');
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const chapter_titles = (localStorage.getItem("easy_course_chapter_titles") || "")
     .split(/,(?=\d+\.)/)
     .map((item: string) => item.replace(/^\d+\.\s*/, "").trim());
 
-  // Watch for new chapters and automatically display the latest one
   useEffect(() => {
     if (chaptersContent.length > 0) {
-      // Find the latest index with content
       let latestIndex = -1;
       for (let i = chaptersContent.length - 1; i >= 0; i--) {
         if (chaptersContent[i] && chaptersContent[i] !== "") {
@@ -26,56 +28,161 @@ const StepFiveCourseCreator: React.FC<courseContentProps> = ({ chaptersContent, 
           break;
         }
       }
-
       if (latestIndex !== -1 && latestIndex !== currentChapterIndex) {
         setCurrentChapterIndex(latestIndex);
         localStorage.setItem("easyCourseChapterNumber", latestIndex.toString());
-        console.log(`Auto-set to chapter ${latestIndex + 1}`);
       }
     }
-  }, [chaptersContent, chapterFetchCount]); // Run when chaptersContent changes
+  }, [chaptersContent, chapterFetchCount]);
+
+  useEffect(() => {
+    if (scrollContainerRef.current && viewMode === 'scroll') {
+      const container = scrollContainerRef.current;
+      const activeButton = container.querySelector('.active-chapter');
+      
+      if (activeButton) {
+        container.scrollTo({
+          left: activeButton.getBoundingClientRect().left - container.getBoundingClientRect().left - 100,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [currentChapterIndex, viewMode]);
+  
+  const scrollChapters = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -200 : 200;
+      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   const hasContent = chaptersContent.length > 0 && !!chaptersContent[currentChapterIndex];
 
   return (
-    <div className="flex flex-col items-center justify-center pb-8">
-      <div className="flex lg:w-[720px] w-[325px] gap-2 items-center py-8 overflow-x-scroll">
-        {chapter_titles?.map((title: string, index: number) => (
+    <div className="flex flex-col items-center justify-center pb-8 max-w-6xl mx-auto">
+      <h2 className="text-center mt-4 text-[36px] text-primary font-bold">{title}</h2>
+      
+      {/* View mode toggle */}
+      <div className="flex justify-center mt-4 mb-2">
+        <div className="bg-gray-100 rounded-lg p-1 flex">
           <button
-            key={index}
-            className={`w-[175px] p-4 ${
-              index === currentChapterIndex 
-                ? "btn-primary" 
-                : chaptersContent[index] 
-                  ? "btn-secondary" 
-                  : "btn-disabled"
-            } flex gap-2`}
-            disabled={!chaptersContent[index]}
-            onClick={() => {
-              setCurrentChapterIndex(index);
-              localStorage.setItem("easyCourseChapterNumber", index.toString());
-            }}
+            onClick={() => setViewMode('scroll')}
+            className={`px-4 py-1.5 text-sm rounded-md ${viewMode === 'scroll' ? 'bg-white shadow-md text-primary' : 'text-gray-600'}`}
           >
-            <span>Chapter </span>
-            <span>{index + 1}</span>
-            {chaptersContent[index] && (
-              <span className="ml-2 text-xs">✓</span>
-            )}
+            Scroll View
           </button>
-        ))}
+          <button
+            onClick={() => setViewMode('grid')}
+            className={`px-4 py-1.5 text-sm rounded-md ${viewMode === 'grid' ? 'bg-white shadow-md text-primary' : 'text-gray-600'}`}
+          >
+            Grid View
+          </button>
+        </div>
       </div>
+      
+      {/* Scrollable chapter navigation */}
+      {viewMode === 'scroll' && (
+        <div className="relative w-full max-w-4xl">
+          <button 
+            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow-md p-1 z-10 hover:bg-gray-50 active:scale-95 transition-transform"
+            onClick={() => scrollChapters('left')}
+          >
+            <ChevronLeft size={24} className="text-primary" />
+          </button>
+          
+          <div 
+            ref={scrollContainerRef}
+            className="flex gap-3 py-6 px-12 overflow-x-auto w-full scrollbar-thin scrollbar-thumb-primary scrollbar-track-gray-100"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            {chapter_titles?.map((title: string, index: number) => (
+              <button
+                key={index}
+                className={`
+                  min-w-[180px] p-4 rounded-lg flex flex-col items-center justify-center gap-2 
+                  shadow-md hover:shadow-lg transition-all transform 
+                  ${index === currentChapterIndex ? 
+                    'active-chapter bg-gradient-to-br from-primary to-purple-700 text-white scale-105' : 
+                    chaptersContent[index] ? 
+                      'bg-white border border-primary/20 hover:border-primary hover:-translate-y-1' : 
+                      'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60'
+                  }
+                `}
+                disabled={!chaptersContent[index]}
+                onClick={() => {
+                  setCurrentChapterIndex(index);
+                  localStorage.setItem("easyCourseChapterNumber", index.toString());
+                }}
+              >
+                <div className="text-xs uppercase font-medium tracking-wide">Chapter {index + 1}</div>
+                <div className="text-center font-medium line-clamp-2 text-sm">
+                  {title.length > 30 ? title.substring(0, 30) + '...' : title}
+                </div>
+                {chaptersContent[index] && (
+                  <div className="w-4 h-4 rounded-full bg-green-500 mt-1 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          <button 
+            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white rounded-full shadow-md p-1 z-10 hover:bg-gray-50 active:scale-95 transition-transform"
+            onClick={() => scrollChapters('right')}
+          >
+            <ChevronRight size={24} className="text-primary" />
+          </button>
+        </div>
+      )}
 
-      <h2 className="text-center mt-4 text-[36px] text-primary">{title}</h2>
+      {/* Grid chapter navigation */}
+      {viewMode === 'grid' && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full max-w-4xl p-4">
+          {chapter_titles?.map((title: string, index: number) => (
+            <button
+              key={index}
+              className={`
+                p-3 rounded-lg flex flex-col items-center justify-center gap-2
+                border transition-all duration-200
+                ${index === currentChapterIndex ? 
+                  'bg-gradient-to-br from-primary to-purple-700 text-white border-primary shadow-lg' : 
+                  chaptersContent[index] ? 
+                    'bg-white border-primary/30 hover:border-primary hover:shadow-md' : 
+                    'bg-gray-100 text-gray-400 cursor-not-allowed opacity-60 border-gray-200'
+                }
+              `}
+              disabled={!chaptersContent[index]}
+              onClick={() => {
+                setCurrentChapterIndex(index);
+                localStorage.setItem("easyCourseChapterNumber", index.toString());
+              }}
+            >
+              <div className="flex justify-center">
+                <BookOpen size={18} className={index === currentChapterIndex ? 'text-white' : 'text-primary'} />
+              </div>
+              <div className="text-xs font-semibold">Chapter {index + 1}</div>
+              <div className="text-center text-xs line-clamp-1">{title}</div>
+              {chaptersContent[index] && (
+                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Content area */}
       {hasContent ? (
-        <div className="w-full">
-          <MarkdownEditor 
+        <div className="w-full mt-6">
+          <MarkdownEditor
             key={`chapter-${currentChapterIndex}`}
-            data={chaptersContent[currentChapterIndex]} 
+            data={chaptersContent[currentChapterIndex]}
           />
         </div>
       ) : (
-        <div className="w-full flex justify-center items-center py-8">
+        <div className="w-full flex flex-col justify-center items-center py-12 mt-4 bg-gray-50 rounded-lg">
           <Spinner />
+          <h2 className="mt-4 text-gray-700 font-medium">Please wait, your course is generating</h2>
         </div>
       )}
     </div>

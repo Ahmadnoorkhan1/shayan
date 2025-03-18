@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
 import apiService from "../../../utilities/service/api";
-import { Book, EditIcon, ImageIcon, ShieldCloseIcon, PackagePlus } from "lucide-react";
+import { Book, ImageIcon, PackagePlus, ShieldCloseIcon, Loader2 } from "lucide-react";
 import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
@@ -13,13 +13,20 @@ import { GenerateCover } from "../../../components/AiToolForms/BookCreator/Gener
 import toast from "react-hot-toast";
 import AlertDialog from "../../../components/AlertDialog";
 import { GenerateQuiz } from "../../../components/GenerateQuiz";
+import {
+  processChapterSelection,
+  handleContentUpdate,
+  updateEditorImage,
+  generateCoverContent,
+  isCoverChapter,
+  extractChapterTitle,
+  formatQuizContent
+} from '../../../utilities/shared/editorUtils';
 
 interface QuillEditor {
   getContents: () => Delta;
   setContents: (delta: Delta) => void;
   root: HTMLElement;
-  getSelection: () => { index: number; length: number } | null;
-  setSelection: (index: number, length: number) => void;
 }
 
 interface Delta {
@@ -51,6 +58,12 @@ const EditBookCreator = () => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false);
   const [chapterToDelete, setChapterToDelete] = useState<number>(-1);
   const [OpenQuizModal, setOpenQuizModal] = useState<boolean>(false);
+  // Add these with existing state declarations
+const [currentQuizContent, setCurrentQuizContent] = useState<{
+  editorContent: string;
+  sharedContent: string;
+} | null>(null);
+const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
 
   const toggleQuizModal = () => {
     setOpenQuizModal(!OpenQuizModal);
@@ -148,90 +161,45 @@ const EditBookCreator = () => {
   };
 
   const handleChapterSelect = (chapterContent: string, index: number) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(chapterContent, 'text/html');
-    
-    // Special handling for cover pages
-    const isCover = chapterContent.includes('data-cover="true"') || 
-                    chapterContent.includes('book-cover-image');
-    
-    if (isCover) {
-      // For cover images, we set a placeholder text in editor
-      const coverImg = doc.querySelector('.book-cover-image');
-      const imgSrc = coverImg?.getAttribute('src') || '';
-      
-      // Create a simplified representation for the editor
-      const placeholder = `<div style="text-align: center; padding: 20px;">
-        <img src="${imgSrc}" style="max-width: 100%; max-height: 400px; margin: 0 auto;" />
-      </div>`;
-      
-      setSelectedChapterTitle('Book Cover');
-      setSelectedChapter(placeholder);
-      setSelectedChapterIndex(index);
-      return;
-    }
-    
-    // Normal chapter handling
-    const titleElement = doc.querySelector('h1');
-    const title = titleElement?.textContent || `Chapter ${index + 1}`;
-    
-    // Remove h1 from content before setting it
-    if (titleElement) {
-      titleElement.remove();
-    }
+    const {
+      isCover,
+      content,
+      title,
+      quizContent,
+      index: selectedIndex
+    } = processChapterSelection(chapterContent, index);
     
     setSelectedChapterTitle(title);
-    setSelectedChapter(doc.body.innerHTML);
-    setSelectedChapterIndex(index);
+    setSelectedChapter(content);
+    setSelectedChapterIndex(selectedIndex);
+    setCurrentQuizContent(quizContent);
+
   };
   
   const handleSave = async () => {
     try {
-      if (selectedChapterIndex === -1) {
-        console.error("No chapter selected");
-        return;
-      }
-  
-      // Create a copy of chapters array
+      if (selectedChapterIndex === -1) return;
+
       const updatedChapters = [...chapters];
+      const updatedContent = handleContentUpdate(
+        selectedChapter, 
+        selectedChapterTitle,
+        Boolean(currentQuizContent)
+      );
       
-      // Only modify the selected chapter
-      let updatedContent = `<h1>${selectedChapterTitle}</h1>${selectedChapter}`;
-  
-      // Check if the content has proper HTML structure
-      const hasHtmlStructure = selectedChapter.includes('<h1>') || selectedChapter.includes('<h2>');
-      
-      if (!hasHtmlStructure) {
-        // If no HTML structure, wrap the content properly
-        updatedContent = `<h1>${courseData?.book_title || 'Chapter ' + (selectedChapterIndex + 1)}</h1>
-  <h2>Section 1</h2>
-  ${selectedChapter}`;
-      }
-  
-      // Clean up any potential JSON stringify artifacts and escape characters
-      updatedContent = updatedContent
-        .replace(/\\"/g, '"')  // Remove escaped quotes
-        .replace(/\\\\/g, '\\') // Remove double escapes
-        .replace(/\\n/g, '\n') // Convert escape sequences to actual newlines
-        .trim();
-      
-      // Update only the selected chapter
       updatedChapters[selectedChapterIndex] = updatedContent;
-  
-      // Make API call to update
+
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/book`,
         {
           content: Array.isArray(updatedChapters) ? JSON.stringify(updatedChapters) : updatedChapters
         }
       );
-  
+
       if (response.success) {
-        // Update local state with cleaned chapters
         setChapters(updatedChapters);
         toast.success('Changes saved successfully');
       } else {
-        console.error("Failed to save content:", response.message);
         toast.error('Failed to save changes');
       }
     } catch (error) {
@@ -241,42 +209,20 @@ const EditBookCreator = () => {
   };
 
   const handleEditedImageSave = (editedImageUrl: string): void => {
-    if (!quillRef.current) return;
+    if (!quillRef.current || !currentEditingImage) return;
     
     const editor = quillRef.current.getEditor();
-    if (!editor || !currentEditingImage) return;
+    if (!editor) return;
   
-    // Get the current selection range
     const range = editor.getSelection();
-  
-    // Find all images in the editor
     const delta = editor.getContents();
-    const updatedDelta: Delta = { ops: [] };
-    let imageFound = false;
-  
-    // Replace the specific image while maintaining other content
-    delta.ops.forEach((op: Operation) => {
-      if (!imageFound && op.insert?.image === currentEditingImage) {
-        updatedDelta.ops.push({
-          insert: { image: editedImageUrl }
-        });
-        imageFound = true;
-      } else {
-        updatedDelta.ops.push(op);
-      }
-    });
-  
-    // Update editor content
-    editor.setContents(updatedDelta as any);
     
-    // Restore selection if it existed
-    if (range) {
-      editor.setSelection(range.index, range.length);
-    }
-  
-    // Force editor update
-    const newContent = editor.root.innerHTML;
-    handleContentChange(newContent);
+    const updatedDelta = updateEditorImage(delta, currentEditingImage, editedImageUrl);
+    
+    editor.setContents(updatedDelta as any);
+    if (range) editor.setSelection(range.index, range.length);
+    
+    handleContentChange(editor.root.innerHTML);
     handleSave();
   
     setOpenEditor(false);
@@ -456,48 +402,21 @@ const EditBookCreator = () => {
   };
 
   const handleSaveQuiz = (editorQuizHTML: string, sharedQuizHTML: string) => {
-    if (!quillRef.current) return;
-    const editor = quillRef.current.getEditor();
-    if (!editor) return;
+    setCurrentQuizContent({
+      editorContent: editorQuizHTML,
+      sharedContent: sharedQuizHTML
+    });
     
-    // Get the current selection range
-    const range = editor.getSelection();
-    const index = range ? range.index : editor.getLength();
-    
-    // Append the editor version of the quiz to the current chapter content
-    editor.clipboard.dangerouslyPasteHTML(editor.getLength(), editorQuizHTML);
-    
-    // Update the content
-    const newContent = editor.root.innerHTML;
-    handleContentChange(newContent);
-    
-    // Update our chapters array to store both versions
     const updatedChapters = [...chapters];
-    const currentChapter = updatedChapters[selectedChapterIndex];
+    const finalChapterContent = formatQuizContent(
+      editorQuizHTML, 
+      sharedQuizHTML, 
+      selectedChapterTitle, 
+      selectedChapter
+    );
     
-    // Parse the current chapter
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(currentChapter, 'text/html');
-    
-    // Remove existing quizzes
-    const existingQuizzes = doc.querySelectorAll('.quiz-container, [data-quiz-id], .shared-quiz-data');
-    existingQuizzes.forEach(quiz => quiz.remove());
-    
-    // Extract chapter title
-    const title = selectedChapterTitle || 'Chapter';
-  
-    // Create quiz marker with comments
-    const sharedQuizMarker = `
-    <!-- SHARED_QUIZ_START -->
-    ${sharedQuizHTML}
-    <!-- SHARED_QUIZ_END -->
-    `;
-    
-    // Combine everything
-    const finalChapterContent = `<h1>${title}</h1>${newContent}${sharedQuizMarker}`;
     updatedChapters[selectedChapterIndex] = finalChapterContent;
 
-    // Save to API
     apiService.post(
       `/course-creator/updateCourse/${id}/book`,
       {
@@ -516,6 +435,40 @@ const EditBookCreator = () => {
     });
     
     setOpenQuizModal(false);
+  };
+
+  // Add the handleRegenerateQuiz function
+  const handleRegenerateQuiz = async () => {
+    if (!selectedChapter) {
+      toast.error('No chapter content available');
+      return;
+    }
+  
+    setIsRegeneratingQuiz(true);
+    try {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = selectedChapter;
+      const textContent = tempDiv.textContent || '';
+  
+      const response = await apiService.post('/generate-quiz', {
+        chapterContent: textContent,
+        quizType: currentQuizContent?.sharedContent.includes('flash-card') ? 'flip-card' : 'multiple-choice',
+        questionCount: 5
+      }, { timeout: 60000 });
+  
+      if (response.success && response.data) {
+        const { editorQuizHTML, sharedQuizHTML } = response.data;
+        handleSaveQuiz(editorQuizHTML, sharedQuizHTML);
+        toast.success('Quiz regenerated successfully');
+      } else {
+        toast.error(response.message || 'Failed to regenerate quiz');
+      }
+    } catch (error) {
+      console.error('Error regenerating quiz:', error);
+      toast.error('Error regenerating quiz');
+    } finally {
+      setIsRegeneratingQuiz(false);
+    }
   };
 
   if (loading) return <div className="p-6">Loading...</div>;
@@ -587,6 +540,37 @@ const EditBookCreator = () => {
           onSave={handleSave}
           onImageClick={handleImageClick}
         />
+        {/* Add the Quiz Display section after RichTextEditor */}
+        {currentQuizContent && (
+          <div className="mt-6 border-t pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-purple-800">Chapter Quiz</h3>
+              <Button
+                onClick={handleRegenerateQuiz}
+                disabled={isRegeneratingQuiz}
+                className="flex items-center text-white gap-2"
+                variant="outline"
+                size="sm"
+              >
+                {isRegeneratingQuiz ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Regenerating...
+                  </>
+                ) : (
+                  <>
+                    <PackagePlus className="h-4 w-4" />
+                    Regenerate Quiz
+                  </>
+                )}
+              </Button>
+            </div>
+            <div 
+              className="p-4 bg-gray-50 rounded-lg"
+              dangerouslySetInnerHTML={{ __html: currentQuizContent.editorContent }}
+            />
+          </div>
+        )}
       </div>
       <ChapterGallery
         chapters={chapters}

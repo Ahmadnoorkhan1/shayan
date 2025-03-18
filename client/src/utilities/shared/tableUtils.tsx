@@ -977,69 +977,59 @@ export const ShareItem = async (navigate:any,item: any) => {
     color: #888888;
   }
   
-  /* Updated Flash Cards Grid Layout */
   .flash-cards-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin: 2rem 0;
-  }
-  
-  .flash-card {
-    margin: 0;
-    perspective: 1000px;
-    width: 100%;
-  }
-  
-  .flash-card-inner {
-    position: relative;
-    width: 100%;
-    height: 180px;
-    transition: transform 0.8s;
-    transform-style: preserve-3d;
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    border-radius: 12px;
-  }
-  
-  .flash-card-inner.flipped {
-    transform: rotateY(180deg);
-  }
-  
-  .flash-card:hover .flash-card-inner {
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-  }
-  
-  .flash-card-front, .flash-card-back {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    border-radius: 12px;
-    text-align: center;
-  }
-  
-  .flash-card-front {
-    background: linear-gradient(135deg, #f9fafb 0%, #e6eef7 100%);
-    color: #333;
-    border: 1px solid var(--border-color);
-    font-weight: 600;
-    z-index: 2;
-  }
-  
-  .flash-card-back {
-    background: linear-gradient(135deg, #f0f7ff 0%, #e0eafc 100%);
-    color: #333;
-    transform: rotateY(180deg);
-    border: 1px solid var(--border-color);
-    font-weight: 500;
-  }
-  
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin: 20px 0;
+}
+
+.flash-card {
+  perspective: 1000px;
+  height: 200px;
+}
+
+.flash-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s;
+  cursor: pointer;
+}
+
+.flash-card-inner:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.flash-card-front,
+.flash-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.flash-card-front {
+  background: linear-gradient(145deg, #ffffff, #f0f0f0);
+  border: 1px solid #e5e7eb;
+}
+
+.flash-card-back {
+  background: linear-gradient(145deg, #f0f7ff, #e1effe);
+  border: 1px solid #e5e7eb;
+  transform: rotateY(180deg);
+}
+
+.flash-card-inner.flipped {
+  transform: rotateY(180deg);
+}
   .short-answer-field {
     width: 100%;
     min-height: 100px;

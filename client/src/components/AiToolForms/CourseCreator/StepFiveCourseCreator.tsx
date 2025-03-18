@@ -131,8 +131,8 @@ const StepFiveCourseCreator: React.FC<courseContentProps> = ({ chaptersContent, 
                   {title.length > 30 ? title.substring(0, 30) + '...' : title}
                 </div>
                 {chaptersContent[index] && (
-                  <div className="w-3 h-3 rounded-full bg-green-500 mt-1 flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                  <div className="w-4 h-4 rounded-full bg-green-500 mt-1 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white"></div>
                   </div>
                 )}
               </button>
