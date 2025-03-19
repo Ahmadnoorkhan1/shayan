@@ -54,7 +54,10 @@ useEffect(() => {
     try {
       const response: ApiResponse = await generateImage(prompt);
       if (response.success) {
-        const Url = `http://localhost:5002`;
+        // const Url = `http://localhost:5002`;
+        const Url = window.location.hostname === 'localhost'
+        ? 'http://localhost:5002'
+        : 'https://minilessonsacademy.onrender.com';
         const imageUrl = `${Url}${response.data}`;
         setGeneratedImage(imageUrl);
         
