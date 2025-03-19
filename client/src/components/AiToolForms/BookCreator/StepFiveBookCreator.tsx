@@ -2,6 +2,8 @@ import { useEffect, useState, useRef } from "react";
 import Spinner from "../../ui/spinner";
 import MarkdownEditor from "../../ui/markdowneditor";
 import { ChevronLeft, ChevronRight, BookOpen } from "lucide-react";
+import { hideLoader } from "../../../utilities/components/Loader"; // Add this import
+
 
 interface bookContentProps {
   chaptersContent: string[];
@@ -9,6 +11,7 @@ interface bookContentProps {
 }
 
 const StepFiveBookCreator: React.FC<bookContentProps> = ({ chaptersContent, chapterFetchCount }) => {
+  console.log("[StepFive] Rendering - chaptersContent:", chaptersContent, "chapterFetchCount:", chapterFetchCount);
   const title = localStorage.getItem("selectedBookTitle") || "";
   const [currentChapterIndex, setCurrentChapterIndex] = useState<number>(0);
   const [viewMode, setViewMode] = useState<'scroll' | 'grid'>('scroll');
@@ -18,8 +21,11 @@ const StepFiveBookCreator: React.FC<bookContentProps> = ({ chaptersContent, chap
     .split(/,(?=\d+\.)/)
     .map((item: string) => item.replace(/^\d+\.\s*/, "").trim());
 
+  // Track latest chapter with content
   useEffect(() => {
+    console.log("[StepFive] useEffect triggered with chaptersContent:", chaptersContent, "chapterFetchCount:", chapterFetchCount);
     if (chaptersContent.length > 0) {
+      hideLoader(); // Hide global loader when content is available
       let latestIndex = -1;
       for (let i = chaptersContent.length - 1; i >= 0; i--) {
         if (chaptersContent[i] && chaptersContent[i] !== "") {
@@ -27,13 +33,18 @@ const StepFiveBookCreator: React.FC<bookContentProps> = ({ chaptersContent, chap
           break;
         }
       }
+      console.log("[StepFive] Latest index with content:", latestIndex);
       if (latestIndex !== -1 && latestIndex !== currentChapterIndex) {
         setCurrentChapterIndex(latestIndex);
         localStorage.setItem("bookChapterNumber", latestIndex.toString());
+        console.log(`[StepFive] Auto-set to chapter ${latestIndex + 1} with content:`, chaptersContent[latestIndex]);
+      } else {
+        console.log("[StepFive] No new content to switch to, keeping index at", currentChapterIndex);
       }
     }
   }, [chaptersContent, chapterFetchCount]);
 
+  // Handle scroll behavior
   useEffect(() => {
     if (scrollContainerRef.current && viewMode === 'scroll') {
       const container = scrollContainerRef.current;
@@ -56,6 +67,7 @@ const StepFiveBookCreator: React.FC<bookContentProps> = ({ chaptersContent, chap
   };
 
   const hasContent = chaptersContent.length > 0 && !!chaptersContent[currentChapterIndex];
+  console.log("[StepFive] Rendering - currentChapterIndex:", currentChapterIndex, "hasContent:", hasContent, "content:", chaptersContent[currentChapterIndex]);
 
   return (
     <div className="flex flex-col items-center justify-center pb-8 max-w-6xl mx-auto">
@@ -91,8 +103,8 @@ const StepFiveBookCreator: React.FC<bookContentProps> = ({ chaptersContent, chap
           
           <div 
             ref={scrollContainerRef}
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none"}}
             className="flex gap-3 py-6 px-12 overflow-x-auto w-full scrollbar-thin scrollbar-thumb-primary scrollbar-track-gray-100"
-            style={{ scrollbarWidth: 'thin' }}
           >
             {chapter_titles?.map((title: string, index: number) => (
               <button

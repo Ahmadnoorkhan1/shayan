@@ -4,7 +4,7 @@ import { Book, ImageIcon, Edit2, CheckCircle, Upload, RefreshCw } from 'lucide-r
 import Modal from '../../ui/Modal';
 import ImageGenerator from '../../ui/ImageGenerator';
 import ImageEditor from '../../ui/ImageEditor/ImageEditor';
-import Tooltip from '../../ui/tooltip';
+import toast from 'react-hot-toast';
 
 interface GenerateCoverProps {
   onCoverImageGenerated?: (imageUrl: string) => void;
@@ -63,8 +63,15 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
 
   // Handle file upload
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const file = event.target.files?.[0] as File;
+
+    if(file?.size > 3000000) {
+      toast.error("File size exceeds 3MB. Please upload a smaller file.");
+      return;
+    }
+
     if (file) {
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const result = e.target?.result as string;
@@ -107,6 +114,7 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
         ref={fileInputRef}
         style={{ display: 'none' }}
         accept="image/*"
+        multiple={false}
         onChange={handleFileChange}
       />
 
@@ -133,31 +141,14 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
                 </Button>
               </div>
 
-              {/* Show uploaded image if available */}
-              {/* {uploadedImage && (
-                <div className="mt-4 bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden p-4">
-                  <h3 className="text-sm font-medium text-gray-700 mb-4 flex justify-between">
-                    <span>Uploaded Image</span>
-                  </h3>
-                  <div className="relative rounded-xl overflow-hidden">
-                    <img 
-                      src={uploadedImage} 
-                      alt="Uploaded Cover" 
-                      className="w-full max-h-[300px] object-contain rounded-lg" 
-                    />
-                  </div>
-                </div>
-              )} */}
+             
 
-              {/* Only show generator when not showing an uploaded image */}
-              {/* {!uploadedImage && ( */}
                 <ImageGenerator 
                   onImageSelect={handleImageGenerated} 
                   onGenerateStart={handleGenerationStart}
                   isEditorContext={false}
                   uploadedImage={uploadedImage as any}
                 />
-              {/* )} */}
               
               {/* Action buttons */}
               <div className="flex justify-between gap-3 mt-4 pt-4 border-t">

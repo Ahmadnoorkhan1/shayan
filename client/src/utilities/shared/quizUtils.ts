@@ -98,7 +98,65 @@ export const determineQuizType = (quizContent: string): QuizType => {
   return 'multiple-choice'; // default
 };
 
-export const formatQuizHTML = (quizData: QuizResponse): { editorQuizHTML: string, sharedQuizHTML: string } => {
+export const formatQuizHTML = (quizData: QuizResponse & { 
+  existingQuiz?: { editorContent: string; sharedContent: string };
+  replaceQuestionIndex?: number;
+}): { editorQuizHTML: string; sharedQuizHTML: string } => {
+  const parser = new DOMParser();
+  
+  // Handle single question regeneration
+  if (quizData.existingQuiz && typeof quizData.replaceQuestionIndex === 'number') {
+    try {
+      // Parse existing content
+      const editorDoc = parser.parseFromString(quizData.existingQuiz.editorContent, 'text/html');
+      const sharedDoc = parser.parseFromString(quizData.existingQuiz.sharedContent, 'text/html');
+      
+      if (quizData.questions && quizData.questions.length === 1) {
+        // Get the quiz container and its ID
+        const quizContainer = sharedDoc.querySelector('.quiz-container');
+        const quizId = quizContainer?.id || `quiz-${Date.now()}`;
+        const quizType = quizContainer?.getAttribute('data-quiz-type') as QuizType;
+
+        // Format only the new question
+        const { editor: newEditorQuestion, shared: newSharedQuestion } = formatQuestion(
+          quizData.questions[0],
+          quizData.replaceQuestionIndex,
+          quizId,
+          quizType || quizData.quizType
+        );
+
+        // Find the questions to replace
+        const editorTarget = editorDoc.querySelectorAll('.quiz-question')[quizData.replaceQuestionIndex];
+        const sharedTarget = sharedDoc.querySelectorAll('.quiz-question')[quizData.replaceQuestionIndex];
+
+        if (editorTarget && sharedTarget) {
+          // Create temporary elements to parse the new question HTML
+          const tempEditor = parser.parseFromString(newEditorQuestion, 'text/html');
+          const tempShared = parser.parseFromString(newSharedQuestion, 'text/html');
+
+          // Replace only the question content
+          const newEditorContent = tempEditor.querySelector('.quiz-question');
+          const newSharedContent = tempShared.querySelector('.quiz-question');
+
+          if (newEditorContent && newSharedContent) {
+            editorTarget.replaceWith(newEditorContent);
+            sharedTarget.replaceWith(newSharedContent);
+          }
+        }
+
+        // Return the updated content while preserving structure
+        return {
+          editorQuizHTML: editorDoc.body.innerHTML,
+          sharedQuizHTML: sharedDoc.body.innerHTML
+        };
+      }
+    } catch (error) {
+      console.error('Error regenerating question:', error);
+      throw new Error('Failed to regenerate question');
+    }
+  }
+
+  // Regular full quiz generation code remains unchanged...
   const quizId = `quiz-${Date.now()}`;
   
   let editorQuizHTML = `<h2>Exercises</h2>`;

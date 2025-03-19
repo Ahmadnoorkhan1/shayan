@@ -539,11 +539,14 @@ const cleanImageUrl = (imgSrc: string): string => {
     // Parse the content
     // console.log(typeof(content), "=====================")
 
-    // const stringContent = JSON.stringify(content);
+    let contentString = typeof content === 'string' 
+    ? content 
+    : JSON.stringify(content);  
+    
     let chapters = [];
     try {
       // Clean and parse the content
-      const cleanedContent = content
+      const cleanedContent = contentString
         .replace(/^"|"$/g, '')
         .replace(/\\"/g, '"')
         .replace(/\\\\/g, '\\')

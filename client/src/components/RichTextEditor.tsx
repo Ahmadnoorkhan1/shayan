@@ -180,9 +180,9 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
       onContentChange(value);
     };
 
-    const handleSaveClick = () => {
-      onSave();
-    };
+    // const handleSaveClick = () => {
+    //   onSave();
+    // };
 
     const modules = {
       toolbar: {
@@ -252,17 +252,7 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
         </div>
 
         {/* Bottom save button - more prominent */}
-        <div className="flex justify-end mt-6">
-          <Button 
-            onClick={handleSaveClick} 
-            className="btn-primary flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-md
-                      shadow-lg hover:shadow-xl
-                      transform transition-all duration-200 hover:-translate-y-0.5 text-base"
-          >
-            <Save className="w-6 h-6" />
-            Save Content
-          </Button>
-        </div>
+  
       </div>
     );
   }

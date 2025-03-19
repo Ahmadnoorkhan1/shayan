@@ -110,21 +110,78 @@ export const processChapterSelection = (
 /**
  * Update editor content and save changes
  */
-export const handleContentUpdate = (content: string, title: string, hasQuiz = false): string => {
-  let updatedContent = `<h1>${title}</h1>${content}`;
+export const handleContentUpdate = (
+  content: string, 
+  title: string, 
+  hasQuiz = false,
+  existingContent?: string
+): string => {
+  // Extract existing quiz content if present
+  let editorQuizContent = '';
+  let sharedQuizContent = '';
+
+  if (hasQuiz && existingContent) {
+    // Match editor quiz section
+    const editorMatch = existingContent.match(
+      /<h2>Exercises<\/h2>([\s\S]*?)(?=<!-- SHARED_QUIZ_START -->|$)/
+    );
+    if (editorMatch) {
+      editorQuizContent = editorMatch[0];
+    }
+
+    // Match shared quiz section with markers
+    const sharedMatch = existingContent.match(
+      /<!-- SHARED_QUIZ_START -->([\s\S]*?)<!-- SHARED_QUIZ_END -->/
+    );
+    if (sharedMatch) {
+      sharedQuizContent = sharedMatch[0];
+    }
+  }
+
+  // Clean up the main content by removing any existing quiz sections
+  let cleanContent = content;
+  if (hasQuiz) {
+    cleanContent = content
+      .replace(/<h2>Exercises<\/h2>[\s\S]*?(?=<h2>|$)/, '')
+      .replace(/<!-- SHARED_QUIZ_START -->[\s\S]*?<!-- SHARED_QUIZ_END -->/, '');
+  }
+
+  // Build updated content
+  let updatedContent = `<h1>${title}</h1>${cleanContent}`;
 
   // Check if content needs HTML structure
-  const hasHtmlStructure = content.includes('<h1>') || content.includes('<h2>');
-  
+  const hasHtmlStructure = cleanContent.includes('<h1>') || cleanContent.includes('<h2>');
   if (!hasHtmlStructure) {
-    updatedContent = `<h1>${title}</h1>\n<h2>Section 1</h2>\n${content}`;
+    updatedContent = `<h1>${title}</h1>\n<h2>Section 1</h2>\n${cleanContent}`;
+  }
+
+  // Preserve quiz content if it exists
+  if (editorQuizContent && sharedQuizContent) {
+    updatedContent = `${updatedContent}${editorQuizContent}${sharedQuizContent}`;
+  }
+
+  // Additional validation to ensure quiz structure remains intact
+  if (hasQuiz) {
+    const verifyEditorQuiz = updatedContent.includes('<h2>Exercises</h2>');
+    const verifySharedQuiz = updatedContent.includes('<!-- SHARED_QUIZ_START -->') && 
+                            updatedContent.includes('<!-- SHARED_QUIZ_END -->');
+    
+    if (!verifyEditorQuiz || !verifySharedQuiz) {
+      console.error('Quiz structure validation failed');
+      // Restore quiz content if structure was lost
+      if (editorQuizContent && sharedQuizContent) {
+        updatedContent = `${updatedContent}${editorQuizContent}${sharedQuizContent}`;
+      }
+    }
   }
 
   // Clean up JSON stringify artifacts
   return updatedContent
-    .replace(/\\"/g, '"')  // Remove escaped quotes
-    .replace(/\\\\/g, '\\') // Remove double escapes
-    .replace(/\\n/g, '\n') // Convert escape sequences to actual newlines
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+    .replace(/\\n/g, '\n')
+    .replace(/\s*(<!-- SHARED_QUIZ_START -->)\s*/g, '\n$1\n')  // Clean quiz markers spacing
+    .replace(/\s*(<!-- SHARED_QUIZ_END -->)\s*/g, '\n$1\n')
     .trim();
 };
 

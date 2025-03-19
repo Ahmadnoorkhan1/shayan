@@ -170,7 +170,7 @@ console.log(quizContent, "see quiz content");
                   disabled={regeneratingQuestionIndex === index}
                   variant="outline"
                   size="sm"
-                  className="shrink-0"
+                  className="shrink-0 bg-purple-600 text-white"
                 >
                   {regeneratingQuestionIndex === index ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

@@ -63,6 +63,8 @@ const BookcreatorPage = () => {
             Created: formatDate(course.createdAt),
             Updated: formatDate(course.updatedAt),
             Content: course.content,
+            type:course.type || "book",
+
           };
         });
         setBooks(formattedBooks);
@@ -271,7 +273,7 @@ const BookcreatorPage = () => {
       ) : (
         <Table
         data={books}
-        headers={["ID", "Course Name", "Created", "Updated"]}
+        headers={["ID", "Course Name", "Created", "Updated", "Type"]} // Add Type to headers
         isAdd={true}
         addItem={addItem}
         deleteItem={deleteItem}

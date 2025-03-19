@@ -22,6 +22,9 @@ import {
   extractChapterTitle,
   formatQuizContent
 } from '../../../utilities/shared/editorUtils';
+import { QuizDisplay } from "../../../components/QuizDisplay";
+import { determineQuizType, formatQuizHTML } from "../../../utilities/shared/quizUtils";
+
 
 interface QuillEditor {
   getContents: () => Delta;
@@ -63,7 +66,10 @@ const [currentQuizContent, setCurrentQuizContent] = useState<{
   editorContent: string;
   sharedContent: string;
 } | null>(null);
+ 
 const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
+  const [regeneratingQuestionIndex, setRegeneratingQuestionIndex] = useState<number>(-1);
+
 
   const toggleQuizModal = () => {
     setOpenQuizModal(!OpenQuizModal);
@@ -184,7 +190,8 @@ const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
       const updatedContent = handleContentUpdate(
         selectedChapter, 
         selectedChapterTitle,
-        Boolean(currentQuizContent)
+        Boolean(currentQuizContent),
+        chapters[selectedChapterIndex] // Pass existing content
       );
       
       updatedChapters[selectedChapterIndex] = updatedContent;
@@ -438,36 +445,74 @@ const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
   };
 
   // Add the handleRegenerateQuiz function
-  const handleRegenerateQuiz = async () => {
-    if (!selectedChapter) {
-      toast.error('No chapter content available');
+  const handleRegenerateQuestion = async (questionIndex: number) => {
+    if (!selectedChapter || !currentQuizContent) {
+      toast.error('No quiz content available');
       return;
     }
   
-    setIsRegeneratingQuiz(true);
+    setRegeneratingQuestionIndex(questionIndex);
+    
     try {
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = selectedChapter;
       const textContent = tempDiv.textContent || '';
-  
+      const quizType = determineQuizType(currentQuizContent.sharedContent);
+      
       const response = await apiService.post('/generate-quiz', {
         chapterContent: textContent,
-        quizType: currentQuizContent?.sharedContent.includes('flash-card') ? 'flip-card' : 'multiple-choice',
-        questionCount: 5
+        quizType,
+        questionCount: 1,
+        preserveStructure: true,
+        questionIndex
       }, { timeout: 60000 });
   
       if (response.success && response.data) {
-        const { editorQuizHTML, sharedQuizHTML } = response.data;
-        handleSaveQuiz(editorQuizHTML, sharedQuizHTML);
-        toast.success('Quiz regenerated successfully');
+        // Add the existing quiz content to preserve structure
+        const formattedQuiz = await formatQuizHTML({
+          ...response.data,
+          existingQuiz: currentQuizContent,
+          replaceQuestionIndex: questionIndex
+        });
+  
+        // Update quiz content with preserved structure
+        setCurrentQuizContent({
+          editorContent: formattedQuiz.editorQuizHTML,
+          sharedContent: formattedQuiz.sharedQuizHTML
+        });
+  
+        // Update chapter content
+        const updatedChapters = [...chapters];
+        const finalChapterContent = formatQuizContent(
+          formattedQuiz.editorQuizHTML,
+          formattedQuiz.sharedQuizHTML,
+          selectedChapterTitle,
+          selectedChapter
+        );
+        
+        updatedChapters[selectedChapterIndex] = finalChapterContent;
+  
+        const saveResponse = await apiService.post(
+          `/course-creator/updateCourse/${id}/course`,
+          {
+            content: JSON.stringify(updatedChapters)
+          }
+        );
+  
+        if (saveResponse.success) {
+          setChapters(updatedChapters);
+          toast.success('Question regenerated successfully');
+        } else {
+          toast.error('Failed to save regenerated question');
+        }
       } else {
-        toast.error(response.message || 'Failed to regenerate quiz');
+        toast.error(response.message || 'Failed to regenerate question');
       }
     } catch (error) {
-      console.error('Error regenerating quiz:', error);
-      toast.error('Error regenerating quiz');
+      console.error('Error regenerating question:', error);
+      toast.error('Error regenerating question');
     } finally {
-      setIsRegeneratingQuiz(false);
+      setRegeneratingQuestionIndex(-1);
     }
   };
 
@@ -541,36 +586,13 @@ const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
           onImageClick={handleImageClick}
         />
         {/* Add the Quiz Display section after RichTextEditor */}
-        {currentQuizContent && (
-          <div className="mt-6 border-t pt-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-purple-800">Chapter Quiz</h3>
-              <Button
-                onClick={handleRegenerateQuiz}
-                disabled={isRegeneratingQuiz}
-                className="flex items-center text-white gap-2"
-                variant="outline"
-                size="sm"
-              >
-                {isRegeneratingQuiz ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Regenerating...
-                  </>
-                ) : (
-                  <>
-                    <PackagePlus className="h-4 w-4" />
-                    Regenerate Quiz
-                  </>
-                )}
-              </Button>
-            </div>
-            <div 
-              className="p-4 bg-gray-50 rounded-lg"
-              dangerouslySetInnerHTML={{ __html: currentQuizContent.editorContent }}
-            />
-          </div>
-        )}
+      {currentQuizContent && (
+        <QuizDisplay
+          quizContent={currentQuizContent}
+          onRegenerateQuestion={handleRegenerateQuestion}
+          regeneratingQuestionIndex={regeneratingQuestionIndex}
+        />
+      )}
       </div>
       <ChapterGallery
         chapters={chapters}

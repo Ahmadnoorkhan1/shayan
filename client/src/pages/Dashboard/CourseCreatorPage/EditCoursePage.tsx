@@ -3,7 +3,7 @@ import { useParams } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
 import apiService from "../../../utilities/service/api";
 import ChapterGallery from "./ChapterGallery";
-import { Book, ImageIcon, PackagePlus, ShieldCloseIcon, Loader2 } from "lucide-react";
+import { Book, ImageIcon, PackagePlus, ShieldCloseIcon, Loader2, Save } from "lucide-react";
 import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
@@ -161,7 +161,8 @@ const EditCoursePage = () => {
       const updatedContent = handleContentUpdate(
         selectedChapter, 
         selectedChapterTitle,
-        Boolean(currentQuizContent)
+        Boolean(currentQuizContent),
+        chapters[selectedChapterIndex] // Pass existing content
       );
       
       updatedChapters[selectedChapterIndex] = updatedContent;
@@ -372,83 +373,78 @@ const EditCoursePage = () => {
     setOpenQuizModal(false);
   };
 
-  const handleRegenerateQuiz = async () => {
-    if (!selectedChapter) {
-      toast.error('No chapter content available');
-      return;
-    }
   
-    setIsRegeneratingQuiz(true);
-    try {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = selectedChapter;
-      const textContent = tempDiv.textContent || '';
-  
-      const response = await apiService.post('/generate-quiz', {
-        chapterContent: textContent,
-        quizType: currentQuizContent?.sharedContent.includes('flash-card') ? 'flip-card' : 'multiple-choice',
-        questionCount: 5
-      }, { timeout: 60000 });
-  
-      if (response.success && response.data) {
-        const { editorQuizHTML, sharedQuizHTML } = await formatQuizHTML(response?.data);
-        // const { editorQuizHTML, sharedQuizHTML } = response.data;
-        handleSaveQuiz(editorQuizHTML, sharedQuizHTML);
-        toast.success('Quiz regenerated successfully');
-      } else {
-        toast.error(response.message || 'Failed to regenerate quiz');
-      }
-    } catch (error) {
-      console.error('Error regenerating quiz:', error);
-      toast.error('Error regenerating quiz');
-    } finally {
-      setIsRegeneratingQuiz(false);
-    }
-  };
 
-  // Add new handler for regenerating individual questions
-  const handleRegenerateQuestion = async (questionIndex: number) => {
-    if (!selectedChapter || !currentQuizContent) {
-      toast.error('No quiz content available');
-      return;
-    }
+const handleRegenerateQuestion = async (questionIndex: number) => {
+  if (!selectedChapter || !currentQuizContent) {
+    toast.error('No quiz content available');
+    return;
+  }
+
+  setRegeneratingQuestionIndex(questionIndex);
   
-    setRegeneratingQuestionIndex(questionIndex);
+  try {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = selectedChapter;
+    const textContent = tempDiv.textContent || '';
+    const quizType = determineQuizType(currentQuizContent.sharedContent);
     
-    try {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = selectedChapter;
-      const textContent = tempDiv.textContent || '';
-  
-      // Generate a single question
-      const response = await apiService.post('/generate-quiz', {
-        chapterContent: textContent,
-        quizType: determineQuizType(currentQuizContent.sharedContent),
-        questionCount: 1,
-        preserveStructure: true,
-        questionIndex
-      }, { timeout: 60000 });
-  
-      if (response.success && response.data) {
-        const { editorQuizHTML, sharedQuizHTML } = await formatQuizHTML({
-          ...response.data,
-          existingQuiz: currentQuizContent,
-          replaceQuestionIndex: questionIndex
-        });
-        
-        handleSaveQuiz(editorQuizHTML, sharedQuizHTML);
+    const response = await apiService.post('/generate-quiz', {
+      chapterContent: textContent,
+      quizType,
+      questionCount: 1,
+      preserveStructure: true,
+      questionIndex
+    }, { timeout: 60000 });
+
+    if (response.success && response.data) {
+      // Add the existing quiz content to preserve structure
+      const formattedQuiz = await formatQuizHTML({
+        ...response.data,
+        existingQuiz: currentQuizContent,
+        replaceQuestionIndex: questionIndex
+      });
+
+      // Update quiz content with preserved structure
+      setCurrentQuizContent({
+        editorContent: formattedQuiz.editorQuizHTML,
+        sharedContent: formattedQuiz.sharedQuizHTML
+      });
+
+      // Update chapter content
+      const updatedChapters = [...chapters];
+      const finalChapterContent = formatQuizContent(
+        formattedQuiz.editorQuizHTML,
+        formattedQuiz.sharedQuizHTML,
+        selectedChapterTitle,
+        selectedChapter
+      );
+      
+      updatedChapters[selectedChapterIndex] = finalChapterContent;
+
+      const saveResponse = await apiService.post(
+        `/course-creator/updateCourse/${id}/course`,
+        {
+          content: JSON.stringify(updatedChapters)
+        }
+      );
+
+      if (saveResponse.success) {
+        setChapters(updatedChapters);
         toast.success('Question regenerated successfully');
       } else {
-        toast.error(response.message || 'Failed to regenerate question');
+        toast.error('Failed to save regenerated question');
       }
-    } catch (error) {
-      console.error('Error regenerating question:', error);
-      toast.error('Error regenerating question');
-    } finally {
-      setRegeneratingQuestionIndex(-1);
+    } else {
+      toast.error(response.message || 'Failed to regenerate question');
     }
-  };
-
+  } catch (error) {
+    console.error('Error regenerating question:', error);
+    toast.error('Error regenerating question');
+  } finally {
+    setRegeneratingQuestionIndex(-1);
+  }
+};
   console.log(currentQuizContent, "++++++++++++++++++++++")
 
   if (loading) return <div className="p-6">Loading...</div>;
@@ -527,6 +523,17 @@ onClick={toggleQuizModal}
   />
 </Modal>
           </div>
+        </div>
+        <div className="flex justify-end ">
+          <Button 
+            onClick={handleSave} 
+            className="btn-primary flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-md
+                      shadow-lg hover:shadow-xl
+                      transform transition-all duration-200 hover:-translate-y-0.5 text-base"
+          >
+            <Save className="w-6 h-6" />
+            Save Content
+          </Button>
         </div>
         <RichTextEditor
          ref={quillRef}
