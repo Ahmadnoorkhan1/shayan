@@ -370,7 +370,7 @@ if (tagName === 'img') {
          
          
           // Handle text elements with enhanced formatting
-          const text = element.textContent?.trim() || '';
+          let text = element.textContent?.trim() || '';
           if (!text) continue;
 
           let font = timesRomanFont;

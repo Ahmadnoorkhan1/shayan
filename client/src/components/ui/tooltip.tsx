@@ -73,7 +73,7 @@ const Tooltip: React.FC<TooltipProps> = ({
         </div>
       )}
       
-      <style jsx global>{`
+      <style>{`
         .tooltip-trigger {
           position: relative;
           z-index: 1;
