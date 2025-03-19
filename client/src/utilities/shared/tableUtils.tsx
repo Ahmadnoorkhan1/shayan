@@ -524,6 +524,16 @@ export const ShareItem = async (navigate:any,item: any) => {
  * Format shared content for public viewing
  * This function prepares courses/books for public sharing
  */
+
+const cleanImageUrl = (imgSrc: string): string => {
+  return imgSrc
+    .replace(/\\n\s*/g, '') // Remove escaped newlines and spaces
+    .replace(/\\\\/g, '\\') // Fix double escaped backslashes
+    .replace(/\\"/g, '"')   // Fix escaped quotes
+    .replace(/^"|"$/g, '')  // Remove wrapping quotes
+    .replace(/^data:image\/[^;]+;base64,/, (match) => decodeURIComponent(match)); // Handle base64
+};
+
    export const formatSharedContent = (content: string, title: string, type: 'course' | 'book'): string => {
    try {
     // Parse the content

@@ -4,16 +4,16 @@ import 'react-quill/dist/quill.snow.css';
 import { Button } from './ui/button';
 import EditorStyles from './EditorStyles';
 import EditorToolbar from './EditorToolbar';
-import BlotFormatter from 'quill-blot-formatter';
+import BlotFormatter2 from '@enzedonline/quill-blot-formatter2';
 import { Save } from 'lucide-react'; // Import Save icon
 
-// Register the BlotFormatter module with Quill
+// Register the BlotFormatter2 module with Quill
 if (typeof window !== 'undefined') {
   const Quill = ReactQuill.Quill;
   // Make sure we only register once
-  if (!Quill.imports['modules/blotFormatter']) {
-    Quill.register('modules/blotFormatter', BlotFormatter);
-    console.log('BlotFormatter registered successfully');
+  if (!Quill.imports['modules/blotFormatter2']) {
+    Quill.register('modules/blotFormatter2', BlotFormatter2);
+    console.log('BlotFormatter2 registered successfully');
   }
 }
 
@@ -193,29 +193,40 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
           ['bold', 'italic', 'underline', 'strike', 'blockquote'],
           [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
           [{ color: [] }, { background: [] }],
-          [{ align: [] }],
+          [{ align: ['', 'center', 'right', 'justify'] }],
           ['link', 'image', 'video'],
           ['clean'],
         ],
       },
-      blotFormatter: {
-        // Configuration for the BlotFormatter
-        overlay: {
-          style: {
-            border: '1px dashed #650AAA',
-            boxSizing: 'border-box'
-          },
-          className: 'blot-formatter__overlay'
-        },
+      blotFormatter2: {
+        // align: {
+        //   allowAligning: true,
+        //   alignments: ['left', 'center', 'right']
+        // },
         resize: {
-          enabled: true,
-          handleStyle: {
-            backgroundColor: '#650AAA',
-            border: '1px solid white',
-            boxSizing: 'border-box'
-          },
-          interactionRate: 40
-        }
+          allowResizing: true,
+          styles: {
+            handle: {
+              backgroundColor: '#650AAA',
+              border: '1px solid white'
+            },
+            overlay: {
+              border: '1px dashed #650AAA'
+            }
+          }
+        },
+        // delete: {
+        //   allowKeyboardDelete: true,
+        // },
+        // image: {
+        //   allowAltTitleEdit: true,
+        //   allowCompressor: true,
+        //   compressionOptions: {
+        //     maxWidth: 1000,
+        //     maxHeight: 1000,
+        //     quality: 0.8
+        //   }
+        // }
       }
     };
 
