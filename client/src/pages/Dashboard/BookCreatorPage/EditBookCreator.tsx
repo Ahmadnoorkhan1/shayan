@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router";
 import RichTextEditor from "../../../components/RichTextEditor";
 import apiService from "../../../utilities/service/api";
-import { Book, ImageIcon, PackagePlus, ShieldCloseIcon, Loader2 } from "lucide-react";
+import { Book, ImageIcon, PackagePlus, ShieldCloseIcon, Loader2, Save } from "lucide-react";
 import ImageGenerator from "../../../components/ui/ImageGenerator";
 import { Button } from "../../../components/ui/button";
 import Modal from "../../../components/ui/Modal";
@@ -576,6 +576,16 @@ const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
             )}
           </div>
         </div>
+
+        <Button 
+            onClick={handleSave} 
+            className="btn-primary flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-md
+                      shadow-lg hover:shadow-xl
+                      transform transition-all duration-200 hover:-translate-y-0.5 text-base"
+          >
+            <Save className="w-6 h-6" />
+            Save Content
+          </Button>
         <RichTextEditor
           ref={quillRef}
           initialContent={selectedChapter}

@@ -7,6 +7,7 @@ const bookRoutes = require('./Routes/BookRoutes');
 const easyCourseRoutes = require('./Routes/EasyCourseRoutes');
 const generationRoutes = require('./Routes/GenerationRoutes');
 const sharingRoutes = require('./Routes/SharingRoutes');
+const answerCheckRoutes = require('./Routes/AnswerCheckRoutes');
 const cors = require("cors");
 const path = require('path');
 
@@ -30,6 +31,7 @@ app.use('/api/book-creator', bookRoutes);
 app.use('/api/easy-course-creator', easyCourseRoutes);
 app.use('/api', generationRoutes);
 app.use('/api/shared', sharingRoutes);
+app.use('/api', answerCheckRoutes); // This will add the /api/check-answer route
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

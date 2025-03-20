@@ -23,6 +23,7 @@ import AddCourseCreator from './pages/Dashboard/CourseCreatorPage/AddCourseCreat
 import EditCoursePage from './pages/Dashboard/CourseCreatorPage/EditCoursePage'
 import SharedContent from './components/shared/SharedContent'
 import GlobalLoader from './components/shared/GlobalLoader'
+import Home from './pages/onboarding/Home'
 
 function App() {
 
@@ -68,6 +69,8 @@ function App() {
           <Route path="/dashboard/news" element={<NewsPage />} />
         </Route> */}
           <Route path="/shared/:type/:id" element={<SharedContent />} />
+          <Route path="/onboard" element={<Home  />} />
+
 
       </Routes>
     </>

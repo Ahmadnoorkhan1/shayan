@@ -277,12 +277,16 @@ function formatShortAnswer(question: QuizQuestion, editorHtml: string, sharedHtm
   sharedHtml += `
     <div style="margin: 10px 0;">
       <textarea class="short-answer-field" placeholder="Type your answer here" style="width: 100%; min-height: 100px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 12px; resize: vertical;"></textarea>
+      <button type="button" class="check-answer-btn mt-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+        Check Answer
+      </button>
     </div>
     <div class="quiz-feedback correct-feedback" style="display: none; margin-top: 10px; padding: 8px 12px; background-color: #d1fae5; border-radius: 4px; color: #065f46;">
       <p><strong>Suggested Answer:</strong> ${question.correctAnswer}</p>
       <p>${question.explanation || ''}</p>
     </div>
   </div>`;
+  
   return { editor: editorHtml, shared: sharedHtml };
 }
 
