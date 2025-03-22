@@ -4,10 +4,10 @@ import apiService from "../../../utilities/service/api";
 import toast from "react-hot-toast";
 import StepFiveBookCreator from "../../../components/AiToolForms/BookCreator/StepFiveBookCreator";
 import StepFourBookCreator from "../../../components/AiToolForms/BookCreator/StepFourBookCreator";
-import StepsThirdBookCreator from "../../../components/AiToolForms/BookCreator/StepThreeBookCreator";
 import StepOneBookCreator from "../../../components/AiToolForms/BookCreator/StepOneBookCreator";
 import StepTwoBookCreator from "../../../components/AiToolForms/BookCreator/StepTwoBookCreator";
 import { useNavigate } from "react-router";
+import StepBookDetails from "../../../components/AiToolForms/BookCreator/StepBookDetails";
 
 
 const AddBookCreator = () => {
@@ -17,13 +17,15 @@ const AddBookCreator = () => {
   const [bookTitles, setBookTitles] = useState([]);
   const [saveButton, setSaveButton] = useState(false);
   const [chapterFetchCount, setChapterFetchCount] = useState(0); // New state
+  const [bookDetails, setBookDetails] = useState<Record<string, string>>({});
+  const [canContinue, setCanContinue] = useState(false);
   const navigate = useNavigate()
   const steps = [
     { label: "Give A Topic", icon: true },
     { label: "Select Title", icon: true },
-    { label: "Outline", icon: true },
-    { label: "Summary", icon: true },
-    { label: "Pro Course", icon: true },
+    { label: "Book Details", icon: true },  // Step 2
+    { label: "Summary", icon: true },       // Step 3
+    { label: "Pro Book", icon: true },      // Step 4
   ];
 
   const handleForm = (data: any) => {
@@ -53,30 +55,29 @@ const AddBookCreator = () => {
       console.error("Error:", error);
     }
   };
-  const generateSummary = async () => {
-    console.log("generateSummary");
+const generateSummary = async () => {
+  try {
     const getTitle = localStorage.getItem("selectedBookTitle") || "";
-
-    try {
-      const response: any = await apiService.post(
-        "/book-creator/step-3",
-        {
-          prompt: getTitle,
-        },
-        { timeout: 30000 }
-      );
-      if (response.success) {
-        localStorage.setItem("book_summary", response.data);
-        setCurrentStep((prev) => prev + 1);
-      } else {
-        toast.error(response.message);
-      }
-    } catch (error) {
-      console.error("Error:", error
-      );
+    const response: any = await apiService.post(
+      "/book-creator/step-3",
+      {
+        prompt: getTitle,
+        bookDetails: bookDetails, // Include book details in summary generation
+      },
+      { timeout: 30000 }
+    );
+    
+    if (response.success) {
+      localStorage.setItem("book_summary", response.data);
+      setCurrentStep(prev => prev + 1);
+    } else {
+      toast.error(response.message);
     }
-  };
-
+  } catch (error) {
+    console.error("Error:", error);
+    toast.error("Failed to generate summary");
+  }
+};
   let chapterTitles:any = [];
   const generateCompleteBook = async () => {
     const getTitle = localStorage.getItem("selectedBookTitle") || "";
@@ -92,6 +93,7 @@ const AddBookCreator = () => {
             title: getTitle,
             summary: savedBookSummary,
             numberOfChapters,
+            // bookDetails: bookDetails,
           },
         },
         null
@@ -115,6 +117,7 @@ const AddBookCreator = () => {
 
   // Modify the fetchChaptersWithRateLimit function
   const fetchChaptersWithRateLimit = async (getTitle: any, savedCourseSummary: any) => {
+
     const title = chapterTitles;
     const MAX_RETRIES = 5;
 
@@ -200,18 +203,30 @@ const AddBookCreator = () => {
 // In fetchChaptersWithRateLimit, after setChapterFetchCount:
 // setRenderTrigger(prev => prev + 1);
 
+  // Add this function to handle book details updates
+  const handleBookDetailsChange = (details: Record<string, string>) => {
+    console.log("Book details updated:", details); // Add debugging
+    setBookDetails(details);
+    
+    // Check if all required fields are filled (the 5 main fields)
+    const requiredFields = ["mainCharacter", "setting", "conflict", "pacing", "theme"];
+    const allRequiredFieldsFilled = requiredFields.every(field => details[field]);
+    
+    setCanContinue(allRequiredFieldsFilled);
+  };
+
   const renderForm = () => {
     switch (currentStep) {
       case 0:
         return <StepOneBookCreator handleForm={handleForm} />;
-      case 1:
+        case 1: 
         return (
           <StepTwoBookCreator handleStepChange={handleChildStepChange} />
         );
-      case 2:
-        return <StepsThirdBookCreator />;
-      case 3:
-        return <StepFourBookCreator />;
+        case 2:
+          return <StepBookDetails selectedDetails={bookDetails} onDetailsSubmit={handleBookDetailsChange} />;
+        case 3:
+          return <StepFourBookCreator />;
       case 4:
         return <StepFiveBookCreator chaptersContent={chapatersData} chapterFetchCount={chapterFetchCount}  />;
               default:
@@ -250,22 +265,33 @@ const AddBookCreator = () => {
       </div>
     );
   };
-  const conditionalNextButtons = () => {
-    switch (currentStep) {
-      case 0:
-        return <NextButton handleClick={handleStepChange} title="Next"  />;
-      case 1:
-        return null;
-      case 2:
-        return <NextButton handleClick={generateSummary} title="Next" />;
-      case 3:
-        return <NextButton handleClick={generateCompleteBook} title="Next" />;
-      case 4:
-        return <>{saveButton && <NextButton handleClick={saveCompleteBook} title="Save" />}</>;
-      case 5:
-        return null;
-    }
-  };
+ // Update conditionalNextButtons to fix the flow
+const conditionalNextButtons = () => {
+  switch (currentStep) {
+    case 0:
+      return <NextButton handleClick={handleStepChange} title="Next" />;
+    case 1:
+      return null; // Title step doesn't need a button
+    case 2: // Book Details step
+      return (
+        <NextButton 
+          handleClick={() => {
+            if (Object.keys(bookDetails).length >= 5) {
+              generateSummary(); // Only call generateSummary after book details are complete
+            }
+          }} 
+          title="Next" 
+          disabled={Object.keys(bookDetails).length < 5} 
+        />
+      );
+    case 3: // Summary step
+      return <NextButton handleClick={generateCompleteBook} title="Next" />;
+    case 4: // Pro Book step
+      return <>{saveButton && <NextButton handleClick={saveCompleteBook} title="Save" />}</>;
+    default:
+      return null;
+  }
+};
   return (
     <div className="flex items-center p-2 w-full ">
       <Stepper
@@ -280,13 +306,20 @@ const AddBookCreator = () => {
 
 interface ButtonProps {
   handleClick: CallableFunction;
-  title:string
+  title:string;
+  disabled?: boolean;
 }
-const NextButton: React.FC<ButtonProps> = ({ handleClick, title}) => {
+const NextButton: React.FC<ButtonProps> = ({ handleClick, title, disabled }) => {
   return (
     <button
       onClick={() => handleClick()}
-      className="relative inline-flex items-center justify-center px-6 py-3 overflow-hidden font-medium text-white bg-primary bg-opacity-5 transition duration-300 ease-out border-2 border-primary rounded-full shadow-md group"
+      disabled={disabled}
+      className={`relative inline-flex items-center justify-center px-6 py-3 overflow-hidden font-medium text-white 
+        transition duration-300 ease-out border-2 rounded-full shadow-md group
+        ${disabled ? 
+          'bg-gray-200 border-gray-300 cursor-not-allowed' : 
+          'bg-primary bg-opacity-5 border-primary hover:bg-primary'
+        }`}
     >
       <span className="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-primary group-hover:translate-x-0 ease">
         <svg
