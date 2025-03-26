@@ -277,7 +277,7 @@ const conditionalNextButtons = () => {
         <NextButton 
           handleClick={() => {
             if (Object.keys(bookDetails).length >= 5) {
-              generateSummary(); // Only call generateSummary after book details are complete
+              generateSummary();
             }
           }} 
           title="Next" 

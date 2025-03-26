@@ -14,7 +14,6 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
   onDeleteChapter 
 }) => {
 
-  console.log(chapters, "see chapters");
 
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);

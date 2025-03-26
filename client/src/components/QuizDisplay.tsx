@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from './ui/button';
-import { Loader2, RotateCw } from 'lucide-react';
+import { Loader2, RotateCw, Trash2 } from 'lucide-react';
 import { determineQuizType, QuizType } from '../utilities/shared/quizUtils';
 import './QuizDisplay.css';
 
@@ -12,15 +12,17 @@ interface QuizDisplayProps {
   };
   onRegenerateQuestion: (index: number) => void;
   regeneratingQuestionIndex: number;
+  onDeleteQuiz?: () => void; // New optional prop
+
 }
 
 export const QuizDisplay: React.FC<QuizDisplayProps> = ({
   quizContent,
   onRegenerateQuestion,
-  regeneratingQuestionIndex
+  regeneratingQuestionIndex,
+  onDeleteQuiz
 }) => {
 
-console.log(quizContent, "see quiz content");
 
     const renderMultipleChoice = (question: Element) => {
         const questionText = question.querySelector('p')?.innerHTML || '';
@@ -137,6 +139,9 @@ console.log(quizContent, "see quiz content");
   };
 
   return (
+    <>
+
+ 
     <div className="mt-6 border-t pt-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -182,7 +187,23 @@ console.log(quizContent, "see quiz content");
             )}
           </div>
         ))}
+
+
       </div>
     </div>
+    {onDeleteQuiz && (
+  <div className="flex justify-end mt-6">
+          <Button 
+            onClick={onDeleteQuiz}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete Quiz</span>
+          </Button>
+          </div>
+        )}
+    </>
   );
 };

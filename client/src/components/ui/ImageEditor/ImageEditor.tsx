@@ -12,16 +12,82 @@ interface ImageEditorProps {
 
 const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) => {
   const [isImgEditorShown, setIsImgEditorShown] = useState<boolean>(true);
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
-  const handleSave = (editedImageObject: any) => {
-    console.log('Edited Image Object:', editedImageObject);
-    if (editedImageObject?.imageBase64) {
-      onSave(editedImageObject.imageBase64);
-      setIsImgEditorShown(false);
+  // Function to compress the image before saving
+  const compressImage = async (imageBase64: string): Promise<string> => {
+    setIsCompressing(true);
+    
+    try {
+      // Create an image element to load the base64 data
+      const img = new Image();
+      img.src = imageBase64;
+      
+      // Wait for the image to load
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+      
+      // Create a canvas to resize and compress the image
+      const canvas = document.createElement('canvas');
+      
+      // Calculate dimensions - limit to max 1200px while preserving aspect ratio
+      const MAX_WIDTH = 1200;
+      const MAX_HEIGHT = 1200;
+      let width = img.width;
+      let height = img.height;
+      
+      // Resize if needed while maintaining aspect ratio
+      if (width > MAX_WIDTH) {
+        height = Math.round(height * (MAX_WIDTH / width));
+        width = MAX_WIDTH;
+      }
+      
+      if (height > MAX_HEIGHT) {
+        width = Math.round(width * (MAX_HEIGHT / height));
+        height = MAX_HEIGHT;
+      }
+      
+      // Set canvas dimensions
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Draw the image onto the canvas with the new dimensions
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(img, 0, 0, width, height);
+      
+      // Convert to compressed JPEG format with quality 0.85 (85%)
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+      
+      console.log('Original size:', Math.round(imageBase64.length / 1024), 'KB');
+      console.log('Compressed size:', Math.round(compressedBase64.length / 1024), 'KB');
+      
+      return compressedBase64;
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      return imageBase64; // Return original if compression fails
+    } finally {
+      setIsCompressing(false);
     }
   };
 
- 
+  const handleSave = async (editedImageObject: any) => {
+    console.log('Edited Image Object received');
+    if (editedImageObject?.imageBase64) {
+      try {
+        // Compress the image before saving
+        const compressedImage = await compressImage(editedImageObject.imageBase64);
+        onSave(compressedImage);
+      } catch (error) {
+        console.error('Error processing image:', error);
+        // Fallback to original if compression fails
+        onSave(editedImageObject.imageBase64);
+      } finally {
+        setIsImgEditorShown(false);
+      }
+    }
+  };
+
   const config: any = {
     source: initialImageUrl,
     onSave: handleSave,
@@ -33,7 +99,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) =>
     },
     Rotate: { 
       angle: 90, 
-      componentType: 'slider' as const // Fix TypeScript error by using const assertion
+      componentType: 'slider' as const
     },
     Crop: {
       presetsItems: [
@@ -52,8 +118,8 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) =>
       minHeight: 100,
     },
     tabsIds: [TABS.ADJUST, TABS.ANNOTATE, TABS.FILTERS],
-    defaultTabId: TABS.ANNOTATE, // Changed from TABS.ADJUST to TABS.ANNOTATE
-    defaultToolId: TOOLS.TEXT, // Changed from TOOLS.CROP to TOOLS.TEXT (or any other annotation tool)
+    defaultTabId: TABS.ANNOTATE,
+    defaultToolId: TOOLS.TEXT,
     onBeforeComplete: () => true,
     showInModal: false,
     translations: {
@@ -61,6 +127,10 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) =>
       cancel: 'Cancel',
       reset: 'Reset All',
     },
+    // Explicitly set lower export quality
+    Finetune: {
+      quality: 85 // JPEG quality 0-100
+    }
   };
 
   if (!initialImageUrl) {
@@ -73,24 +143,31 @@ const ImageEditor: React.FC<ImageEditorProps> = ({ initialImageUrl, onSave }) =>
 
   return (
     <div className="w-full bg-white rounded-lg overflow-hidden">
-    {isImgEditorShown && (
-      <div className="flex flex-col">
-      
-        <div className="relative h-[450px] md:h-[500px]"> {/* Adjusted height */}
-          {isImgEditorShown && initialImageUrl && (
-            <FilerobotImageEditor
-              {...config}
-              savingPixelRatio={2} // Reduced for better performance
-              previewPixelRatio={2}
-              observePluginContainerSize
-              showInModal={false}
-              className="w-full h-full" // Added className
-            />
-          )}
+      {isCompressing && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 text-white">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-white mb-2"></div>
+            <p>Optimizing image size...</p>
+          </div>
         </div>
-      </div>
-    )}
-  </div>
+      )}
+      {isImgEditorShown && (
+        <div className="flex flex-col">
+          <div className="relative h-[450px] md:h-[500px]">
+            {isImgEditorShown && initialImageUrl && (
+              <FilerobotImageEditor
+                {...config}
+                savingPixelRatio={1} // Reduced from 2 to 1 for smaller file size
+                previewPixelRatio={1.5}
+                observePluginContainerSize
+                showInModal={false}
+                className="w-full h-full"
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

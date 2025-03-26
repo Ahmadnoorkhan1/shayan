@@ -153,6 +153,8 @@ const EditCoursePage = () => {
     
   };
 
+console.log(selectedChapter, "see selected Chapter");
+
   const handleSave = async () => {
     try {
       if (selectedChapterIndex === -1) return;
@@ -375,77 +377,227 @@ const EditCoursePage = () => {
 
   
 
-const handleRegenerateQuestion = async (questionIndex: number) => {
-  if (!selectedChapter || !currentQuizContent) {
-    toast.error('No quiz content available');
+  const handleRegenerateQuestion = async (questionIndex: number) => {
+    if (!selectedChapter || !currentQuizContent) {
+      toast.error('No quiz content available');
+      return;
+    }
+  
+    setRegeneratingQuestionIndex(questionIndex);
+    
+    try {
+      // Store the original quiz content as backup
+      const originalQuizContent = {...currentQuizContent};
+      
+      // Create a parser and parse the current chapter HTML
+      const parser = new DOMParser();
+      
+      // CRITICAL: We need to extract CLEAN chapter content with no quiz data at all
+      // This will be what we show in the editor and what we use as base for saving
+      const doc = parser.parseFromString(selectedChapter, 'text/html');
+      
+      // Remove any quiz sections that might already be in the editor
+      const quizSections = doc.querySelectorAll('h2');
+      quizSections.forEach(section => {
+        if (section.textContent?.trim().toLowerCase() === 'exercises') {
+          let currentNode = section as any;
+          const nodesToRemove = [];
+          nodesToRemove.push(currentNode);
+          
+          while (currentNode.nextElementSibling) {
+            currentNode = currentNode.nextElementSibling;
+            nodesToRemove.push(currentNode);
+            if (currentNode.tagName === 'H2') break;
+          }
+          
+          nodesToRemove.forEach(node => {
+            if (node.parentNode) node.parentNode.removeChild(node);
+          });
+        }
+      });
+      
+      // Get the clean chapter content without any quiz sections
+      const cleanContent = doc.body.innerHTML;
+      const textContent = doc.body.textContent || '';
+      const quizType = determineQuizType(currentQuizContent.sharedContent);
+      
+      const response = await apiService.post('/generate-quiz', {
+        chapterContent: textContent,
+        quizType,
+        questionCount: 1,
+        preserveStructure: true,
+        questionIndex
+      }, { timeout: 60000 });
+  
+      if (response.success && response.data) {
+        try {
+          // Format the quiz HTML with the new question
+          const formattedQuiz = await formatQuizHTML({
+            ...response.data,
+            existingQuiz: currentQuizContent,
+            replaceQuestionIndex: questionIndex
+          });
+  
+          // IMPORTANT FIX: Ensure the editor content has the h2 heading
+          let editorContent = formattedQuiz.editorQuizHTML;
+          if (!editorContent.trim().startsWith('<h2>Exercises</h2>')) {
+            editorContent = `<h2>Exercises</h2>${editorContent}`;
+          }
+  
+          // Update the quiz content state to show in the separate display
+          setCurrentQuizContent({
+            editorContent: editorContent,
+            sharedContent: formattedQuiz.sharedQuizHTML
+          });
+  
+          // IMPORTANT: Create the final chapter content with ONLY the clean content
+          // in the visible editor part, and proper quiz content as metadata
+          const updatedChapters = [...chapters];
+          const finalChapterContent = formatQuizContent(
+            editorContent,  // Using our fixed editor content
+            formattedQuiz.sharedQuizHTML,  // This contains the interactive quiz
+            selectedChapterTitle,
+            cleanContent     // This is the clean chapter content WITHOUT any quiz sections
+          );
+          
+          updatedChapters[selectedChapterIndex] = finalChapterContent;
+  
+          const saveResponse = await apiService.post(
+            `/course-creator/updateCourse/${id}/course`,
+            {
+              content: JSON.stringify(updatedChapters)
+            }
+          );
+  
+          if (saveResponse.success) {
+            setChapters(updatedChapters);
+            
+            // CRITICAL: Update the editor to show only the clean content,
+            // NOT the content with the quiz embedded
+            setSelectedChapter(cleanContent);
+            
+            toast.success('Question regenerated successfully');
+          } else {
+            // Revert to original quiz content on save failure
+            setCurrentQuizContent(originalQuizContent);
+            toast.error('Failed to save regenerated question');
+          }
+        } catch (error) {
+          console.error('Error processing regenerated question:', error);
+          setCurrentQuizContent(originalQuizContent);
+          toast.error('Failed to process regenerated question');
+        }
+      } else {
+        toast.error(response.message || 'Failed to regenerate question');
+      }
+    } catch (error) {
+      console.error('Error regenerating question:', error);
+      toast.error('Error regenerating question');
+    } finally {
+      setRegeneratingQuestionIndex(-1);
+    }
+  };
+
+
+const handleDeleteQuiz = async () => {
+  if (selectedChapterIndex === -1 || !currentQuizContent) {
+    toast.error('No quiz available to delete');
     return;
   }
 
-  setRegeneratingQuestionIndex(questionIndex);
-  
   try {
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = selectedChapter;
-    const textContent = tempDiv.textContent || '';
-    const quizType = determineQuizType(currentQuizContent.sharedContent);
+    // Get the current chapter HTML
+    const originalChapter = chapters[selectedChapterIndex];
     
-    const response = await apiService.post('/generate-quiz', {
-      chapterContent: textContent,
-      quizType,
-      questionCount: 1,
-      preserveStructure: true,
-      questionIndex
-    }, { timeout: 60000 });
-
-    if (response.success && response.data) {
-      // Add the existing quiz content to preserve structure
-      const formattedQuiz = await formatQuizHTML({
-        ...response.data,
-        existingQuiz: currentQuizContent,
-        replaceQuestionIndex: questionIndex
-      });
-
-      // Update quiz content with preserved structure
-      setCurrentQuizContent({
-        editorContent: formattedQuiz.editorQuizHTML,
-        sharedContent: formattedQuiz.sharedQuizHTML
-      });
-
-      // Update chapter content
-      const updatedChapters = [...chapters];
-      const finalChapterContent = formatQuizContent(
-        formattedQuiz.editorQuizHTML,
-        formattedQuiz.sharedQuizHTML,
-        selectedChapterTitle,
-        selectedChapter
-      );
-      
-      updatedChapters[selectedChapterIndex] = finalChapterContent;
-
-      const saveResponse = await apiService.post(
-        `/course-creator/updateCourse/${id}/course`,
-        {
-          content: JSON.stringify(updatedChapters)
+    // STEP 1: Remove visible quiz content from the editor view
+    // Parse the HTML to properly manipulate the DOM
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(selectedChapter, 'text/html');
+    
+    // Find and remove only quiz sections from the editor content
+    const quizSections = doc.querySelectorAll('h2');
+    let quizFound = false;
+    
+    quizSections.forEach(section => {
+      if (section.textContent?.trim().toLowerCase() === 'exercises') {
+        quizFound = true;
+        let currentNode = section as any;
+        const nodesToRemove = [];
+        nodesToRemove.push(currentNode);
+        
+        // Mark subsequent nodes for removal until the next h2 or end
+        while (currentNode.nextElementSibling) {
+          currentNode = currentNode.nextElementSibling;
+          nodesToRemove.push(currentNode);
+          if (currentNode.tagName === 'H2') break;
         }
-      );
-
-      if (saveResponse.success) {
-        setChapters(updatedChapters);
-        toast.success('Question regenerated successfully');
-      } else {
-        toast.error('Failed to save regenerated question');
+        
+        // Remove the marked nodes
+        nodesToRemove.forEach(node => {
+          if (node.parentNode) node.parentNode.removeChild(node);
+        });
       }
+    });
+    
+    // Get the clean content for the editor view
+    const cleanEditorContent = doc.body.innerHTML;
+    
+    // STEP 2: Remove ALL quiz data from the chapter content
+    let cleanChapterContent = originalChapter
+      // Remove the editor quiz section (<h2>Exercises</h2> and everything after it until the next heading)
+      .replace(/<h2>Exercises<\/h2>[\s\S]*?(?=<h2>|<!-- SHARED_QUIZ_START -->|$)/, '')
+      // Remove the shared quiz section with markers 
+      .replace(/<!-- SHARED_QUIZ_START -->[\s\S]*?<!-- SHARED_QUIZ_END -->/, '')
+      // Remove any quiz data comments
+      .replace(/<!-- quiz data:[\s\S]*?-->/, '')
+      // Clean up any double spaces or line breaks that might be left
+      .replace(/\s+/g, ' ')
+      .trim();
+      
+    // Verify the content is actually cleaned
+    const hasQuizContent = cleanChapterContent.includes('<h2>Exercises</h2>') || 
+                          cleanChapterContent.includes('<!-- SHARED_QUIZ_START -->') ||
+                          cleanChapterContent.includes('quiz data:');
+                          
+    if (hasQuizContent) {
+      console.warn('Quiz content still detected after cleaning, applying stronger cleaning methods');
+      
+      // More aggressive cleaning if needed
+      cleanChapterContent = cleanChapterContent
+        .replace(/<h2>Exercises<\/h2>[\s\S]*/, '')
+        .replace(/<!-- SHARED_QUIZ_START -->[\s\S]*/, '')
+        .replace(/<!--[\s\S]*?quiz[\s\S]*?-->/, '');
+    }
+    
+    // STEP 3: Update the chapter with clean content
+    const updatedChapters = [...chapters];
+    updatedChapters[selectedChapterIndex] = cleanChapterContent;
+
+    const response = await apiService.post(
+      `/course-creator/updateCourse/${id}/course`,
+      {
+        content: JSON.stringify(updatedChapters)
+      }
+    );
+    
+    if(response.success) {
+      // Update local state
+      setChapters(updatedChapters);
+      setCurrentQuizContent(null);
+      
+      // Update the editor with the clean content
+      setSelectedChapter(cleanEditorContent);
+      
+      console.log('Quiz successfully deleted, chapter content cleaned');
+      toast.success('Quiz deleted successfully');
     } else {
-      toast.error(response.message || 'Failed to regenerate question');
+      toast.error('Failed to delete quiz');
     }
   } catch (error) {
-    console.error('Error regenerating question:', error);
-    toast.error('Error regenerating question');
-  } finally {
-    setRegeneratingQuestionIndex(-1);
+    console.error('Error deleting quiz:', error);
+    toast.error('Error deleting quiz');
   }
 };
-  console.log(currentQuizContent, "++++++++++++++++++++++")
 
   if (loading) return <div className="p-6">Loading...</div>;
   if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
@@ -525,15 +677,14 @@ onClick={toggleQuizModal}
           </div>
         </div>
         <div className="flex justify-end ">
-          <Button 
-            onClick={handleSave} 
-            className="btn-primary flex items-center gap-2 px-6 py-3 text-white font-semibold rounded-md
-                      shadow-lg hover:shadow-xl
-                      transform transition-all duration-200 hover:-translate-y-0.5 text-base"
-          >
-            <Save className="w-6 h-6" />
-            Save Content
-          </Button>
+         <Button 
+           onClick={handleSave} 
+           className="btn-primary flex items-center gap-1 px-3 py-1.5 text-white text-sm font-medium 
+                     rounded shadow hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+         >
+           <Save className="w-4 h-4" />
+           Save Content
+         </Button>
         </div>
         <RichTextEditor
          ref={quillRef}
@@ -550,6 +701,7 @@ onClick={toggleQuizModal}
     quizContent={currentQuizContent}
     onRegenerateQuestion={handleRegenerateQuestion}
     regeneratingQuestionIndex={regeneratingQuestionIndex}
+    onDeleteQuiz={handleDeleteQuiz}
   />
 )}
       </div>

@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import EditorStyles from './EditorStyles';
 import EditorToolbar from './EditorToolbar';
 import BlotFormatter2 from '@enzedonline/quill-blot-formatter2';
-import { Save } from 'lucide-react'; // Import Save icon
+import { Save, Edit, Image } from 'lucide-react';
 
 // Register the BlotFormatter2 module with Quill
 if (typeof window !== 'undefined') {
@@ -31,6 +31,8 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
     const [content, setContent] = useState(initialContent);
     const isResizingRef = useRef(false);
     const editorRef = useRef<HTMLDivElement | null>(null);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
       if (initialContent) {
@@ -48,104 +50,6 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
       }
     }, [imageUrl, ref]);
 
-    // Setup image double-click handler for editing
-    useEffect(() => {
-      // Function to add event listeners to all images
-      const addImageListeners = () => {
-        // If no editor or no onImageClick handler, skip
-        if (!ref || !('current' in ref) || !ref.current || !onImageClick) return;
-        
-        // Get the editor element
-        const editor = ref.current.getEditor();
-        const editorEl = editor.root;
-        
-        // Find all images in the editor
-        const images = editorEl.querySelectorAll('img');
-        
-        // Add double-click handlers to each image
-        images.forEach(img => {
-          // Remove existing listeners first to avoid duplicates
-          img.removeEventListener('dblclick', handleImageDblClick);
-          
-          // Add the double-click handler
-          img.addEventListener('dblclick', handleImageDblClick);
-          
-          // Mark the image as having a listener
-          img.setAttribute('data-has-listener', 'true');
-        });
-      };
-
-      // Handler for double-clicks
-      const handleImageDblClick = (event: Event) => {
-        // Only process if we're not currently resizing
-        // if (isResizingRef.current) return;
-        
-        event.preventDefault();
-        event.stopPropagation();
-        
-        const imgEl = event.target as HTMLImageElement;
-        const imageUrl = imgEl.getAttribute('src');
-        
-        if (imageUrl && onImageClick) {
-          console.log('Double click detected on image:', imageUrl);
-          onImageClick(imageUrl);
-        }
-      };
-      
-      // Call function to add listeners initially
-      addImageListeners();
-      
-      // Set up a mutation observer to watch for new images
-      if (ref && 'current' in ref && ref.current) {
-        const editor = ref.current.getEditor();
-        const editorEl = editor.root;
-        
-        // Create a mutation observer
-        const observer = new MutationObserver((mutations) => {
-          // Check if any images were added
-          let shouldAddListeners = false;
-          
-          mutations.forEach(mutation => {
-            if (mutation.type === 'childList') {
-              mutation.addedNodes.forEach(node => {
-                // Check direct node
-                if (node.nodeName === 'IMG') {
-                  shouldAddListeners = true;
-                }
-                
-                // Check children of added nodes
-                if (node.nodeType === 1) {
-                  const el = node as Element;
-                  if (el.querySelector('img')) {
-                    shouldAddListeners = true;
-                  }
-                }
-              });
-            }
-          });
-          
-          // If images were added, update listeners
-          if (shouldAddListeners) {
-            addImageListeners();
-          }
-        });
-        
-        // Start observing
-        observer.observe(editorEl, { 
-          childList: true, 
-          subtree: true 
-        });
-        
-        // Cleanup
-        return () => {
-          observer.disconnect();
-          const images = editorEl.querySelectorAll('img');
-          images.forEach(img => {
-            img.removeEventListener('dblclick', handleImageDblClick);
-          });
-        };
-      }
-    }, [ref, onImageClick]);
 
     // Track resize operations
     useEffect(() => {
@@ -154,6 +58,18 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
         const target = e.target as HTMLElement;
         if (target.classList.contains('blot-formatter__resize-handle')) {
           isResizingRef.current = true;
+        } else if (target.tagName === 'IMG') {
+          const imgSrc = (target as HTMLImageElement).src;
+          setSelectedImage(imgSrc);
+        } else {
+          // If clicking on anything else except edit buttons, clear selection
+          const isEditButton = target.closest('button') && 
+            (target.closest('button')?.title?.includes('Edit') || 
+             target.closest('button')?.innerHTML?.includes('Edit'));
+          
+          if (!isEditButton) {
+            setSelectedImage(null);
+          }
         }
       };
 
@@ -180,10 +96,6 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
       onContentChange(value);
     };
 
-    // const handleSaveClick = () => {
-    //   onSave();
-    // };
-
     const modules = {
       toolbar: {
         container: [
@@ -199,10 +111,10 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
         ],
       },
       blotFormatter2: {
-        // align: {
-        //   allowAligning: true,
-        //   alignments: ['left', 'center', 'right']
-        // },
+        align: {
+          allowAligning: true,
+          alignments: ['left', 'center', 'right']
+        },
         resize: {
           allowResizing: true,
           styles: {
@@ -215,32 +127,34 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
             }
           }
         },
-        // delete: {
-        //   allowKeyboardDelete: true,
-        // },
-        // image: {
-        //   allowAltTitleEdit: true,
-        //   allowCompressor: true,
-        //   compressionOptions: {
-        //     maxWidth: 1000,
-        //     maxHeight: 1000,
-        //     quality: 0.8
-        //   }
-        // }
       }
     };
 
     return (
-      <div className="flex flex-col mx-auto gap-4 mt-8 w-full">
+      <div className="flex flex-col mx-auto gap-4 -mt-8 w-full">
         <EditorStyles />
         
-        {/* Top save button */}
-        <div className="flex justify-between items-center mb-4">
-          <EditorToolbar editorRef={ref as React.RefObject<ReactQuill>} />
-       
-        </div>
+  {/* Top toolbar area */}
+  <div className="flex justify-between items-center">
+    <EditorToolbar editorRef={ref as React.RefObject<ReactQuill>} />
+  </div>
+  
+  {/* Image edit button - reserve space with visibility hidden instead of conditional rendering */}
+  <div className="flex items-center justify-start "> {/* Fixed height to prevent layout shifts */}
+    <Button
+      onClick={() => {
+        onImageClick && selectedImage && onImageClick(selectedImage);
+      }}
+      className={`bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-4 py-2 rounded-md shadow-md transition-all duration-200 hover:shadow-lg ${selectedImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+      title="Edit the selected image"
+    >
+      <Edit className="h-4 w-4" />
+      <span>Edit Image</span>
+    </Button>
+  </div>
         
-        <div className="editor-wrapper" ref={editorRef}>
+        {/* Editor area */}
+        <div className="editor-wrapper relative" ref={editorRef}>
           <ReactQuill
             ref={ref}
             value={content}
@@ -249,10 +163,9 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
             theme="snow"
             preserveWhitespace
           />
+          
+        
         </div>
-
-        {/* Bottom save button - more prominent */}
-  
       </div>
     );
   }

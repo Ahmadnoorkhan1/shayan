@@ -4,9 +4,14 @@ import { CustomSelect } from '../../../components/ui/Select';
 interface BookDetailsProps {
   onDetailsSubmit: (details: Record<string, string>) => void;
   selectedDetails?: Record<string, string>;
+  bookType?: string; // Optional book type hint
 }
 
-const StepBookDetails: React.FC<BookDetailsProps> = ({ onDetailsSubmit, selectedDetails: initialDetails = {} }) => {
+const StepBookDetails: React.FC<BookDetailsProps> = ({ 
+  onDetailsSubmit, 
+  selectedDetails: initialDetails = {},
+  bookType 
+}) => {
   const [selectedDetails, setSelectedDetails] = useState<Record<string, string>>(initialDetails);
   const [activeDetail, setActiveDetail] = useState<string | null>(null);
   const [characterNames, setCharacterNames] = useState<string[]>(
@@ -14,65 +19,122 @@ const StepBookDetails: React.FC<BookDetailsProps> = ({ onDetailsSubmit, selected
   );
   const [newCharacterName, setNewCharacterName] = useState<string>('');
 
+  // Detect book type from title or use provided type
+  useEffect(() => {
+    const storedTitle = localStorage.getItem("selectedBookTitle") || "";
+    const detectedType = detectBookType(storedTitle);
+    console.log("Detected book type:", detectedType);
+  }, []);
+
+  const detectBookType = (title: string): string => {
+    const lowerTitle = title.toLowerCase();
+    if (/learn|study|guide|course|education|teach|tutorial/.test(lowerTitle)) return 'educational';
+    if (/tech|code|program|software|data|digital|computer|ai|ml/.test(lowerTitle)) return 'technical';
+    if (/story|tale|adventure|fantasy|mystery|romance|fiction|novel/.test(lowerTitle)) return 'fiction';
+    if (/grow|improve|success|motivation|inspiration|self-help|development/.test(lowerTitle)) return 'selfHelp';
+    return 'general';
+  };
+
+  // Enhanced options with versatile choices for different book types
   const bookDetails = [
     {
       id: "mainCharacter",
       name: "Main Character Type",
       options: [
+        // Fiction options
         "Young Hero/Heroine",
         "Wise Mentor",
         "Anti-hero",
         "Ensemble Cast",
         "Historical Figure",
-        "Mythical Being"
+        "Mythical Being",
+        // Non-fiction options
+        "Subject Matter Expert",
+        "Narrator/Guide",
+        "Case Study Subject",
+        "Reader (Second Person)",
+        "Biographical Subject",
+        "None (Concept-focused)"
       ]
     },
     {
       id: "setting",
       name: "Story Setting",
       options: [
+        // Fiction settings
         "Modern Day",
         "Historical Period",
         "Fantasy World",
         "Future/Sci-fi",
         "Multiple Timelines",
-        "Urban Environment"
+        "Urban Environment",
+        // Non-fiction settings
+        "Academic Context",
+        "Professional Environment",
+        "Educational Setting",
+        "Real-world Applications",
+        "Theoretical Framework",
+        "Global Perspective"
       ]
     },
     {
       id: "conflict",
       name: "Main Conflict",
       options: [
+        // Fiction conflicts
         "Person vs Nature",
         "Person vs Society",
         "Person vs Self",
         "Person vs Technology",
         "Person vs Supernatural",
-        "Multiple Conflicts"
+        "Multiple Conflicts",
+        // Non-fiction conflicts/challenges
+        "Knowledge Gap",
+        "Practical Challenge",
+        "Common Misconception",
+        "Competing Theories",
+        "Implementation Difficulty",
+        "Learning Curve"
       ]
     },
     {
       id: "pacing",
       name: "Story Pacing",
       options: [
+        // Fiction pacing
         "Fast-paced Action",
         "Gradual Build-up",
         "Multiple Plot Lines",
         "Character-driven",
         "Mystery/Suspense",
-        "Epic Journey"
+        "Epic Journey",
+        // Non-fiction pacing
+        "Progressive Learning",
+        "Step-by-Step Guide",
+        "Conceptual Exploration",
+        "Quick Reference",
+        "Deep Dive Analysis",
+        "Mixed Approach"
       ]
     },
     {
       id: "theme",
       name: "Central Theme",
       options: [
+        // Fiction themes
         "Coming of Age",
         "Good vs Evil",
         "Love & Loss",
         "Power & Corruption",
         "Redemption",
-        "Discovery & Adventure"
+        "Discovery & Adventure",
+        // Non-fiction themes
+        "Innovation & Progress",
+        "Problem Solving",
+        "Knowledge Acquisition",
+        "Practical Application",
+        "Expert Mastery",
+        "Paradigm Shift"
       ]
     }
   ];

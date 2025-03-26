@@ -138,6 +138,8 @@ export const formatQuizHTML = (quizData: QuizResponse & {
           const newEditorContent = tempEditor.querySelector('.quiz-question');
           const newSharedContent = tempShared.querySelector('.quiz-question');
 
+          console.log(newEditorContent, newSharedContent);
+
           if (newEditorContent && newSharedContent) {
             editorTarget.replaceWith(newEditorContent);
             sharedTarget.replaceWith(newSharedContent);
