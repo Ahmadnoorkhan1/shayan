@@ -20,11 +20,22 @@ const Stepper: FC<StepperProps> = ({ currentStep, steps }) => {
             <li
               key={index}
               className={`
-                relative flex md:flex-1 items-center 
-                ${index !== steps.length - 1 ? 'md:pr-8' : ''}
+                relative flex items-center 
+                ${index !== steps.length - 1 ? 'pr-2 sm:pr-4 md:pr-8' : ''}
                 ${isClickable ? 'cursor-pointer' : ''}
+                ${index !== 0 ? 'pl-2 sm:pl-4' : ''}
               `}
             >
+              {/* Connector line */}
+              {index !== 0 && (
+                <div 
+                  className={`
+                    hidden sm:block absolute left-0 top-1/2 h-0.5 w-full -translate-y-1/2
+                    ${isCompleted ? 'bg-primary' : 'bg-gray-200'}
+                  `} 
+                  style={{width: 'calc(100% - 2.5rem)', left: '-50%', zIndex: 0}}
+                />
+              )}
               
               {/* Step indicator */}
               <div className={`
@@ -35,30 +46,34 @@ const Stepper: FC<StepperProps> = ({ currentStep, steps }) => {
               `}>
                 <span className={`
                   flex items-center justify-center
-                  w-8 h-8 md:w-10 md:h-10 rounded-full
-                  text-xs md:text-sm font-semibold
+                  w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 rounded-full
+                  text-xs md:text-sm font-semibold shrink-0
                   transition-all duration-300
                   ${isActive ? "bg-purple-100 text-primary ring-2 ring-purple-200" : ""}
                   ${isCompleted ? "bg-primary text-white" : "bg-gray-100"}
                   ${!isActive && !isCompleted ? "text-gray-500" : ""}
                 `}>
                   {isCompleted ? (
-                    <CheckCircle className="w-5 h-5 md:w-6 md:h-6" />
+                    <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6" />
                   ) : (
-                    <span>{index + 1}</span>
+                    <span className="text-[10px] sm:text-xs md:text-sm">{index + 1}</span>
                   )}
                 </span>
                 
                 {/* Step label */}
-                <span className={`
-                  ml-2 md:ml-3 max-w-[80px] md:max-w-none
-                  whitespace-normal text-left text-xs md:text-sm
-                  ${isActive ? "font-semibold text-primary" : ""}
-                  ${isCompleted ? "font-medium text-primary" : ""}
-                  ${!isActive && !isCompleted ? "text-gray-500" : ""}
+                <div className={`
+                  ml-1 sm:ml-2 md:ml-3 flex-shrink
+                  w-14 sm:w-20 md:w-auto lg:max-w-none
                 `}>
-                  {step.label}
-                </span>
+                  <span className={`
+                    block text-left text-[10px] leading-tight sm:text-xs md:text-sm
+                    ${isActive ? "font-semibold text-primary" : ""}
+                    ${isCompleted ? "font-medium text-primary" : ""}
+                    ${!isActive && !isCompleted ? "text-gray-500" : ""}
+                  `}>
+                    {step.label}
+                  </span>
+                </div>
               </div>
             </li>
           );
@@ -100,7 +115,7 @@ const CourseForm: FC<CourseFormProps> = ({
 
 // Add scrollbar-hide utility if not already defined in your app
 const ScrollbarStyles = () => (
-  <style >{`
+  <style  >{`
     .scrollbar-hide {
       -ms-overflow-style: none;
       scrollbar-width: none;

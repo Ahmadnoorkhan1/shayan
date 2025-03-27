@@ -791,106 +791,121 @@ console.log(selectedChapter, "-----------")
 
   return (
     <React.Fragment>
-    <div className="flex flex-col lg:flex-row p-2 md:p-4 gap-4 lg:gap-6 max-w-full overflow-hidden">
-      {/* Main editing area */}
-      <div className=" p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden max-w-4xl ">
-      {/* Header section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2">
-            <Book className="w-5 h-5 text-purple-500 flex-shrink-0" />
-            <h2 className="text-xl font-bold text-purple-600 truncate">Edit Chapter</h2>
-          </div>
-          
-          {/* Actions toolbar */}
-          <div className="flex flex-wrap items-center text-purple-600 gap-2">
-            <Button
-              variant="soft"
-              size="sm"
-              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-              onClick={toggleQuizModal}
-            >
-              <PackagePlus className="w-4 h-4 " />
-              <span className="text-xs whitespace-nowrap">Create Quiz</span>
-            </Button>
-  
-            <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
-  <div className="text-purple-600">
-            <Button
-              variant="soft"
-              size="sm"
-              ref={buttonRef}
-              onClick={() => setShowImageGenerator(!showImageGenerator)}
-              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-              title={showImageGenerator ? "Hide AI Image Generator" : "Generate AI Image"}
-            >
-              <ImageIcon className="w-4 h-4 " />
-              <span className="text-xs whitespace-nowrap">Generate Image</span>
-            </Button>
-            </div>
-            {selectedChapterIndex !== -1 && 
-            chapters[selectedChapterIndex] && 
-            (chapters[selectedChapterIndex].includes('data-cover="true"') || 
-             chapters[selectedChapterIndex].includes('book-cover-image')) && (
-              <Button
-                variant="soft"
-                size="sm"
-                onClick={handleRemoveCoverImage}
-                className="bg-red-100 hover:bg-red-200 transition flex items-center gap-1"
-                title="Remove cover image"
-              >
-                <ShieldCloseIcon className="w-4 h-4 text-red-600" />
-                <span className="text-xs whitespace-nowrap">Remove Cover</span>
-              </Button>
-            )}
-          </div>
-        </div>
-        
-        {/* Save button - now full width on mobile, right-aligned on desktop */}
-        <div className="flex justify-end mb-4">
-          <Button 
-            onClick={handleSave} 
-            className="w-full btn-primary md:w-auto bg-primary text-white flex items-center justify-center gap-2 px-4 py-2
-                      rounded shadow hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save Content</span>
-          </Button>
-        </div>
-        
-        {/* Rich text editor - with proper container to handle responsiveness */}
-        <div className=" w-full overflow-hidden">
-          <RichTextEditor
-            ref={quillRef}
-            initialContent={selectedChapter}
-            imageUrl={AIImage}
-            id={Number(id)}
-            onContentChange={handleContentChange}
-            onSave={handleSave}
-            onImageClick={handleImageClick}
-          />
-        </div>
-  
-        {/* Quiz display area - conditionally shown */}
-        {currentQuizContent && (
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-purple-800 mb-4">Chapter Quiz</h3>
-            <QuizDisplay
-              quizContent={currentQuizContent}
-              onRegenerateQuestion={handleRegenerateQuestion}
-              regeneratingQuestionIndex={regeneratingQuestionIndex}
-              onDeleteQuiz={handleDeleteQuiz}
-            />
-          </div>
-        )}
-      </div>
-      
-      {/* Chapter gallery - now in a scrollable container */}
-      <div className="lg:w-80 lg:flex-shrink-0">
+    {/* Main container with responsive layout changes */}
+    <div className="flex flex-col p-2 md:p-4 gap-4 lg:gap-6 max-w-full overflow-hidden">
+      {/* Chapter gallery - Appears at the top on mobile, moved to side on larger screens */}
+      <div className="w-full lg:hidden">
         <ChapterGallery
           chapters={chapters}
           onSelectChapter={handleChapterSelect}
           onDeleteChapter={handleDeleteChapter}
         />
+      </div>
+      
+      {/* Main editor area and sidebar container for lg+ screens */}
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Main editing area */}
+        <div className="p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden w-full lg:max-w-4xl">
+          {/* Header section */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <Book className="w-5 h-5 text-purple-500 flex-shrink-0" />
+              <h2 className="text-xl font-bold text-purple-600 truncate">Edit Chapter</h2>
+            </div>
+            
+            {/* Actions toolbar */}
+            <div className="flex flex-wrap items-center text-purple-600 gap-2">
+              <Button
+                variant="soft"
+                size="sm"
+                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+                onClick={toggleQuizModal}
+              >
+                <PackagePlus className="w-4 h-4" />
+                <span className="text-xs whitespace-nowrap">Create Quiz</span>
+              </Button>
+    
+              <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
+              
+              <div className="text-purple-600">
+                <Button
+                  variant="soft"
+                  size="sm"
+                  ref={buttonRef}
+                  onClick={() => setShowImageGenerator(!showImageGenerator)}
+                  className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+                  title={showImageGenerator ? "Hide AI Image Generator" : "Generate AI Image"}
+                >
+                  <ImageIcon className="w-4 h-4" />
+                  <span className="text-xs whitespace-nowrap">Generate Image</span>
+                </Button>
+              </div>
+              
+              {selectedChapterIndex !== -1 && 
+              chapters[selectedChapterIndex] && 
+              (chapters[selectedChapterIndex].includes('data-cover="true"') || 
+               chapters[selectedChapterIndex].includes('book-cover-image')) && (
+                <Button
+                  variant="soft"
+                  size="sm"
+                  onClick={handleRemoveCoverImage}
+                  className="bg-red-100 hover:bg-red-200 transition flex items-center gap-1"
+                  title="Remove cover image"
+                >
+                  <ShieldCloseIcon className="w-4 h-4 text-red-600" />
+                  <span className="text-xs whitespace-nowrap">Remove Cover</span>
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Save button - now full width on mobile, right-aligned on desktop */}
+          <div className="flex justify-end mb-4">
+            <Button 
+              onClick={handleSave} 
+              className="w-full md:w-auto btn-primary bg-primary text-white flex items-center justify-center gap-2 px-4 py-2
+                        rounded shadow hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save Content</span>
+            </Button>
+          </div>
+          
+          {/* Rich text editor - with proper container to handle responsiveness */}
+          <div className="w-full overflow-hidden">
+            <RichTextEditor
+              ref={quillRef}
+              initialContent={selectedChapter}
+              imageUrl={AIImage}
+              id={Number(id)}
+              onContentChange={handleContentChange}
+              onSave={handleSave}
+              onImageClick={handleImageClick}
+            />
+          </div>
+    
+          {/* Quiz display area - conditionally shown */}
+          {currentQuizContent && (
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-purple-800 mb-4">Chapter Quiz</h3>
+              <QuizDisplay
+                quizContent={currentQuizContent}
+                onRegenerateQuestion={handleRegenerateQuestion}
+                regeneratingQuestionIndex={regeneratingQuestionIndex}
+                onDeleteQuiz={handleDeleteQuiz}
+              />
+            </div>
+          )}
+        </div>
+        
+        {/* Chapter gallery - Only visible on large screens */}
+        <div className="hidden lg:block lg:w-80 lg:flex-shrink-0">
+          <ChapterGallery
+            chapters={chapters}
+            onSelectChapter={handleChapterSelect}
+            onDeleteChapter={handleDeleteChapter}
+          />
+        </div>
       </div>
     </div>
     
