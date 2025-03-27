@@ -103,7 +103,7 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
   return (
 <div 
   style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} 
-  className="sticky top-0 w-full sm:w-[40%] h-[calc(100vh-4rem)] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden"
+  className="sticky top-0 w-full sm:w-[40%] lg:w-auto h-[90vh] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden"
 >      <div className=" top-0 bg-white z-20 px-4 py-3 border-b border-purple-100">
         <h3 className="text-lg font-semibold text-purple-800 flex items-center">
           <Book className="w-5 h-5 mr-2 text-purple-600" />

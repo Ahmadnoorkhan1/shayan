@@ -84,7 +84,7 @@ const AlertDialog: React.FC<AlertDialogProps> = ({
           {onCancel && (
             <button
               onClick={onCancel}
-              className={`min-w-[100px] px-4 py-2 rounded-md transition-colors ${getButtonStyles(cancelStyle)}`}
+              className={`min-w-[100px] px-4 py-2 rounded-full transition-colors ${getButtonStyles(cancelStyle)}`}
             >
               {cancelText}
             </button>
@@ -93,7 +93,7 @@ const AlertDialog: React.FC<AlertDialogProps> = ({
           {/* Close/Continue button */}
           <button
             onClick={onClose}
-            className="min-w-[100px] px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+            className="min-w-[100px] px-4 py-2 rounded-full border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
           >
             {onCancel ? "Continue Editing" : cancelText}
           </button>
@@ -101,7 +101,7 @@ const AlertDialog: React.FC<AlertDialogProps> = ({
           {/* Confirm button */}
           <button
             onClick={onConfirm}
-            className={`min-w-[100px] px-4 py-2 rounded-md transition-colors ${getButtonStyles(confirmStyle)}`}
+            className={`min-w-[100px] btn-primary px-4 py-2 rounded-full transition-colors ${getButtonStyles(confirmStyle)}`}
           >
             {confirmText}
           </button>

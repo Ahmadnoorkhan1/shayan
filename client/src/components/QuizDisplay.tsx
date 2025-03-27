@@ -138,21 +138,15 @@ export const QuizDisplay: React.FC<QuizDisplayProps> = ({
     }
   };
 
-  return (
-    <>
-
- 
-    <div className="mt-6 border-t pt-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-purple-800">
-            {container?.getAttribute('data-quiz-title') || 'Chapter Quiz'}
-          </h3>
-          <span className="px-2 py-1 text-sm bg-purple-100 text-purple-700 rounded-full">
-            {quizType?.split('-').map(word => 
-              word.charAt(0).toUpperCase() + word.slice(1)
-            ).join(' ')}
-          </span>
+  // Add these style improvements to the component return
+return (
+  <>
+    <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6 overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
+        <h3 className="text-lg font-semibold text-purple-800">Quiz Preview</h3>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Type: {quizType || 'Multiple Choice'}</span>
+          <span className="text-sm text-gray-500">Questions: {questions.length}</span>
         </div>
       </div>
 
@@ -160,22 +154,25 @@ export const QuizDisplay: React.FC<QuizDisplayProps> = ({
         {questions.map((question, index) => (
           <div 
             key={index} 
-            className={quizType === 'flip-card' ? 'flip-card-wrapper' : 'bg-white shadow-sm rounded-lg p-6 border border-gray-200'}
+            className={quizType === 'flip-card' ? 
+              'flip-card-wrapper' : 
+              'bg-white shadow-sm rounded-lg p-4 md:p-6 border border-gray-200'}
           >
             {quizType === 'flip-card' ? (
               renderFlipCard(question)
             ) : (
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1">
+              <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                <div className="flex-1 w-full">
                   <div className="text-sm text-gray-500 mb-3">Question {index + 1}</div>
                   {renderQuestion(question, index)}
                 </div>
+                
                 <Button
                   onClick={() => onRegenerateQuestion(index)}
                   disabled={regeneratingQuestionIndex === index}
                   variant="outline"
                   size="sm"
-                  className="shrink-0 bg-purple-600 text-white"
+                  className="mt-4 md:mt-0 self-end md:self-start shrink-0 bg-purple-600 text-white"
                 >
                   {regeneratingQuestionIndex === index ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -187,23 +184,41 @@ export const QuizDisplay: React.FC<QuizDisplayProps> = ({
             )}
           </div>
         ))}
-
-
       </div>
     </div>
+    
     {onDeleteQuiz && (
-  <div className="flex justify-end mt-6">
-          <Button 
-            onClick={onDeleteQuiz}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Delete Quiz</span>
-          </Button>
-          </div>
-        )}
-    </>
-  );
+      <div className="flex justify-end mt-4">
+        <Button 
+          onClick={onDeleteQuiz}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+        >
+          <Trash2 className="w-4 h-4" />
+          <span>Delete Quiz</span>
+        </Button>
+      </div>
+    )}
+    
+    {/* Additional responsive styles */}
+    <style >{`
+      .flash-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+      }
+      
+      @media (max-width: 640px) {
+        .flash-cards-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      
+      .flip-card-wrapper {
+        min-height: 180px;
+      }
+    `}</style>
+  </>
+);
 };

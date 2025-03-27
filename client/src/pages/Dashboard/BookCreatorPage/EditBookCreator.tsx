@@ -791,129 +791,143 @@ console.log(selectedChapter, "-----------")
 
   return (
     <React.Fragment>
-    <div className="flex flex-col sm:flex-row p-4 space-y-6 sm:space-y-0 sm:space-x-6">
-      <div className="flex-1 p-6 bg-white rounded-lg shadow-md">
-        <div className="flex items-center justify-between mb-4">
+    <div className="flex flex-col lg:flex-row p-2 md:p-4 gap-4 lg:gap-6 max-w-full overflow-hidden">
+      {/* Main editing area */}
+      <div className=" p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden max-w-4xl ">
+      {/* Header section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
-            <Book className="w-5 h-5 text-purple-500" />
-            <h2 className="text-xl font-bold text-purple-800">Edit Chapter</h2>
+            <Book className="w-5 h-5 text-purple-500 flex-shrink-0" />
+            <h2 className="text-xl font-bold text-purple-600 truncate">Edit Chapter</h2>
           </div>
-          <div className="flex relative">
+          
+          {/* Actions toolbar */}
+          <div className="flex flex-wrap items-center text-purple-600 gap-2">
             <Button
-              color="destructive"
               variant="soft"
               size="sm"
-              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center gap-2"
+              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
               onClick={toggleQuizModal}
             >
-              <PackagePlus className="w-5 h-5 text-gray-600" />
-              <span className="text-[12px] text-gray-700">Create Quiz</span>
+              <PackagePlus className="w-4 h-4 " />
+              <span className="text-xs whitespace-nowrap">Create Quiz</span>
             </Button>
-
+  
             <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
+  <div className="text-purple-600">
             <Button
-              color="destructive"
               variant="soft"
               size="sm"
               ref={buttonRef}
               onClick={() => setShowImageGenerator(!showImageGenerator)}
-              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center gap-2"
-              title={
-                showImageGenerator
-                  ? "Hide AI Image Generator"
-                  : "Generate AI Image"
-              }
+              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+              title={showImageGenerator ? "Hide AI Image Generator" : "Generate AI Image"}
             >
-              <ImageIcon className="w-5 h-5 text-gray-600" />
-              <span className="text-sm text-gray-700">Generate AI Image</span>
+              <ImageIcon className="w-4 h-4 " />
+              <span className="text-xs whitespace-nowrap">Generate Image</span>
             </Button>
-
+            </div>
             {selectedChapterIndex !== -1 && 
             chapters[selectedChapterIndex] && 
             (chapters[selectedChapterIndex].includes('data-cover="true"') || 
-            chapters[selectedChapterIndex].includes('book-cover-image')) && (
+             chapters[selectedChapterIndex].includes('book-cover-image')) && (
               <Button
-                color="destructive"
                 variant="soft"
                 size="sm"
                 onClick={handleRemoveCoverImage}
-                className="p-2 rounded-full bg-red-100 hover:bg-red-200 transition flex items-center gap-2 ml-2"
+                className="bg-red-100 hover:bg-red-200 transition flex items-center gap-1"
                 title="Remove cover image"
               >
-                <ShieldCloseIcon className="w-5 h-5 text-red-600" />
-                <span className="text-sm text-red-700">Remove Cover</span>
+                <ShieldCloseIcon className="w-4 h-4 text-red-600" />
+                <span className="text-xs whitespace-nowrap">Remove Cover</span>
               </Button>
             )}
           </div>
         </div>
-<div className="flex justify-end ">
-<Button 
-  onClick={handleSave} 
-  className="btn-primary flex items-center gap-1 px-3 py-1.5 text-white text-sm font-medium 
-            rounded shadow hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
->
-  <Save className="w-4 h-4" />
-  Save Content
-</Button>
-
-          </div>
-        <RichTextEditor
-          ref={quillRef}
-          initialContent={selectedChapter}
-          imageUrl={AIImage}
-          id={Number(id)}
-          onContentChange={handleContentChange}
-          onSave={handleSave}
-          onImageClick={handleImageClick}
         
-        />
-        {/* Add the Quiz Display section after RichTextEditor */}
+        {/* Save button - now full width on mobile, right-aligned on desktop */}
+        <div className="flex justify-end mb-4">
+          <Button 
+            onClick={handleSave} 
+            className="w-full btn-primary md:w-auto bg-primary text-white flex items-center justify-center gap-2 px-4 py-2
+                      rounded shadow hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
+          >
+            <Save className="w-4 h-4" />
+            <span>Save Content</span>
+          </Button>
+        </div>
+        
+        {/* Rich text editor - with proper container to handle responsiveness */}
+        <div className=" w-full overflow-hidden">
+          <RichTextEditor
+            ref={quillRef}
+            initialContent={selectedChapter}
+            imageUrl={AIImage}
+            id={Number(id)}
+            onContentChange={handleContentChange}
+            onSave={handleSave}
+            onImageClick={handleImageClick}
+          />
+        </div>
+  
+        {/* Quiz display area - conditionally shown */}
         {currentQuizContent && (
-  <QuizDisplay
-    quizContent={currentQuizContent}
-    onRegenerateQuestion={handleRegenerateQuestion}
-    regeneratingQuestionIndex={regeneratingQuestionIndex}
-    onDeleteQuiz={handleDeleteQuiz} // Add this prop
-  />
-)}
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <h3 className="text-lg font-semibold text-purple-800 mb-4">Chapter Quiz</h3>
+            <QuizDisplay
+              quizContent={currentQuizContent}
+              onRegenerateQuestion={handleRegenerateQuestion}
+              regeneratingQuestionIndex={regeneratingQuestionIndex}
+              onDeleteQuiz={handleDeleteQuiz}
+            />
+          </div>
+        )}
       </div>
-      <ChapterGallery
-        chapters={chapters}
-        onSelectChapter={handleChapterSelect}
-        onDeleteChapter={handleDeleteChapter}
-      />
+      
+      {/* Chapter gallery - now in a scrollable container */}
+      <div className="lg:w-80 lg:flex-shrink-0">
+        <ChapterGallery
+          chapters={chapters}
+          onSelectChapter={handleChapterSelect}
+          onDeleteChapter={handleDeleteChapter}
+        />
+      </div>
     </div>
     
-    {/* Image Editor Modal */}
+    {/* Modals and dialog boxes - unchanged */}
     <Modal
       isOpen={openEditor}
-      onClose={() => {
-        setOpenEditor(false);
-        setCurrentEditingImage(null);
-      }}
+      onClose={() => setOpenEditor(false)}
       title="Image Editor"
     >
-      {currentEditingImage && (
-        <ImageEditor
-          initialImageUrl={currentEditingImage}
-          onSave={handleEditedImageSave}
-        />
-      )}
+      <ImageEditor
+        initialImageUrl={currentEditingImage || ''}
+        onSave={handleEditedImageSave}
+      />
     </Modal>
-
-    {/* AI Image Generator Modal */}
+    
     <Modal 
       isOpen={showImageGenerator}
       onClose={() => setShowImageGenerator(false)}
       title="AI Image Generator"
     >
       <ImageGenerator 
-        onImageSelect={handleAIImageSelect}
+        onImageSelect={handleAIImageSelect} 
         isEditorContext={true}
       />
     </Modal>
-
-    {/* Image Edit Confirmation Dialog */}
+    
+    <Modal 
+      isOpen={OpenQuizModal} 
+      onClose={toggleQuizModal} 
+      title="Create Quiz"
+    >
+      <GenerateQuiz 
+        selectedChapter={selectedChapter} 
+        onSaveQuiz={handleSaveQuiz} 
+      />
+    </Modal>
+    
     <AlertDialog
       isOpen={showEditConfirmation}
       onClose={handleCancelEdit}
@@ -926,7 +940,6 @@ console.log(selectedChapter, "-----------")
       imageUrl={pendingImageUrl || ''}
     />
     
-    {/* Chapter Delete Confirmation Dialog */}
     <AlertDialog
       isOpen={showDeleteConfirmation}
       onClose={handleCancelDelete}
@@ -942,19 +955,7 @@ console.log(selectedChapter, "-----------")
       showImage={false}
       confirmStyle="outline"
     />
-
-    {/* Add Quiz Modal */}
-    <Modal 
-      isOpen={OpenQuizModal} 
-      onClose={toggleQuizModal} 
-      title="Create Quiz"
-    >
-      <GenerateQuiz 
-        selectedChapter={selectedChapter} 
-        onSaveQuiz={handleSaveQuiz} 
-      />
-    </Modal>
-    </React.Fragment>
+  </React.Fragment>
   );
 
   // Helper function to extract title for the confirmation dialog

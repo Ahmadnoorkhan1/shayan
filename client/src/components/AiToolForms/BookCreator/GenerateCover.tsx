@@ -97,16 +97,17 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
 
   return (
     <>
+    <div className='text-purple-600'>
       <Button 
-        color="destructive"
         variant="soft"
         size='sm'
         onClick={() => setShowModal(true)}
-        className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition flex items-center gap-2"
-      >
-        <Book className="w-5 h-5 text-gray-600" />
-        <span className="text-[12px] text-gray-700">Book Cover</span>
+        className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+        >
+        <Book className="w-4 h-4 " />
+        <span className="text-[12px] ">Book Cover</span>
       </Button>
+      </div>
 
       {/* Hidden file input for upload */}
       <input 

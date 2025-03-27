@@ -131,30 +131,32 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
     };
 
     return (
-      <div className="flex flex-col mx-auto gap-4 -mt-8 w-full">
+      <div className="flex flex-col mx-auto w-full">
         <EditorStyles />
         
-  {/* Top toolbar area */}
-  <div className="flex justify-between items-center">
-    <EditorToolbar editorRef={ref as React.RefObject<ReactQuill>} />
-  </div>
-  
-  {/* Image edit button - reserve space with visibility hidden instead of conditional rendering */}
-  <div className="flex items-center justify-start "> {/* Fixed height to prevent layout shifts */}
-    <Button
-      onClick={() => {
-        onImageClick && selectedImage && onImageClick(selectedImage);
-      }}
-      className={`bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-4 py-2 rounded-md shadow-md transition-all duration-200 hover:shadow-lg ${selectedImage ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      title="Edit the selected image"
-    >
-      <Edit className="h-4 w-4" />
-      <span>Edit Image</span>
-    </Button>
-  </div>
+        {/* Top toolbar area */}
+        <div className="flex justify-between items-center mb-3">
+          <EditorToolbar editorRef={ref as React.RefObject<ReactQuill>} />
+        </div>
         
-        {/* Editor area */}
-        <div className="editor-wrapper relative" ref={editorRef}>
+        {/* Image edit button - now more accessible and better positioned */}
+        {selectedImage && (
+          <div className="flex items-center justify-start mb-3">
+            <Button
+              onClick={() => {
+                onImageClick && selectedImage && onImageClick(selectedImage);
+              }}
+              className={`bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 px-3 py-1.5 rounded-md shadow-md transition-all duration-200 hover:shadow-lg`}
+              title="Edit the selected image"
+            >
+              <Edit className="h-4 w-4" />
+              <span className="text-sm">Edit Image</span>
+            </Button>
+          </div>
+        )}
+        
+        {/* Editor area - with improved overflow handling */}
+        <div className="editor-wrapper relative border rounded-lg overflow-hidden" ref={editorRef}>
           <ReactQuill
             ref={ref}
             value={content}
@@ -163,9 +165,8 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
             theme="snow"
             preserveWhitespace
           />
-          
-        
         </div>
+    
       </div>
     );
   }

@@ -206,6 +206,36 @@ const EditorStyles: React.FC = () => {
         margin-bottom: 8px !important;
       }
       
+          
+         .ql-editor {
+  max-height: auto;
+  overflow-y: auto;
+  scrollbar-width: none; /* For Firefox */
+  -ms-overflow-style: none; /* For Internet Explorer & Edge */
+}
+
+.ql-editor::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
+}
+
+          
+        
+          
+          /* Mobile optimizations */
+          @media (max-width: 640px) {
+            .ql-toolbar.ql-snow {
+              padding: 6px 4px;
+            }
+            
+            .ql-toolbar.ql-snow .ql-formats {
+              margin-right: 10px;
+            }
+            
+            .ql-editor {
+              min-height: 180px;
+              padding: 10px;
+            }
+          }
      
       
      
