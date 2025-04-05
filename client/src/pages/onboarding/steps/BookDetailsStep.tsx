@@ -1,30 +1,23 @@
 "use client"
 
 import type React from "react"
-
-// import type { BookDetail } from "../book-generation-stepper"
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../Select"
-// import { CustomSelect } from "../../components/ui/select"
-
 import { useState } from "react"
-import { BookDetail } from "../BookGenerationStepper"
+import { ContentDetail } from "../BookGenerationStepper"
 import { CustomSelect } from "../../../components/ui/Select"
 
-interface BookDetailsStepProps {
+interface ContentDetailsStepProps {
   selectedDetails: Record<string, string>
   onChange: (detailId: string, value: string) => void
 }
 
-const BookDetailsStep: React.FC<BookDetailsStepProps> = ({ selectedDetails, onChange }) => {
+const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails, onChange }) => {
   const [activeDetail, setActiveDetail] = useState<string | null>(null)
 
-  const details: BookDetail[] = [
+  const details: ContentDetail[] = [
     {
       id: "style",
-      name: "Writing Style",
-      options: ["Academic", "Conversational", "Technical", "Narrative", "Instructional", "Poetic"],
+      name: "Content Style",
+      options: ["Academic", "Conversational", "Technical", "Narrative", "Instructional", "Poetic", "Journalistic", "Business"],
       value: selectedDetails.style || "",
     },
     {
@@ -36,57 +29,73 @@ const BookDetailsStep: React.FC<BookDetailsStepProps> = ({ selectedDetails, onCh
         "College Students",
         "Professionals",
         "General Adult Readers",
-        "Seniors",
+        "Beginners",
+        "Intermediate Learners",
+        "Advanced Practitioners",
+        "Executives",
+        "Educators",
       ],
       value: selectedDetails.audience || "",
     },
     {
-      id: "language",
-      name: "Language Level",
-      options: ["Beginner", "Intermediate", "Advanced", "Technical", "Simplified", "Academic"],
-      value: selectedDetails.language || "",
+      id: "length",
+      name: "Length/Depth",
+      options: ["Brief", "Standard", "Comprehensive", "In-depth", "Bite-sized", "Extended Series"],
+      value: selectedDetails.length || "",
     },
     {
-      id: "chapters",
-      name: "Number of Chapters",
-      options: ["5", "10", "15", "20", "25", "30"],
-      value: selectedDetails.chapters || "",
+      id: "structure",
+      name: "Content Structure",
+      options: [
+        "Standard Chapters",
+        "Modules/Lessons",
+        "Q&A Format",
+        "Step-by-Step Guide",
+        "Case Studies",
+        "Theory & Practice",
+        "Problem-Solution",
+        "Sequential Learning",
+        "Thematic Organization"
+      ],
+      value: selectedDetails.structure || "",
     },
     {
       id: "tone",
       name: "Tone",
-      options: ["Formal", "Informal", "Humorous", "Serious", "Inspirational", "Critical"],
+      options: ["Formal", "Informal", "Humorous", "Serious", "Inspirational", "Critical", "Neutral", "Enthusiastic", "Authoritative"],
       value: selectedDetails.tone || "",
     },
     {
-      id: "format",
-      name: "Book Format",
+      id: "media",
+      name: "Media Type",
       options: [
-        "Standard Chapters",
-        "Workbook with Exercises",
-        "Illustrated Guide",
-        "Q&A Format",
-        "Case Studies",
-        "Step-by-Step Guide",
+        "Text-only",
+        "Text with Graphics",
+        "Illustrated",
+        "Interactive Elements",
+        "Video Support",
+        "Audio Companion",
+        "Multi-format"
       ],
-      value: selectedDetails.format || "",
+      value: selectedDetails.media || "",
     },
   ]
 
   return (
     <div className="space-y-2">
       <p className="text-sm text-gray-500 mb-6">
-        Customize your book by selecting options for each category below. Fill at least 3 categories to continue.
+        Customize your content by selecting options for each category below. Fill at least 3 categories to continue.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {details.map((detail) => {
+        {details?.map((detail) => {
           const isActive = activeDetail === detail.id
           const isSelected = !!detail.value
 
           return (
             <div
               key={detail.id}
+              onClick={() => setActiveDetail(detail.id)}
               className={`relative rounded-xl transition-all duration-300 ${
                 isSelected
                   ? "bg-gradient-to-r from-purple-50 to-white border border-purple-100"
@@ -103,13 +112,13 @@ const BookDetailsStep: React.FC<BookDetailsStepProps> = ({ selectedDetails, onCh
               </label>
 
               <CustomSelect
-  value={detail.value}
-  options={detail.options}
-  placeholder={`Select ${detail.name}`}
-  onChange={(value) => onChange(detail.id, value)}
-  isSelected={isSelected}
-  className="hover:border-purple-300 focus:ring-purple-200"
-/>
+                value={detail.value}
+                options={detail.options}
+                placeholder={`Select ${detail.name}`}
+                onChange={(value) => onChange(detail.id, value)}
+                isSelected={isSelected}
+                className="hover:border-purple-300 focus:ring-purple-200"
+              />
 
               {isSelected && (
                 <div className="absolute top-0 right-0 w-3 h-3 bg-purple-500 rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
@@ -141,5 +150,4 @@ const BookDetailsStep: React.FC<BookDetailsStepProps> = ({ selectedDetails, onCh
   )
 }
 
-export default BookDetailsStep
-
+export default ContentDetailsStep

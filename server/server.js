@@ -8,8 +8,10 @@ const easyCourseRoutes = require('./Routes/EasyCourseRoutes');
 const generationRoutes = require('./Routes/GenerationRoutes');
 const sharingRoutes = require('./Routes/SharingRoutes');
 const answerCheckRoutes = require('./Routes/AnswerCheckRoutes');
+const onboardingRoutes = require('./Routes/OnboardingRoutes');
 const cors = require("cors");
 const path = require('path');
+
 
 dotenv.config();
 
@@ -25,13 +27,15 @@ app.get('/', (req, res) => {
 });
 
 // Mount routes
-app.use('/api/auth', authRoutes);
 app.use('/api/course-creator', courseRoutes);
 app.use('/api/book-creator', bookRoutes);
 app.use('/api/easy-course-creator', easyCourseRoutes);
 app.use('/api', generationRoutes);
 app.use('/api/shared', sharingRoutes);
 app.use('/api', answerCheckRoutes); // This will add the /api/check-answer route
+app.use('/api/auth', authRoutes);
+app.use('/api/onboard', onboardingRoutes); // New route for onboarding process
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

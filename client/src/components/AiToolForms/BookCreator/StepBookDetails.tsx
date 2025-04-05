@@ -43,6 +43,7 @@ const StepBookDetails: React.FC<BookDetailsProps> = ({
       options: [
         // Fiction options
         "Young Hero/Heroine",
+        "Antagonist",
         "Wise Mentor",
         "Anti-hero",
         "Ensemble Cast",

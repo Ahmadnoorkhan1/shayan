@@ -161,6 +161,7 @@ const EasyCourseCreator = () => {
   const renderButtons = () => {
     return (
       <div className="pt-16 pb-4 flex gap-8">
+       {currentStep > 0 && ( // Only show back button if not on first step
         <button
           onClick={() => setCurrentStep((prev: any) => prev - 1)}
           className="relative inline-flex items-center justify-center px-6 py-3 overflow-hidden font-medium text-white bg-primary bg-opacity-5 transition duration-300 ease-out border-2 border-primary rounded-full shadow-md group"
@@ -174,9 +175,9 @@ const EasyCourseCreator = () => {
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
                 d="M14 5l7 7m0 0l-7 7m7-7H3"
               ></path>
             </svg>
@@ -186,6 +187,7 @@ const EasyCourseCreator = () => {
           </span>
           <span className="relative invisible">Back</span>
         </button>
+      )}
         {conditionalNextButtons()}
       </div>
     );

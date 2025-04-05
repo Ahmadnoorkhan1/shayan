@@ -3,54 +3,55 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Check, ChevronRight, BookOpen, Sparkles, ChevronLeft } from "lucide-react"
+import { Check, ChevronRight, BookOpen, Sparkles, ChevronLeft, Layers, FileText, Loader2 } from "lucide-react"
 import BookPurposeStep from "./steps/BookPurposeStep"
 import BookDetailsStep from "./steps/BookDetailsStep"
 import BookTitleStep from "./steps/BookTitleStep"
 import WelcomeAnimation from "./WelcomeAnimation"
+import apiService from "../../utilities/service/api"
 
-
-export type BookPurpose = {
+// Rename these types to be more generic
+export type ContentPurpose = {
   id: string
   title: string
   description: string
   icon: React.ReactNode
 }
 
-export type BookDetail = {
+export type ContentDetail = {
   id: string
   name: string
   options: string[]
   value: string
 }
 
-export type BookData = {
+export type ContentData = {
   purpose: string
   details: Record<string, string>
   title: string
 }
 
-const BookGenerationStepper = () => {
+// Rename the component to be more generic
+const ContentGenerationStepper = () => {
   const [showWelcome, setShowWelcome] = useState(true)
   const [currentStep, setCurrentStep] = useState(0)
-  const [bookData, setBookData] = useState<BookData>({
+  const [contentData, setContentData] = useState<ContentData>({
     purpose: "",
     details: {},
     title: "",
   })
   const [isCompleted, setIsCompleted] = useState(false)
   const [animateStep, setAnimateStep] = useState(false)
-  // Add this state to track initial render
   const [initialRender, setInitialRender] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [contentId, setContentId] = useState<string | null>(null)
 
   const steps = [
-    { id: "purpose", name: "Book Purpose", description: "Define what type of book you want to create" },
-    { id: "details", name: "Book Details", description: "Customize your book's style and content" },
-    { id: "title", name: "Book Title", description: "Choose the perfect title for your creation" },
+    { id: "purpose", name: "Content Purpose", description: "Define what type of content you want to create" },
+    { id: "details", name: "Content Details", description: "Customize your content's style and structure" },
+    { id: "title", name: "Choose Title", description: "Select the perfect title for your creation" },
   ]
-
-  // Remove the auto-dismiss welcome screen timer
-  // We'll now rely on the button click only
 
   useEffect(() => {
     // Trigger animation when step changes
@@ -81,25 +82,57 @@ const BookGenerationStepper = () => {
   }
 
   const handlePurposeSelect = (purposeId: string) => {
-    setBookData((prev) => ({ ...prev, purpose: purposeId }))
+    setContentData((prev) => ({ ...prev, purpose: purposeId }))
   }
 
   const handleDetailChange = (detailId: string, value: string) => {
-    setBookData((prev) => ({
+    setContentData((prev) => ({
       ...prev,
       details: { ...prev.details, [detailId]: value },
     }))
   }
 
   const handleTitleSelect = (title: string) => {
-    setBookData((prev) => ({ ...prev, title }))
+    setContentData((prev) => ({ ...prev, title }))
   }
+
+  const createContent = async () => {
+    setIsSubmitting(true)
+    setSubmitError(null)
+    
+    try {
+      // Call API to create content with all the data collected
+      const response = await apiService.post("/onboard/generate-content", {
+        contentType: contentData.purpose,
+        contentTitle: contentData.title,
+        contentDetails: contentData.details,
+        // Add any other necessary data
+      });
+      
+      if (response.success) {
+        // Store the content ID if returned by the API
+        if (response.data && response.data.id) {
+          setContentId(response.data.id);
+        }
+        // Show completion screen
+        setIsCompleted(true);
+      } else {
+        throw new Error(response.message || "Failed to create content");
+      }
+    } catch (err) {
+      console.error("Error creating content:", err);
+      setSubmitError(err instanceof Error ? err.message : "Failed to create your content. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep((prev) => prev + 1)
     } else {
-      setIsCompleted(true)
+      // On final step, create the content
+      createContent();
     }
   }
 
@@ -111,12 +144,12 @@ const BookGenerationStepper = () => {
 
   const canProceed = () => {
     if (currentStep === 0) {
-      return bookData.purpose !== ""
+      return contentData.purpose !== ""
     } else if (currentStep === 1) {
       // Require at least 3 details to be filled
-      return Object.keys(bookData.details).length >= 3
+      return Object.keys(contentData.details).length >= 3
     } else if (currentStep === 2) {
-      return bookData.title !== ""
+      return contentData.title !== ""
     }
     return false
   }
@@ -124,11 +157,11 @@ const BookGenerationStepper = () => {
   const renderStep = () => {
     switch (currentStep) {
       case 0:
-        return <BookPurposeStep selectedPurpose={bookData.purpose} onSelect={handlePurposeSelect} />
+        return <BookPurposeStep selectedPurpose={contentData.purpose} onSelect={handlePurposeSelect} />
       case 1:
-        return <BookDetailsStep selectedDetails={bookData.details} onChange={handleDetailChange} />
+        return <BookDetailsStep selectedDetails={contentData.details} onChange={handleDetailChange} />
       case 2:
-        return <BookTitleStep bookData={bookData} selectedTitle={bookData.title} onSelect={handleTitleSelect} />
+        return <BookTitleStep bookData={contentData} selectedTitle={contentData.title} onSelect={handleTitleSelect} />
       default:
         return null
     }
@@ -145,7 +178,7 @@ const BookGenerationStepper = () => {
     return (
       <div className="max-w-3xl mx-auto rounded-2xl shadow-[0_20px_60px_-15px_rgba(124,58,237,0.3)] overflow-hidden">
         <div className="bg-gradient-to-r from-purple-600 to-purple-800 p-8 text-white">
-          <h2 className="text-3xl text-white font-bold">Your Masterpiece Awaits!</h2>
+          <h2 className="text-3xl text-white font-bold">Your Creation Awaits!</h2>
           <p className="mt-2 opacity-90">We're bringing your vision to life</p>
         </div>
 
@@ -160,20 +193,20 @@ const BookGenerationStepper = () => {
           </div>
 
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">"{bookData.title}"</h3>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">"{contentData.title}"</h3>
             <p className="text-gray-600">
-              Your {bookData.details.audience} {bookData.purpose} book is being crafted with care.
+              Your {contentData.details.audience} {contentData.purpose} content is being crafted with care.
             </p>
           </div>
 
           <div className="bg-purple-50 border border-purple-100 rounded-xl p-6 mb-8">
-            <h4 className="font-medium text-purple-800 mb-3">Book Details</h4>
+            <h4 className="font-medium text-purple-800 mb-3">Content Details</h4>
             <div className="grid grid-cols-2 gap-3">
               <div className="text-sm">
                 <span className="text-gray-500">Type:</span>
-                <span className="ml-2 text-gray-800 font-medium capitalize">{bookData.purpose}</span>
+                <span className="ml-2 text-gray-800 font-medium capitalize">{contentData.purpose}</span>
               </div>
-              {Object.entries(bookData.details).map(([key, value]) => (
+              {Object.entries(contentData.details).map(([key, value]) => (
                 <div key={key} className="text-sm">
                   <span className="text-gray-500 capitalize">{key}:</span>
                   <span className="ml-2 text-gray-800 font-medium">{value}</span>
@@ -185,9 +218,9 @@ const BookGenerationStepper = () => {
           <div className="flex justify-center">
             <button
               className="bg-gradient-to-r flex items-center from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white px-10 py-4 h-auto rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-              onClick={() => (window.location.href = "/dashboard")}
+              onClick={() => (window.location.href = contentId ? `/dashboard/content/${contentId}` : "/dashboard")}
             >
-              <BookOpen className="mr-2 h-5 w-5" />
+              <FileText className="mr-2 h-5 w-5" />
               Go to My Dashboard
             </button>
           </div>
@@ -206,7 +239,7 @@ const BookGenerationStepper = () => {
 
         <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">Create With Us</h1>
         <p className="text-purple-100 max-w-xl">
-          Let's bring your ideas to life. Follow these simple steps to create a professional, customized book that
+          Let's bring your ideas to life. Follow these simple steps to create professional, customized content that
           perfectly captures your vision.
         </p>
       </div>
@@ -259,6 +292,14 @@ const BookGenerationStepper = () => {
         </div>
       </div>
 
+      {/* Error message if submission fails */}
+      {submitError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6 mx-4">
+          <p className="text-sm font-medium">{submitError}</p>
+          <p className="text-sm mt-1">Please try again or contact support if the problem persists.</p>
+        </div>
+      )}
+
       {/* Step Content */}
       <div
         className={`bg-white rounded-2xl shadow-[0_10px_50px_-12px_rgba(124,58,237,0.25)] overflow-hidden transition-all duration-300 ease-in-out ${
@@ -269,9 +310,9 @@ const BookGenerationStepper = () => {
           <div className="px-6 py-5">
             <h2 className="text-2xl font-bold text-gray-800 mb-1">{steps[currentStep].name}</h2>
             <p className="text-gray-500">
-              {currentStep === 0 && "Select the purpose of your book to help us understand your goals."}
-              {currentStep === 1 && "Provide details about your book to customize the content."}
-              {currentStep === 2 && "Choose a title for your book from our suggestions."}
+              {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
+              {currentStep === 1 && "Provide details about your content to customize its structure and style."}
+              {currentStep === 2 && "Choose a title for your creation from our suggestions."}
             </p>
           </div>
         </div>
@@ -282,12 +323,12 @@ const BookGenerationStepper = () => {
         <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
           <button
             onClick={handleBack}
-            disabled={currentStep === 0}
+            disabled={currentStep === 0 || isSubmitting}
             className={`
               px-4 py-2 rounded-lg font-medium text-sm
               flex items-center gap-2
               transform transition-all duration-200
-              ${currentStep === 0
+              ${currentStep === 0 || isSubmitting
                 ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
                 : 'hover:bg-purple-50 hover:text-purple-700 active:scale-95 text-gray-600 bg-white border border-gray-200'
               }
@@ -305,12 +346,12 @@ const BookGenerationStepper = () => {
 
           <button
             onClick={handleNext}
-            disabled={!canProceed()}
+            disabled={!canProceed() || isSubmitting}
             className={`
               px-5 py-2.5 rounded-lg font-medium text-sm
               flex items-center gap-2
               transform transition-all duration-200
-              ${canProceed()
+              ${canProceed() && !isSubmitting
                 ? `
                   bg-gradient-to-r from-purple-600 to-purple-700
                   hover:from-purple-700 hover:to-purple-800
@@ -322,9 +363,14 @@ const BookGenerationStepper = () => {
               }
             `}
           >
-            {currentStep === steps.length - 1 ? (
+            {isSubmitting ? (
               <>
-                Create My Book
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Processing...
+              </>
+            ) : currentStep === steps.length - 1 ? (
+              <>
+                Create My Content
                 <Sparkles className="w-4 h-4" />
               </>
             ) : (
@@ -340,4 +386,4 @@ const BookGenerationStepper = () => {
   )
 }
 
-export default BookGenerationStepper
+export default ContentGenerationStepper

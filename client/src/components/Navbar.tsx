@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import "../App.css";
 import { NAVLINKS } from "../utilities/data/NavbarLinks";
 import { Link, useLocation } from "react-router";
+import AccessTokenRedirect from "./ExternalAccess/AccessTokenRedirect";
 
 const Navbar: React.FC = () => {
   const { pathname } = useLocation();
@@ -22,6 +23,7 @@ const Navbar: React.FC = () => {
               Mini Lessons Academy
             </span>
           </Link>
+          
         </div>
 
         {/* Navbar Toggler */}

@@ -5,12 +5,12 @@ export const SIDEBARLINKS:any = [
         to:'dashboard'
 
     },
-    {
-        src:"/images/icons/brain.svg",
-        title:"Knowledgebase",
-        to:'dashboard/knowledgebase'
+    // {
+    //     src:"/images/icons/brain.svg",
+    //     title:"Knowledgebase",
+    //     to:'dashboard/knowledgebase'
 
-    },
+    // },
     {
         src:"/images/icons/square.svg",
         title:"Course Creator",
@@ -22,11 +22,11 @@ export const SIDEBARLINKS:any = [
         to:'dashboard/book-creator'
 
     },
-    {
-        src:"/images/icons/robot.svg",
-        title:"AI Coach",
-        to:'dashboard/ai-coach'
-    },
+    // {
+    //     src:"/images/icons/robot.svg",
+    //     title:"AI Coach",
+    //     to:'dashboard/ai-coach'
+    // },
     {
         src:"/images/icons/finger.svg",
         title:"1 Click Course Creator",

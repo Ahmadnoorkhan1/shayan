@@ -2,19 +2,19 @@
 
 import type React from "react"
 
-import { BookOpen, GraduationCap, Lightbulb, BookText, Palette, BookMarked } from "lucide-react"
+import { BookOpen, GraduationCap, Lightbulb, BookText, Palette, BookMarked, Video, FileText, Globe, Presentation } from "lucide-react"
 import { useState } from "react"
-import { BookPurpose } from "../BookGenerationStepper"
+import { ContentPurpose } from "../BookGenerationStepper"
 
-interface BookPurposeStepProps {
+interface ContentPurposeStepProps {
   selectedPurpose: string
   onSelect: (purposeId: string) => void
 }
 
-const BookPurposeStep: React.FC<BookPurposeStepProps> = ({ selectedPurpose, onSelect }) => {
+const ContentPurposeStep: React.FC<ContentPurposeStepProps> = ({ selectedPurpose, onSelect }) => {
   const [hoveredPurpose, setHoveredPurpose] = useState<string | null>(null)
 
-  const purposes: BookPurpose[] = [
+  const purposes: ContentPurpose[] = [
     {
       id: "educational",
       title: "Educational",
@@ -29,7 +29,7 @@ const BookPurposeStep: React.FC<BookPurposeStepProps> = ({ selectedPurpose, onSe
     },
     {
       id: "fiction",
-      title: "Fiction Novel",
+      title: "Fiction",
       description: "Write engaging stories, novels, or creative fiction in various genres.",
       icon: <BookOpen className="w-10 h-10" />,
     },
@@ -40,17 +40,35 @@ const BookPurposeStep: React.FC<BookPurposeStepProps> = ({ selectedPurpose, onSe
       icon: <BookText className="w-10 h-10" />,
     },
     {
-      id: "creative",
-      title: "Creative Writing",
-      description: "Develop poetry collections, short stories, or creative writing compilations.",
-      icon: <Palette className="w-10 h-10" />,
+      id: "course",
+      title: "Course",
+      description: "Build comprehensive learning experiences with lessons, exercises, and assessments.",
+      icon: <Presentation className="w-10 h-10" />,
     },
     {
-      id: "reference",
-      title: "Reference Guide",
-      description: "Create encyclopedias, dictionaries, or comprehensive reference materials.",
-      icon: <BookMarked className="w-10 h-10" />,
+      id: "blog",
+      title: "Blog or Article",
+      description: "Write engaging online content, articles, or blog posts on various topics.",
+      icon: <FileText className="w-10 h-10" />,
     },
+    // {
+    //   id: "video",
+    //   title: "Video Script",
+    //   description: "Create scripts for educational videos, tutorials, or presentations.",
+    //   icon: <Video className="w-10 h-10" />,
+    // },
+    // {
+    //   id: "reference",
+    //   title: "Reference Material",
+    //   description: "Create encyclopedias, dictionaries, or comprehensive reference materials.",
+    //   icon: <BookMarked className="w-10 h-10" />,
+    // },
+    // {
+    //   id: "web",
+    //   title: "Web Content",
+    //   description: "Develop content for websites, landing pages, or digital platforms.",
+    //   icon: <Globe className="w-10 h-10" />,
+    // },
   ]
 
   return (
@@ -112,5 +130,4 @@ const BookPurposeStep: React.FC<BookPurposeStepProps> = ({ selectedPurpose, onSe
   )
 }
 
-export default BookPurposeStep
-
+export default ContentPurposeStep

@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps>  = ({ toggleSidebar }) => {
         />
       </button>
       <h1 className="text-lg font-semibold">Dashboard</h1>
-      <div>
+      {/* <div>
         <Button 
         size="md"
         
@@ -28,7 +28,7 @@ const Header: React.FC<HeaderProps>  = ({ toggleSidebar }) => {
                         <User className="w-4 h-4" />
                         Profile
         </Button>
-      </div>
+      </div> */}
     </header>
   );
 };

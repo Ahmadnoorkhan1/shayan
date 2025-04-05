@@ -1,4 +1,5 @@
 import '../App.css'
+import AccessTokenRedirect from './ExternalAccess/AccessTokenRedirect'
 const HeroSection = () => {
   return (
     <section className="section banner relative">
@@ -11,7 +12,11 @@ const HeroSection = () => {
             <p className="mt-6 text-primary font-bold">
               Turn Your Ideas into Profitable Courses in Minutes.
             </p>
-            <button className="btn btn-white mt-6">Free Trail</button>
+            <div className="mt-6 flex items-center gap-4"> 
+            <button className="btn btn-white ">Free Trail</button>
+            <AccessTokenRedirect userId={1}  />
+
+            </div>
           </div>
           <div className="lg:col-6">
             {/* ADD A VIDEO TAG HERE ILL GIVE YOU THE BLOB TO SHOW */}

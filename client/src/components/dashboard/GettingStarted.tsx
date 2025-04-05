@@ -1,3 +1,5 @@
+import AccessTokenRedirect from "../ExternalAccess/AccessTokenRedirect"
+
 interface GettingStartedProps {
     button:boolean,
     title:string,
@@ -21,6 +23,7 @@ const GettingStarted: React.FC<GettingStartedProps> = ({button,title,description
                     View Tutorial
                 </a>  : <></>
                 }
+
             </div>
         </div>
     </div>

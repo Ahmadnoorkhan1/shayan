@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
-import { BookOpen, Sparkles, PenTool, BookText } from "lucide-react"
+import { BookOpen, Sparkles, PenTool, BookText, Layers, Lightbulb } from "lucide-react"
 
 interface WelcomeAnimationProps {
   onComplete: () => void
@@ -63,7 +62,7 @@ const WelcomeAnimation: React.FC<WelcomeAnimationProps> = ({ onComplete, onBegin
                   ${isAnimated ? "scale-100 rotate-0" : "scale-0 rotate-90"}
                   transition-all duration-700 ease-out`}
               >
-                <BookOpen className="w-16 h-16 text-white" />
+                <Layers className="w-16 h-16 text-white" />
               </div>
             </div>
           </div>
@@ -74,7 +73,7 @@ const WelcomeAnimation: React.FC<WelcomeAnimationProps> = ({ onComplete, onBegin
               ${isAnimated ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}
               transition-all duration-700 delay-300 ease-out`}
           >
-            Welcome to Your Book Creation Journey
+            Welcome to Your Content Creation Journey
           </h1>
 
           <p
@@ -82,7 +81,7 @@ const WelcomeAnimation: React.FC<WelcomeAnimationProps> = ({ onComplete, onBegin
               ${isAnimated ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"}
               transition-all duration-700 delay-500 ease-out`}
           >
-            Turn your ideas into beautifully crafted books with our AI-powered platform
+            Transform your ideas into beautifully crafted content with our AI-powered platform
           </p>
 
           <div
@@ -90,6 +89,12 @@ const WelcomeAnimation: React.FC<WelcomeAnimationProps> = ({ onComplete, onBegin
               ${isAnimated ? "opacity-100" : "opacity-0"}
               transition-all duration-500 delay-700 ease-out`}
           >
+            <div className="flex flex-col items-center">
+              <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center mb-3">
+                <Lightbulb className="w-7 h-7 text-purple-600" />
+              </div>
+              <span className="text-gray-700 font-medium">Ideate</span>
+            </div>
             <div className="flex flex-col items-center">
               <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center mb-3">
                 <PenTool className="w-7 h-7 text-purple-600" />

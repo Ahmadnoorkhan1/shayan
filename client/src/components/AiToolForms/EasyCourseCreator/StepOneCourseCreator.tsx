@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import apiService from "../../../utilities/service/api";
 import Spinner from "../../ui/spinner";
+import TitleSelectionComponent from "../common/TitleSelectionComponent";
+import ContentTopicInput from '../common/ContentTopicInput';
 
 interface StepTwoProps {
   handleStepChange: CallableFunction;
@@ -9,6 +11,7 @@ interface StepTwoProps {
 const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) => {
   const [suggestedTitles, setSuggestedTitles] = useState<string[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [showAdvancedInput, setShowAdvancedInput] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchTitles = async () => {
@@ -55,57 +58,66 @@ const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) 
 
   const selectTitle = (title: string) => {
     localStorage.setItem("selectedTitleEasyCourse", title);
+    
+    // Store original topic if it's a custom title
+    if (suggestedTitles && !suggestedTitles.includes(title) && !localStorage.getItem('original_easy_course_topic')) {
+      localStorage.setItem('original_easy_course_topic', title);
+    }
+    
     handleStepChange();
   };
 
-  return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
-      <h2 className="p-4 text-center text-primary md:text-lg text-base">
-        Choose A More Detailed Title for Your Course Or enter your own below!
-      </h2>
-
-      {loading ? (
-        <div className="my-8">
-          <Spinner />
-        </div>
-      ) : suggestedTitles && suggestedTitles.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full px-4 py-6">
-          {suggestedTitles?.slice(3,9)?.map((title: string, index: number) => (
-            <button
-              key={index}
-              className="p-4 h-full bg-primary border-2 border-gray-300 rounded-lg 
-                         hover:scale-[1.03] transition duration-300 cursor-pointer 
-                         flex items-center justify-center shadow-md"
-              onClick={() => selectTitle(title)}
-            >
-              <h3 className="text-base font-bold text-white text-center line-clamp-3">
-                {title}
-              </h3>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <h3 className="p-4 text-center text-primary md:text-lg text-base">
-          No suggested titles available. Please enter your own.
-        </h3>
-      )}
-
-<div className="w-full max-w-4xl px-4 mt-8 mb-6">
-      <label htmlFor="custom-title" className="text-sm font-medium text-gray-700 mb-2 block">
-      Enter your own course topic or title:
-    </label>
-    
-    <input
-      id="custom-title"
-      className="w-full px-5 py-3 border-2 border-gray-300 rounded-lg shadow-sm text-base
-              focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary
-              transition-all duration-200"
-      type="text"
-      placeholder="e.g., 'Advanced JavaScript for Web Developers'"
-      onChange={(e) => localStorage.setItem("selectedTitleEasyCourse", e.target.value)}
-    />
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <Spinner />
+        <p className="mt-4 text-gray-600">Loading title suggestions...</p>
       </div>
-    </div>
+    );
+  }
+
+  if (showAdvancedInput) {
+    return (
+      <div className="w-full max-w-4xl px-4 mt-8 mb-6">
+        <ContentTopicInput 
+          handleForm={(value:any) => {
+            localStorage.setItem("selectedTitleEasyCourse", value);
+            localStorage.setItem('original_easy_course_topic', value);
+            handleStepChange();
+          }}
+          // title="Enter your own course topic or title"
+          // description="Provide a detailed description for your course"
+          placeholder="e.g., 'Advanced JavaScript for Web Developers'"
+        />
+        
+        <button
+          onClick={() => setShowAdvancedInput(false)}
+          className="mt-4 text-primary hover:text-primary/80 text-sm font-medium"
+        >
+          ← Back to suggested titles
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <TitleSelectionComponent
+        titles={suggestedTitles?.slice(3, 9) || []}
+        onSelectTitle={selectTitle}
+        contentType="Easy Course"
+        showCustomInput={false}
+      />
+      
+      <div className="w-full max-w-lg px-4 mt-2 mb-8 text-center">
+        <button
+          onClick={() => setShowAdvancedInput(true)}
+          className="text-primary hover:text-primary/80 font-medium"
+        >
+          Need more options? Create an advanced custom title
+        </button>
+      </div>
+    </>
   );
 };
 

@@ -32,7 +32,6 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
     const isResizingRef = useRef(false);
     const editorRef = useRef<HTMLDivElement | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
       if (initialContent) {
