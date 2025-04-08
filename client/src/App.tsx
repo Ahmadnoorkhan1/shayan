@@ -84,7 +84,7 @@ function App() {
       setWelcomeEmail(userData?.userData?.email || '');
       
       // Get the redirect URL from userData or use dashboard as default
-      const redirectPath = '/dashboard';
+      const redirectPath = '/onboard';
       console.log(`[App] Redirecting to: ${redirectPath}`);
       
       // Navigate to the specified path (using replace to avoid back button issues)

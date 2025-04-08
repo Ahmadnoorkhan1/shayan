@@ -45,8 +45,28 @@ const hideLoader = () => {
   window.dispatchEvent(new Event('loadingStatusChanged'));
 };
 
+// List of API endpoints that should not trigger the global loader
+const noLoaderEndpoints = [
+  'book-creator/getBookChapter',  // Book chapter generation endpoint
+  'book-creator/step-5'           // Book final step endpoint
+];
+
+// Helper to determine if loader should be skipped for this endpoint
+const shouldSkipLoader = (url: string) => {
+  return noLoaderEndpoints.some(endpoint => url.includes(endpoint));
+};
+
 // Helper to determine loader type and message based on URL
 const getLoaderConfig = (url: string) => {
+  // Skip loader for specific endpoints
+  if (shouldSkipLoader(url)) {
+    return {
+      type: 'none' as const,
+      message: '',
+      skipLoader: true
+    };
+  }
+  
   // AI generation operations - use spinner
   if (url.includes('generate') || url.includes('ai-') || url.includes('-ai')) {
     return { 
@@ -102,14 +122,18 @@ const getLoaderConfig = (url: string) => {
 
 const apiService = {
   get: async (url: string, params?: any) => {
-    const { type, message } = getLoaderConfig(url);
-    showLoader(type, message);
+    const loaderConfig = getLoaderConfig(url);
+    
+    // Only show loader if not in the skip list
+    if (!loaderConfig.skipLoader) {
+      showLoader(loaderConfig.type, loaderConfig.message);
+    }
     
     try {
       const response = await api.get(url, { params });
       
-      // For long operations, show a success message
-      if (type === 'spinner' || type === 'dots') {
+      // For long operations, show a success message (but skip for no-loader endpoints)
+      if (!loaderConfig.skipLoader && (loaderConfig.type === 'spinner' || loaderConfig.type === 'dots')) {
         toast.success(response?.data?.message || 'Data loaded successfully!');
       }
       
@@ -120,13 +144,20 @@ const apiService = {
       toast.error(`${errorMessage} (${url.split('/').pop()})`);
       throw error;
     } finally {
-      hideLoader();
+      // Only hide loader if we showed it
+      if (!loaderConfig.skipLoader) {
+        hideLoader();
+      }
     }
   },
 
   post: async (url: string, data: any, params?: any, timeout?: any) => {
-    const { type, message } = getLoaderConfig(url);
-    showLoader(type, message);
+    const loaderConfig = getLoaderConfig(url);
+    
+    // Only show loader if not in the skip list
+    if (!loaderConfig.skipLoader) {
+      showLoader(loaderConfig.type, loaderConfig.message);
+    }
     
     try {
       // For AI operations that might take longer, use a longer timeout
@@ -137,10 +168,12 @@ const apiService = {
       
       const response = await api.post(url, data, config);
       
-      // Use a clearer success message
-      const successMsg = response?.data?.message || 
-                         (url.includes('create') ? 'Created successfully!' : 'Success!');
-      toast.success(successMsg);
+      // Use a clearer success message, but skip for no-loader endpoints
+      if (!loaderConfig.skipLoader) {
+        const successMsg = response?.data?.message || 
+                          (url.includes('create') ? 'Created successfully!' : 'Success!');
+        toast.success(successMsg);
+      }
       
       return response.data;
     } catch (error: any) {
@@ -149,20 +182,29 @@ const apiService = {
       toast.error(`${errorMessage} (${url.split('/').pop()})`);
       throw error;
     } finally {
-      hideLoader();
+      // Only hide loader if we showed it
+      if (!loaderConfig.skipLoader) {
+        hideLoader();
+      }
     }
   },
 
   put: async (url: string, data: any) => {
-    const { type, message } = getLoaderConfig(url);
-    showLoader(type, message);
+    const loaderConfig = getLoaderConfig(url);
+    
+    // Only show loader if not in the skip list
+    if (!loaderConfig.skipLoader) {
+      showLoader(loaderConfig.type, loaderConfig.message);
+    }
     
     try {
       const response = await api.put(url, data);
       
       // Use a clearer success message
-      const successMsg = response?.data?.message || 'Updated successfully!';
-      toast.success(successMsg);
+      if (!loaderConfig.skipLoader) {
+        const successMsg = response?.data?.message || 'Updated successfully!';
+        toast.success(successMsg);
+      }
       
       return response.data;
     } catch (error: any) {
@@ -171,30 +213,49 @@ const apiService = {
       toast.error(`${errorMessage} (${url.split('/').pop()})`);
       throw error;
     } finally {
-      hideLoader();
+      // Only hide loader if we showed it
+      if (!loaderConfig.skipLoader) {
+        hideLoader();
+      }
     }
   },
 
   delete: async (url: string) => {
-    // For delete operations, always use a bar loader with clear message
-    showLoader('bar', 'Deleting...');
+    const loaderConfig = getLoaderConfig(url);
+    
+    // Only show loader if not in the skip list
+    if (!loaderConfig.skipLoader) {
+      showLoader('bar', 'Deleting...');
+    }
     
     try {
       const response = await api.delete(url);
-      toast.success(response?.data?.message || 'Deleted successfully!');
+      
+      if (!loaderConfig.skipLoader) {
+        toast.success(response?.data?.message || 'Deleted successfully!');
+      }
+      
       return response.data;
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || 'Error deleting';
       toast.error(`${errorMessage} (${url.split('/').pop()})`);
       throw error;
     } finally {
-      hideLoader();
+      // Only hide loader if we showed it
+      if (!loaderConfig.skipLoader) {
+        hideLoader();
+      }
     }
   },
   
   // Add a new method for file uploads with progress tracking
   upload: async (url: string, formData: FormData) => {
-    showLoader('spinner', 'Uploading file...');
+    const loaderConfig = getLoaderConfig(url);
+    
+    // Only show loader if not in the skip list
+    if (!loaderConfig.skipLoader) {
+      showLoader('spinner', 'Uploading file...');
+    }
     
     try {
       const response = await api.post(url, formData, {
@@ -202,20 +263,28 @@ const apiService = {
           'Content-Type': 'multipart/form-data'
         },
         onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / (progressEvent.total || 100)
-          );
-          updateLoaderProgress(percentCompleted);
+          if (!loaderConfig.skipLoader) {
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total || 100)
+            );
+            updateLoaderProgress(percentCompleted);
+          }
         }
       });
       
-      toast.success(response?.data?.message || 'File uploaded successfully!');
+      if (!loaderConfig.skipLoader) {
+        toast.success(response?.data?.message || 'File uploaded successfully!');
+      }
+      
       return response.data;
     } catch (error: any) {
       toast.error(error?.response?.data?.message || 'Error uploading file');
       throw error;
     } finally {
-      hideLoader();
+      // Only hide loader if we showed it
+      if (!loaderConfig.skipLoader) {
+        hideLoader();
+      }
     }
   }
 };

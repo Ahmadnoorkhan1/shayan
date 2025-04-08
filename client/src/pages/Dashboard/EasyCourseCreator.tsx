@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import StepFiveCourseCreator from "../../components/AiToolForms/EasyCourseCreator/StepFiveCourseCreator";
 import StepOneCourseCreator from "../../components/AiToolForms/EasyCourseCreator/StepOneCourseCreator";
 import Stepper from "../../components/ui/ToolSteps";
@@ -11,6 +11,21 @@ const EasyCourseCreator = () => {
   const [chapatersData, setChaptersData] = useState<any>([]);
   const [saveButton, setSaveButton] = useState(false);
   const [chapterFetchCount, setChapterFetchCount] = useState(0);
+
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === "Enter") {
+        if (currentStep === 0) {
+          generateCompleteCourse();
+        } else if (currentStep === 1 && saveButton) {
+          saveCompleteCourse();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [currentStep, saveButton, chapatersData]);
 
   const navigate = useNavigate()
 

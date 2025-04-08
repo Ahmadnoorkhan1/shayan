@@ -60,7 +60,7 @@ const GlobalLoader = () => {
                 {/* Spinner Foreground */}
                 <div className="w-16 h-16 rounded-full border-4 border-t-primary border-l-primary absolute top-0 animate-spin"></div>
                 {/* Pulsing Dot */}
-                <div className="absolute top-0 right-2 w-3 h-3 bg-gradient-to-br from-primary to-purple-700 rounded-full animate-pulse"></div>
+                {/* <div className="absolute top-0 right-2 w-3 h-3 bg-gradient-to-br from-primary to-purple-700 rounded-full animate-pulse"></div> */}
               </div>
             ) : (
               <div className="flex space-x-2">

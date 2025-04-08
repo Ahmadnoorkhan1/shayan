@@ -13,6 +13,7 @@ const ContentTopicInput: React.FC<ContentTopicInputProps> = ({
   description = "Enter a topic for your content. Don't worry, you can always change it later 🙂",
   placeholder = "Enter your topic"
 }) => {
+
   return (
     <div className="flex flex-col items-center justify-center p-8">
       <h2 className="p-4 text-center text-primary text-2xl">

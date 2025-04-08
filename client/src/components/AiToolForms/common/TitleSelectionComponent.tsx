@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PenSquare } from 'lucide-react';
 
 interface TitleSelectionProps {
@@ -15,8 +15,27 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
   contentType = 'Content',
   showCustomInput = true
 }) => {
-  const [customTitle, setCustomTitle] = useState('');
-  const [showCustomField, setShowCustomField] = useState(false);
+  // Get storage key based on content type
+  const getCustomTitleKey = () => {
+    switch (contentType) {
+      case 'Easy Course':
+        return 'easy_course_custom_title';
+      case 'Course':
+        return 'course_custom_title';
+      case 'Book':
+        return 'book_custom_title';
+      default:
+        return 'custom_title';
+    }
+  };
+  
+  // Initialize customTitle with saved value if available
+  const [customTitle, setCustomTitle] = useState(() => {
+    const savedTitle = localStorage.getItem(getCustomTitleKey());
+    return savedTitle || '';
+  });
+  
+  const [showCustomField, setShowCustomField] = useState(!!customTitle); // Show field if there's saved title
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   // More professional, minimal color variants
@@ -29,13 +48,40 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
     "from-sky-600 to-sky-500", // Professional sky blue
   ];
 
+  // Clean titles by removing quotation marks
+  const cleanTitles = titles?.map(title => {
+    if (typeof title === 'string') {
+      // Remove start and end quotes if present
+      return title.replace(/^["'](.*)["']$/, '$1');
+    }
+    return title;
+  });
+
+  // Save custom title to localStorage when changed
+  useEffect(() => {
+    if (customTitle) {
+      localStorage.setItem(getCustomTitleKey(), customTitle);
+    }
+  }, [customTitle]);
+
   const handleTitleSelect = (title: string) => {
-    onSelectTitle(title);
+    // Clean any quotes from the selected title
+    const cleanTitle = typeof title === 'string' ? title.replace(/^["'](.*)["']$/, '$1') : title;
+    onSelectTitle(cleanTitle);
   };
 
   const handleCustomTitleSubmit = () => {
     if (customTitle.trim()) {
-      onSelectTitle(customTitle);
+      // Clean any quotes from the custom title
+      const cleanTitle = customTitle.trim().replace(/^["'](.*)["']$/, '$1');
+      onSelectTitle(cleanTitle);
+    }
+  };
+
+  // Handle Enter key press in custom title input
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && customTitle.trim()) {
+      handleCustomTitleSubmit();
     }
   };
 
@@ -47,7 +93,7 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
 
       {/* Title cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full px-4 py-6">
-        {titles?.slice(0, 6)?.map((title: string, index: number) => {
+        {cleanTitles?.slice(0, 6)?.map((title: string, index: number) => {
           const colorClass = colorVariants[index % colorVariants.length];
           const isHovered = hoverIndex === index;
           
@@ -157,11 +203,13 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
                 type="text"
                 value={customTitle}
                 onChange={(e) => setCustomTitle(e.target.value)}
+                onKeyPress={handleKeyPress}
                 placeholder={`Enter a title for your ${contentType.toLowerCase()}...`}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg 
                           focus:ring-2 focus:ring-primary focus:border-primary 
                           outline-none text-gray-900 bg-gray-50 hover:bg-white
                           transition-all duration-200"
+                autoFocus
               />
               
               <button
@@ -170,7 +218,7 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
                 className={`w-full py-3 rounded-lg transition-all duration-300 font-medium text-sm
                            transform hover:shadow-lg ${
                              customTitle.trim() 
-                               ? 'bg-primary text-white  hover:-translate-y-0.5 active:translate-y-0' 
+                               ? 'bg-primary text-white hover:-translate-y-0.5 active:translate-y-0' 
                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                            }`}
               >

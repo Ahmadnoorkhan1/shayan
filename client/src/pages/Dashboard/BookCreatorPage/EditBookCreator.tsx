@@ -70,61 +70,61 @@ const [currentQuizContent, setCurrentQuizContent] = useState<{
 const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
   const [regeneratingQuestionIndex, setRegeneratingQuestionIndex] = useState<number>(-1);
 
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const navigate = useNavigate();
   
   // Add this effect to warn users before they leave with unsaved changes
-  useEffect(() => {
-    // Function to handle navigation attempts
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
-        // Standard way to show a browser confirm dialog before navigation
-        e.preventDefault();
-        e.returnValue = '';
-        return '';
-      }
-    };
+  // useEffect(() => {
+  //   // Function to handle navigation attempts
+  //   const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+  //     if (hasUnsavedChanges) {
+  //       // Standard way to show a browser confirm dialog before navigation
+  //       e.preventDefault();
+  //       e.returnValue = '';
+  //       return '';
+  //     }
+  //   };
 
-    // Function to intercept navigation attempts within the React app
-    const handleNavigation = (e: MouseEvent) => {
-      // Check if the click is on an anchor tag or a button that might navigate away
-      const target = e.target as HTMLElement;
-      const anchor = target.closest('a');
-      const button = target.closest('button');
+  //   // Function to intercept navigation attempts within the React app
+  //   const handleNavigation = (e: MouseEvent) => {
+  //     // Check if the click is on an anchor tag or a button that might navigate away
+  //     const target = e.target as HTMLElement;
+  //     const anchor = target.closest('a');
+  //     const button = target.closest('button');
       
-      if ((anchor && anchor.getAttribute('href')?.startsWith('/')) || 
-          (button && button.getAttribute('data-nav'))) {
+  //     if ((anchor && anchor.getAttribute('href')?.startsWith('/')) || 
+  //         (button && button.getAttribute('data-nav'))) {
         
-        if (hasUnsavedChanges) {
-          e.preventDefault();
+  //       if (hasUnsavedChanges) {
+  //         e.preventDefault();
           
-          if (window.confirm('You have unsaved changes. Do you want to save your course before you leave the page?')) {
-            // Save content first, then navigate
-            handleSave().then(() => {
-              const destination = anchor ? anchor.getAttribute('href') : 
-                                  button ? button.getAttribute('data-nav') : '/dashboard';
-              navigate(destination || '/dashboard');
-            });
-          } else {
-            // User chose not to save, proceed with navigation
-            const destination = anchor ? anchor.getAttribute('href') : 
-                                button ? button.getAttribute('data-nav') : '/dashboard';
-            navigate(destination || '/dashboard');
-          }
-        }
-      }
-    };
+  //         if (window.confirm('You have unsaved changes. Do you want to save your course before you leave the page?')) {
+  //           // Save content first, then navigate
+  //           handleSave().then(() => {
+  //             const destination = anchor ? anchor.getAttribute('href') : 
+  //                                 button ? button.getAttribute('data-nav') : '/dashboard';
+  //             navigate(destination || '/dashboard');
+  //           });
+  //         } else {
+  //           // User chose not to save, proceed with navigation
+  //           const destination = anchor ? anchor.getAttribute('href') : 
+  //                               button ? button.getAttribute('data-nav') : '/dashboard';
+  //           navigate(destination || '/dashboard');
+  //         }
+  //       }
+  //     }
+  //   };
 
-    // Add event listeners
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('click', handleNavigation, true);
+  //   // Add event listeners
+  //   window.addEventListener('beforeunload', handleBeforeUnload);
+  //   document.addEventListener('click', handleNavigation, true);
 
-    return () => {
-      // Clean up event listeners
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('click', handleNavigation, true);
-    };
-  }, [hasUnsavedChanges, navigate]);
+  //   return () => {
+  //     // Clean up event listeners
+  //     window.removeEventListener('beforeunload', handleBeforeUnload);
+  //     document.removeEventListener('click', handleNavigation, true);
+  //   };
+  // }, [hasUnsavedChanges, navigate]);
 
   
 
