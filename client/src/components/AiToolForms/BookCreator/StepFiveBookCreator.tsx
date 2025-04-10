@@ -1,16 +1,26 @@
+import React from "react";
 import ContentViewer from "../common/ContentViewer";
 
-interface BookContentProps {
+interface StepFiveBookCreatorProps {
   chaptersContent: string[];
   chapterFetchCount: number;
+  onSave?: () => void;
+  onBack?: () => void;
 }
 
-const StepFiveBookCreator: React.FC<BookContentProps> = ({ chaptersContent, chapterFetchCount }) => {
+const StepFiveBookCreator: React.FC<StepFiveBookCreatorProps> = ({
+  chaptersContent,
+  chapterFetchCount,
+  onSave,
+  onBack
+}) => {
   return (
     <ContentViewer
       chaptersContent={chaptersContent}
       chapterFetchCount={chapterFetchCount}
       titleType="book"
+      onSave={onSave}
+      onBack={onBack}
     />
   );
 };

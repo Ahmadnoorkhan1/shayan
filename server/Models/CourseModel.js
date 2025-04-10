@@ -33,6 +33,10 @@ const Course = sequelize?.define(
       type: DataTypes.STRING,
       allowNull: true, // Can be null if not provided
     },
+    audio_location: { // Add this field
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     type: {
       type: DataTypes.STRING,
       allowNull: false,

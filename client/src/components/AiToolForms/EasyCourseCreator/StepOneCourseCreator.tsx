@@ -3,6 +3,7 @@ import apiService from "../../../utilities/service/api";
 import Spinner from "../../ui/spinner";
 import TitleSelectionComponent from "../common/TitleSelectionComponent";
 import ContentTopicInput from '../common/ContentTopicInput';
+import { RefreshCw } from "lucide-react"; // Import refresh icon
 
 interface StepTwoProps {
   handleStepChange: CallableFunction;
@@ -12,49 +13,71 @@ const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) 
   const [suggestedTitles, setSuggestedTitles] = useState<string[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [showAdvancedInput, setShowAdvancedInput] = useState<boolean>(false);
+  const [regenerating, setRegenerating] = useState<boolean>(false);
+
+  const fetchTitles = async (forceRefresh = false) => {
+    // Clear stored titles if forcing refresh
+    if (forceRefresh) {
+      localStorage.removeItem("easy_course_titles");
+      setRegenerating(true);
+    }
+
+    const storedTitles = localStorage.getItem("easy_course_titles");
+    if (!storedTitles || forceRefresh) {
+      // Generate a random number of chapters between 10-20
+      const numberOfChapters = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
+      localStorage.setItem("number_of_easy_course_chapters", numberOfChapters.toString());
+      
+      try {
+        // Add randomization parameter to API call
+        const response: any = await apiService.post(
+          "/easy-course-creator/step-1",
+          {
+            prompt: {
+              chapterCount: numberOfChapters,
+              randomSeed: Math.random(), // Add randomization seed
+              diversityLevel: "high" // Request higher diversity in titles
+            },
+          },
+          null
+        );
+
+        if (response?.success) {
+          const generatedChapterTitles = response.data;
+          // Shuffle the array before storing for additional randomness
+          const shuffledTitles = generatedChapterTitles.sort(() => 0.5 - Math.random());
+          localStorage.setItem("easy_course_titles", JSON.stringify(shuffledTitles));
+          setSuggestedTitles(Array.isArray(shuffledTitles) ? shuffledTitles : []);
+        } else {
+          setSuggestedTitles([]);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        setSuggestedTitles([]);
+      }
+    } else {
+      try {
+        const parsedTitles = JSON.parse(storedTitles);
+        // Shuffle the titles each time they're loaded from localStorage
+        const shuffledStoredTitles = [...parsedTitles].sort(() => 0.5 - Math.random());
+        setSuggestedTitles(Array.isArray(shuffledStoredTitles) ? shuffledStoredTitles : []);
+      } catch (error) {
+        console.error("Error parsing stored titles:", error);
+        setSuggestedTitles([]);
+      }
+    }
+    setLoading(false);
+    setRegenerating(false);
+  };
 
   useEffect(() => {
-    const fetchTitles = async () => {
-      const storedTitles = localStorage.getItem("easy_course_titles");
-      if (!storedTitles) {
-        const numberOfChapters = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
-        localStorage.setItem("number_of_easy_course_chapters", numberOfChapters.toString());
-        try {
-          const response: any = await apiService.post(
-            "/easy-course-creator/step-1",
-            {
-              prompt: {
-                chapterCount: numberOfChapters,
-              },
-            },
-            null
-          );
-
-          if (response?.success) {
-            const generatedChapterTitles = response.data;
-            localStorage.setItem("easy_course_titles", JSON.stringify(generatedChapterTitles));
-            setSuggestedTitles(Array.isArray(generatedChapterTitles) ? generatedChapterTitles : []);
-          } else {
-            setSuggestedTitles([]);
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          setSuggestedTitles([]);
-        }
-      } else {
-        try {
-          const parsedTitles = JSON.parse(storedTitles);
-          setSuggestedTitles(Array.isArray(parsedTitles) ? parsedTitles : []);
-        } catch (error) {
-          console.error("Error parsing stored titles:", error);
-          setSuggestedTitles([]);
-        }
-      }
-      setLoading(false);
-    };
-
     fetchTitles();
   }, []);
+
+  const handleRegenerateTitles = () => {
+    setLoading(true);
+    fetchTitles(true); // Pass true to force refresh
+  };
 
   const selectTitle = (title: string) => {
     localStorage.setItem("selectedTitleEasyCourse", title);
@@ -71,7 +94,9 @@ const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) 
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <Spinner />
-        <p className="mt-4 text-gray-600">Loading title suggestions...</p>
+        <p className="mt-4 text-gray-600">
+          {regenerating ? "Generating new title suggestions..." : "Loading title suggestions..."}
+        </p>
       </div>
     );
   }
@@ -85,8 +110,6 @@ const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) 
             localStorage.setItem('original_easy_course_topic', value);
             handleStepChange();
           }}
-          // title="Enter your own course topic or title"
-          // description="Provide a detailed description for your course"
           placeholder="e.g., 'Advanced JavaScript for Web Developers'"
         />
         
@@ -100,10 +123,26 @@ const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) 
     );
   }
 
+  // Select a random set of 6 titles each time, rather than always the same slice
+  const displayTitles = suggestedTitles 
+    ? [...suggestedTitles].sort(() => 0.5 - Math.random()).slice(0, 6) 
+    : [];
+
   return (
     <>
+      <div className="w-full flex justify-end max-w-lg px-4 mb-2">
+        <button
+          onClick={handleRegenerateTitles}
+          className="flex items-center gap-2 text-primary hover:text-primary/80 font-medium"
+          disabled={loading || regenerating}
+        >
+          <RefreshCw size={16} className={regenerating ? "animate-spin" : ""} />
+          Regenerate titles
+        </button>
+      </div>
+      
       <TitleSelectionComponent
-        titles={suggestedTitles?.slice(3, 9) || []}
+        titles={displayTitles}
         onSelectTitle={selectTitle}
         contentType="Easy Course"
         showCustomInput={false}

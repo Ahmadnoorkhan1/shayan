@@ -6,9 +6,9 @@ interface ImageGenerationResponse {
   message: string;
 }
 
-export const generateImage = async (prompt: string): Promise<ImageGenerationResponse> => {
+export const generateImage = async (prompt: string, courseId: string | number, contentType: string): Promise<ImageGenerationResponse> => {
   try {
-    const response = await apiService.post('/generate-image', { prompt });
+    const response = await apiService.post('/generate-image', { prompt, courseId , contentType});
     return response;
   } catch (error:any) {
     console.error(error);

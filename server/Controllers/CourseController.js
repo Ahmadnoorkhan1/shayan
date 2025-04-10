@@ -45,21 +45,91 @@ const gptTitles = async (data) => {
 }
 
 const gptSummary = async (data) => {
-    const question = `I am making a course of ${data.prompt}. Can you write me a summary of 600 words? Make sure to return the summary only`;
+    const courseTitle = data.prompt || "Untitled Course";
+    
+    // Simplified prompt focused only on content
+    const question = `Write professional content for a course summary titled "${courseTitle}".
+
+I need exactly 5 sections: Introduction, Course Overview, Key Benefits, Target Audience, and Conclusion.
+Each section should be 1-2 paragraphs (approximately 100-120 words per section).
+
+Write ONLY the CONTENT for each section. Do NOT include any HTML formatting, section titles, or tags.
+Separate each section with THREE HYPHENS (---).
+
+For example:
+[Introduction content here]
+---
+[Course Overview content here]
+---
+[Key Benefits content here]
+---
+[Target Audience content here]
+---
+[Conclusion content here]`;
+
     const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("AI response timed out")), 30000) // 15 sec
+        setTimeout(() => reject(new Error("AI response timed out")), 60000) // 60 seconds
     );
 
     try {
-        const response = await Promise.race([letsAi(question), timeout]);
-        if (!response ) return "Invalid AI response";
+        const response = await Promise.race([letsAi(question, 2048), timeout]);
+        if (!response) return getDefaultSummary(courseTitle);
         
-        return response;
+        // Split the response by the section separator
+        const sections = response.split('---').map(section => section.trim());
+        
+        // Ensure we have exactly 5 sections, pad with defaults if needed
+        const sectionTitles = ['Introduction', 'Course Overview', 'Key Benefits', 'Target Audience', 'Conclusion'];
+        const defaultSections = [
+            `Welcome to the course "${courseTitle}". This course will provide valuable insights and skills.`,
+            `This course covers essential topics and practical applications in ${courseTitle}.`,
+            `Students will gain improved understanding, practical skills, and confidence in the subject matter.`,
+            `This course is designed for beginners to intermediate learners interested in ${courseTitle}.`,
+            `By completing this course, you'll be equipped with the knowledge and skills needed to excel.`
+        ];
+        
+        // Build the HTML with proper structure
+        let html = '<div class="course-summary">';
+        
+        for (let i = 0; i < sectionTitles.length; i++) {
+            const title = sectionTitles[i];
+            // Use the AI-generated content or fall back to default if missing
+            const content = sections[i] || defaultSections[i];
+            
+            html += `
+  <h3 class="summary-section-title">${title}</h3>
+  <p>${content}</p>
+  `;
+        }
+        
+        html += '</div>';
+        
+        return html;
     } catch (error) {
-        console.error("Error:", error.message);
-        return error; // Rethrow for proper handling
+        console.error("Error generating summary:", error.message);
+        return getDefaultSummary(courseTitle);
     }
 };
+
+// Helper function for default summary
+function getDefaultSummary(courseTitle) {
+    return `<div class="course-summary">
+  <h3 class="summary-section-title">Introduction</h3>
+  <p>Welcome to the course "${courseTitle}". This course will provide you with valuable insights and practical skills that you can apply immediately.</p>
+  
+  <h3 class="summary-section-title">Course Overview</h3>
+  <p>This course covers essential topics and practical applications in ${courseTitle}, designed to build your knowledge step by step.</p>
+  
+  <h3 class="summary-section-title">Key Benefits</h3>
+  <p>Students will gain improved understanding, practical skills, and confidence in applying concepts from ${courseTitle}.</p>
+  
+  <h3 class="summary-section-title">Target Audience</h3>
+  <p>This course is designed for beginners to intermediate learners who are interested in expanding their knowledge in ${courseTitle}.</p>
+  
+  <h3 class="summary-section-title">Conclusion</h3>
+  <p>By completing this course, you'll be equipped with the knowledge and skills needed to excel in ${courseTitle}.</p>
+</div>`;
+}
 
 const getNumberOfTitles = async(data)=>{
 
@@ -164,6 +234,7 @@ const addCourse = async (req, res) => {
         const savedCourse = await course.save();;
         return res.status(201).json({ success: true, data: savedCourse, message:" Course "+savedCourse.course_id+" saved successfully" });
     } catch (error) {
+        console.log(error);
         return res.status(500).json({ success: false, message: "Error occurred while adding course", error: error.message });
     }
 }

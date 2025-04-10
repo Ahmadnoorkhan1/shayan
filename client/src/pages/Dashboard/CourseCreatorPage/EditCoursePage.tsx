@@ -13,8 +13,8 @@ import { GenerateCover } from "../../../components/AiToolForms/BookCreator/Gener
 import toast from "react-hot-toast";
 import AlertDialog from "../../../components/AlertDialog";
 import { GenerateQuiz } from "../../../components/GenerateQuiz";
-// import { formatQuizHTML } from '../../utilities/shared/quizUtils';
-// import { formatQuizHTML } from "../../../utilities/shared/editorUtils";
+import { ExternalLink } from "lucide-react";
+import { useNavigate, useLocation } from "react-router";
 
 import {
   processChapterSelection,
@@ -70,7 +70,11 @@ const EditCoursePage = () => {
   const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
   // Add new state for tracking question regeneration
   const [regeneratingQuestionIndex, setRegeneratingQuestionIndex] = useState<number>(-1);
-
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState<boolean>(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  
   const toggleQuizModal = () => setOpenQuizModal(!OpenQuizModal);
 
   const handleImageClick = (imageUrl: string) => {
@@ -126,6 +130,8 @@ const EditCoursePage = () => {
     if (id) {
       fetchCourse();
     }
+
+   
   }, [id]);
 
   const handleAIImageSelect = (imageUrl: string) => {
@@ -134,6 +140,9 @@ const EditCoursePage = () => {
   };
 
   const handleContentChange = (newContent: string) => {
+    if (newContent !== selectedChapter) {
+      setHasUnsavedChanges(true);
+    }
     setSelectedChapter(newContent);
   };
 
@@ -150,10 +159,8 @@ const EditCoursePage = () => {
     setSelectedChapter(content);
     setSelectedChapterIndex(selectedIndex);
     setCurrentQuizContent(quizContent);
-    
   };
 
-console.log(selectedChapter, "see selected Chapter");
 
   const handleSave = async () => {
     try {
@@ -178,7 +185,8 @@ console.log(selectedChapter, "see selected Chapter");
 
       if (response.success) {
         setChapters(updatedChapters);
-        toast.success('Changes saved successfully');
+        setHasUnsavedChanges(false); // Reset flag after successful save
+        // toast.success('Changes saved successfully');
       } else {
         toast.error('Failed to save changes');
       }
@@ -476,7 +484,7 @@ console.log(selectedChapter, "see selected Chapter");
             // NOT the content with the quiz embedded
             setSelectedChapter(cleanContent);
             
-            toast.success('Question regenerated successfully');
+            // toast.success('Question regenerated successfully');
           } else {
             // Revert to original quiz content on save failure
             setCurrentQuizContent(originalQuizContent);
@@ -589,7 +597,7 @@ const handleDeleteQuiz = async () => {
       setSelectedChapter(cleanEditorContent);
       
       console.log('Quiz successfully deleted, chapter content cleaned');
-      toast.success('Quiz deleted successfully');
+      // toast.success('Quiz deleted successfully');
     } else {
       toast.error('Failed to delete quiz');
     }
@@ -599,8 +607,93 @@ const handleDeleteQuiz = async () => {
   }
 };
 
-  if (loading) return <div className="p-6">Loading...</div>;
-  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
+ const handleCreateAudio = async()=>{
+    const response = await apiService.post(
+      `/audio/generate/${id}/course`,
+      {
+        "voice": "alloy" // optional, defaults to "echo"
+      }
+    );
+  
+    if (response.success) {
+      toast.success('Audio created successfully');
+    } else {
+      toast.error('Failed to create audio');
+    }
+  }
+
+  useEffect(() => {
+    // Confirmation handler for when user tries to navigate away
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        // Standard browser confirmation dialog
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires returnValue to be set
+        setShowLeaveConfirmation(true);
+        return ''; // This text is usually ignored by most browsers
+      }
+    };
+
+    // Add listener for tab/window closing
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Hook into history changes
+    const unblock = () => {
+      // Show our custom dialog when navigating away
+      if (hasUnsavedChanges) {
+        setShowLeaveConfirmation(true);
+        return false;
+      }
+      return true;
+    };
+
+    // Handle browser back button
+    const handlePopState = (e: PopStateEvent) => {
+      if (hasUnsavedChanges) {
+        // Prevent the default navigation
+        e.preventDefault();
+        // Show our custom dialog
+        setShowLeaveConfirmation(true);
+        // Push current state back to keep us on this page
+        window.history.pushState(null, '', window.location.pathname);
+      }
+    };
+
+    // Push state to enable catching the back button
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges]);
+
+  const handleConfirmLeave = async () => {
+    // Save content before leaving
+    await handleSave();
+    setShowLeaveConfirmation(false);
+    // Allow navigation to continue
+    navigate('/dashboard');
+  };
+
+  const handleCancelLeave = () => {
+    setShowLeaveConfirmation(false);
+    // Stay on the page
+  };
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
+      <div className="relative">
+        <Book className="w-12 h-12 text-primary/20 animate-pulse" />
+      </div>
+      <h3 className="mt-4 text-lg font-medium text-gray-700">Loading course content...</h3>
+      <p className="mt-2 text-sm text-gray-500">Please wait while we prepare your course editor</p>
+      <div className="mt-6 w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
+        <div className="h-full bg-primary/80 rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
+      </div>
+    </div>
+  );  if (error) return <div className="p-6 text-red-500">Error: {error}</div>;
 
   return (
     <React.Fragment>
@@ -621,13 +714,10 @@ const handleDeleteQuiz = async () => {
         <div className="p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden w-full lg:max-w-4xl">
           {/* Header section */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-            <div className="flex items-center gap-2">
-              <Book className="w-5 h-5 text-purple-500 flex-shrink-0" />
-              <h2 className="text-xl font-bold text-purple-600 truncate">Edit Chapter</h2>
-            </div>
+           
             
             {/* Actions toolbar */}
-            <div className="flex flex-wrap items-center text-purple-600 gap-2">
+            <div className="flex flex-wrap items-center text-primary gap-2">
               <Button
                 variant="soft"
                 size="sm"
@@ -637,10 +727,20 @@ const handleDeleteQuiz = async () => {
                 <PackagePlus className="w-4 h-4" />
                 <span className="text-xs whitespace-nowrap">Create Quiz</span>
               </Button>
+              {/* <Button
+                variant="soft"
+                size="sm"
+                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+                onClick={handleCreateAudio}
+              >
+                <PackagePlus className="w-4 h-4" />
+                <span className="text-xs whitespace-nowrap">Create Audio</span>
+              </Button> */}
+            
     
-              <GenerateCover onCoverImageGenerated={handleAddCoverImage}/>
+              <GenerateCover onCoverImageGenerated={handleAddCoverImage}  courseId={id} contentType={"course"}/>
               
-              <div className="text-purple-600">
+              <div className="text-primary">
                 <Button
                   variant="soft"
                   size="sm"
@@ -669,19 +769,29 @@ const handleDeleteQuiz = async () => {
                   <span className="text-xs whitespace-nowrap">Remove Cover</span>
                 </Button>
               )}
+                <Button
+    variant="soft"
+    size="sm"
+                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+    onClick={() => window.open(`/shared/course/${id}`, '_blank')}
+    title="View live published version in new tab"
+  >
+    <ExternalLink className="w-4 h-4 text-primary" />
+    <span className="text-xs whitespace-nowrap">share preview</span>
+  </Button>
             </div>
           </div>
           
           {/* Save button - now full width on mobile, right-aligned on desktop */}
           <div className="flex justify-end mb-4">
-            <Button 
-              onClick={handleSave} 
-              className="w-full btn-primary md:w-auto bg-primary text-white flex items-center justify-center gap-2 px-4 py-2
-                        rounded shadow hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save Content</span>
-            </Button>
+             <button 
+                         onClick={handleSave} 
+                         className="flex items-center justify-center text-white bg-gradient-to-tl font-medium rounded-md text-sm px-4 py-2 transition-all duration-200 shadow-sm"
+           
+                       >
+                         <Save className="w-4 h-4" />
+                         <span>Save Content</span>
+                       </button>
           </div>
           
           {/* Rich text editor - with proper container to handle responsiveness */}
@@ -700,7 +810,7 @@ const handleDeleteQuiz = async () => {
           {/* Quiz display area - conditionally shown */}
           {currentQuizContent && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold text-purple-800 mb-4">Chapter Quiz</h3>
+              <h3 className="text-lg font-semibold text-primary mb-4">Chapter Quiz</h3>
               <QuizDisplay
                 quizContent={currentQuizContent}
                 onRegenerateQuestion={handleRegenerateQuestion}
@@ -737,11 +847,15 @@ const handleDeleteQuiz = async () => {
     <Modal 
       isOpen={showImageGenerator}
       onClose={() => setShowImageGenerator(false)}
-      title="AI Image Generator"
+      title="Image Generator"
     >
       <ImageGenerator 
         onImageSelect={handleAIImageSelect} 
         isEditorContext={true}
+        NotCover={true}
+        contentType={"course"}
+        courseId={id}
+
       />
     </Modal>
     
@@ -755,6 +869,18 @@ const handleDeleteQuiz = async () => {
         onSaveQuiz={handleSaveQuiz} 
       />
     </Modal>
+
+    <AlertDialog
+    isOpen={showLeaveConfirmation}
+    onClose={handleCancelLeave}
+    title="Unsaved Changes"
+    description="You have unsaved changes. Would you like to save before leaving?"
+    onConfirm={handleConfirmLeave}
+    confirmText="Save & Leave"
+    cancelText="Stay"
+    showImage={false}
+    />
+
     
     <AlertDialog
       isOpen={showEditConfirmation}

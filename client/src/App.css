@@ -1065,3 +1065,9 @@ select::-webkit-scrollbar-track {
 .animate-scaleIn {
   animation: scaleIn 0.4s ease-out forwards;
 }
+
+@keyframes loading {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 0%; }
+}

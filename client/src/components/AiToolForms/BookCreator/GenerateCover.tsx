@@ -8,9 +8,11 @@ import toast from 'react-hot-toast';
 
 interface GenerateCoverProps {
   onCoverImageGenerated?: (imageUrl: string) => void;
+  courseId?: string | number
+  contentType?: string 
 }
 
-export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenerated }) => {
+export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenerated, courseId, contentType }) => {
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState<'generate' | 'edit'>('generate');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -105,7 +107,7 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
         className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
         >
         <Book className="w-4 h-4 " />
-        <span className="text-[12px] ">Book Cover</span>
+        <span className="text-[12px] ">{contentType?.toLowerCase() === "course" ? "Course Cover" : "Book Cover" }</span>
       </Button>
       </div>
 
@@ -149,6 +151,8 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
                   onGenerateStart={handleGenerationStart}
                   isEditorContext={false}
                   uploadedImage={uploadedImage as any}
+                  courseId={courseId}
+                  contentType={contentType}
                 />
               
               {/* Action buttons */}

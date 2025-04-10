@@ -10,8 +10,8 @@ const AddCourseCreator = () => {
     { label: "Give A Topic", icon: true },
     { label: "Select Title", icon: true },
     { label: "Outline", icon: true },
-    { label: "Summary", icon: true },
-    { label: "Pro Course", icon: true },
+    { label: "Syllabus", icon: true },
+    { label: "Complete Course", icon: true },
   ];
 
   // Just provide the component references, not the instances

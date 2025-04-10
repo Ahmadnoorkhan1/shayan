@@ -1,46 +1,65 @@
 const OpenAI = require('openai');
-const axios = require('axios');
-const fs = require('fs-extra');
-const path = require('path');
+const { saveImage } = require('./fileStorage');
 require('dotenv').config();
 
 const openai = new OpenAI({
-    apiKey: process.env.OPEN_API_KEY
+  apiKey: process.env.OPEN_API_KEY
 });
 
-const generateImage = async (prompt) => {
-    try {
-        // Create images directory if it doesn't exist
-        const imagesDir = path.join(__dirname, '../public/images');
-        await fs.ensureDir(imagesDir);
-
-        // Generate unique filename
-        const timestamp = Date.now();
-        const filename = `${timestamp}-${Math.random().toString(36).substring(7)}.png`;
-        const filepath = path.join(imagesDir, filename);
-
-        // Generate image with DALL-E
-        const response = await openai.images.generate({
-            model: "dall-e-3",
-            prompt: prompt,
-            n: 1,
-            size: "1024x1024",
-            quality: "standard",
-            response_format: "url"
-        });
-
-        // Download image from URL
-        const imageUrl = response.data[0].url;
-        const imageResponse = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-        await fs.writeFile(filepath, imageResponse.data);
-
-        // Return local path that can be accessed through the server
-        return `/images/${filename}`;
-
-    } catch (error) {
-        console.error("DALL-E Error:", error.message);
-        return null;
+/**
+ * Generates an image from a prompt and saves it to the filesystem
+ * @param {string} prompt - The prompt to generate an image from
+ * @param {Object} options - Additional options
+ * @param {string} options.contentType - 'book' or 'course'
+ * @param {string|number} options.contentId - ID of the book or course
+ * @param {string} options.size - Image size (default: '1024x1024')
+ * @returns {Object} - Image metadata
+ */
+const generateImage = async (prompt, options = {}) => {
+  try {
+    // Extract options with defaults
+    const { 
+      contentType = 'general', 
+      contentId = 'temp', 
+      size = '1024x1024',
+      description = prompt.substring(0, 100)
+    } = options;
+    
+    // If no valid contentId is provided, throw an error
+    if (!contentId || contentId === 'temp') {
+      throw new Error('Content ID is required for image storage');
     }
+
+    console.log(`Generating image for ${contentType} ID ${contentId}: "${prompt}"`);
+
+    // Generate image through OpenAI
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt: prompt,
+      n: 1,
+      size: size,
+      response_format: "b64_json"
+    });
+
+    if (!response || !response.data || !response.data[0] || !response.data[0].b64_json) {
+      throw new Error("Invalid response structure from OpenAI");
+    }
+
+    // Get base64 image data
+    const imageData = `data:image/png;base64,${response.data[0].b64_json}`;
+
+    // Save image to filesystem
+    const imageMetadata = await saveImage(imageData, contentType, contentId, description);
+
+    // Return image metadata
+    return {
+      url: imageMetadata.path,
+      metadata: imageMetadata
+    };
+  } catch (error) {
+    console.error("Error generating image:", error.message);
+    throw error;
+  }
 };
 
 module.exports = { generateImage };

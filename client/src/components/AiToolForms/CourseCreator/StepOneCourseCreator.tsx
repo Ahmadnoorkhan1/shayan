@@ -8,6 +8,7 @@ const StepOneCourseCreator: React.FC<StepOneProps> = ({ handleForm }) => {
   return (
     <ContentTopicInput 
       handleForm={handleForm}
+      contentType="course"
       // You can optionally customize these props:
       // title="Custom title for course creator" 
       // description="Custom description for course creator"

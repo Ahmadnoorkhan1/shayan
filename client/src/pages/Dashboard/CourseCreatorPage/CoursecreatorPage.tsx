@@ -88,8 +88,8 @@ const CoursecreatorPage = () => {
     <>
       <GettingStarted
         button={false}
-        title="Create a book with our AI"
-        description="What do you want your book to be about? (don't worry, you can always change the content or name of your book later!)"
+        title="Create a course with our AI"
+        description="What do you want your course to be about? (don't worry, you can always change the content or name of your course later!)"
       />
 
       {loading ? (

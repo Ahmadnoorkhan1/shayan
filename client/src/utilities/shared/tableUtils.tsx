@@ -1110,7 +1110,6 @@ const cleanImageUrl = (imgSrc: string): string => {
         <div class="container">
           <header>
             <h1 class="title">${title}</h1>
-            <h2 class="subtitle">Shared ${type === 'book' ? 'Book' : 'Course'}</h2>
           </header>
           
          <div class="cover-toc-container">
@@ -1122,9 +1121,7 @@ const cleanImageUrl = (imgSrc: string): string => {
             ${chaptersHtml}
           </div>
           
-          <footer>
-            <p>© ${new Date().getFullYear()} Mini Schools Academy. All rights reserved.</p>
-          </footer>
+        
         </div>
         
 

@@ -81,18 +81,22 @@ const Stepper: FC<StepperProps> = ({ currentStep, steps }) => {
   );
 };
 
+// Update the CourseFormProps interface to include loadingIndicator
 interface CourseFormProps {
   renderForm: CallableFunction;
   renderButtons: CallableFunction;
   currentStep: number;
   steps: { label: string; icon: boolean }[];
+  loadingIndicator?: React.ReactNode; // New prop
 }
 
+// Update the CourseForm component to render the loading indicator
 const CourseForm: FC<CourseFormProps> = ({
   renderForm,
   renderButtons,
   currentStep,
-  steps
+  steps,
+  loadingIndicator // New prop
 }) => {
   return (
     <div className="w-full max-w-full mx-auto px-4 sm:px-6">
@@ -106,6 +110,13 @@ const CourseForm: FC<CourseFormProps> = ({
           renderForm={renderForm} 
           renderButtons={renderButtons}
         />
+        
+        {/* Render loading indicator if provided */}
+        {loadingIndicator && (
+          <div className="flex justify-center mt-4">
+            {loadingIndicator}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 // ChapterGallery.tsx
 import React, { useState } from "react";
 import { Book, ChevronDown, ChevronUp, FileText, BookOpen, Trash2 } from 'lucide-react';
+import Tooltip from "../../../components/ui/tooltip";
 
 interface ChapterGalleryProps {
   chapters: string[];
@@ -105,8 +106,8 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
   style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} 
   className="sticky top-0 w-full sm:w-[40%] lg:w-auto h-[90vh] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden"
 >      <div className=" top-0 bg-white z-20 px-4 py-3 border-b border-purple-100">
-        <h3 className="text-lg font-semibold text-purple-800 flex items-center">
-          <Book className="w-5 h-5 mr-2 text-purple-600" />
+        <h3 className="text-lg font-semibold text-primary flex items-center">
+          <Book className="w-5 h-5 mr-2 text-primary" />
           Course Chapters
         </h3>
       </div>
@@ -146,18 +147,24 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
                       <div className="flex items-start gap-2 min-w-0">
                         <FileText 
                           className={`w-4 h-4 mt-0.5 flex-shrink-0 transition-colors duration-200
-                            ${isHovered ? 'text-purple-600' : 'text-purple-400'}
-                            ${selectedChapterIndex === index ? 'text-purple-700' : ''}
+                            ${isHovered ? 'text-primary' : 'text-primary'}
+                            ${selectedChapterIndex === index ? 'text-primary' : ''}
                           `}
                         />
                         <div className="flex-1 min-w-0">
-                          <h4 className={`text-sm font-medium truncate transition-colors duration-200
-                            ${selectedChapterIndex === index ? 'text-purple-900' : 'text-gray-800'}
-                          `}>
-                            {title}
-                          </h4>
+                        <Tooltip 
+                            content={title} 
+                            position="top"
+                            width="medium"
+                          >
+                            <h4 className={`text-sm font-medium truncate transition-colors duration-200
+                              ${selectedChapterIndex === index ? 'text-primary' : 'text-gray-800'}
+                            `}>
+                              {title}
+                            </h4>
+                          </Tooltip>
                           <p className={`text-xs mt-1 transition-colors duration-200
-                            ${selectedChapterIndex === index ? 'text-purple-600' : 'text-gray-500'}
+                            ${selectedChapterIndex === index ? 'text-primary' : 'text-gray-500'}
                           `}>
                             {description}
                           </p>

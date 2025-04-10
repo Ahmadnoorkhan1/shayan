@@ -8,6 +8,7 @@ const StepOneBookCreator: React.FC<StepOneProps> = ({ handleForm }) => {
   return (
     <ContentTopicInput 
       handleForm={handleForm}
+      contentType="book"
       // You can optionally customize these props:
       // title="Custom title for book creator" 
       // description="Custom description for book creator"

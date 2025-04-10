@@ -247,6 +247,8 @@ function App() {
           </Route>
 
           <Route path="/shared/:type/:id" element={<SharedContent />} />
+          <Route path="/preview/:type/:id" element={<SharedContent />} />
+
           <Route path="/onboard" element={<Home />} />
         </Routes>
       )}

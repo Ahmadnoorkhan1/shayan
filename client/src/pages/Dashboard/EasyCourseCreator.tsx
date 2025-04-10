@@ -31,7 +31,7 @@ const EasyCourseCreator = () => {
 
   const steps = [
     { label: "Give A Topic", icon: true },
-    { label: "Pro Course", icon: true },
+    { label: "Complete Course", icon: true },
   ];
   
   

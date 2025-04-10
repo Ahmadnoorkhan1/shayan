@@ -1,25 +1,28 @@
+import React from "react";
 import ContentViewer from "../common/ContentViewer";
 
-interface EasyCourseContentProps {
+interface StepFiveEasyCourseCreatorProps {
   chaptersContent: string[];
   chapterFetchCount: number;
+  onSave?: () => void;
+  onBack?: () => void;
 }
 
-const StepFiveCourseCreator: React.FC<EasyCourseContentProps> = ({ chaptersContent, chapterFetchCount }) => {
-  // If there's a save function in the parent component, we can pass it here
-  const handleSave = () => {
-    // You can implement this if needed, or leave it out
-    console.log('Easy course save button clicked');
-  };
-  
+const StepFiveEasyCourseCreator: React.FC<StepFiveEasyCourseCreatorProps> = ({
+  chaptersContent,
+  chapterFetchCount,
+  onSave,
+  onBack
+}) => {
   return (
     <ContentViewer
       chaptersContent={chaptersContent}
       chapterFetchCount={chapterFetchCount}
       titleType="easyCourse"
-      // onSave={handleSave}
+      onSave={onSave}
+      onBack={onBack}
     />
   );
 };
 
-export default StepFiveCourseCreator;
+export default StepFiveEasyCourseCreator;

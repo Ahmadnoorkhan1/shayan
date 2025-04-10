@@ -11,7 +11,7 @@ const AddBookCreator = () => {
     { label: "Select Title", icon: true },
     { label: "Book Details", icon: true },
     { label: "Summary", icon: true },
-    { label: "Pro Book", icon: true },
+    { label: "Complete Book", icon: true },
   ];
 
   // Instead of creating components directly, just provide references to them
@@ -52,7 +52,7 @@ const AddBookCreator = () => {
       steps={bookSteps}
       stepComponents={bookComponents as any}
       apiEndpoints={bookApiEndpoints}
-      requirementFields={requiredBookFields}
+      requirementFields={requiredBookFields as any}
       redirectPath="/dashboard/book-creator"
       storageKeys={bookStorageKeys}
     />

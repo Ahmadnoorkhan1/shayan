@@ -5,7 +5,7 @@ import { Button } from './ui/button';
 import EditorStyles from './EditorStyles';
 import EditorToolbar from './EditorToolbar';
 import BlotFormatter2 from '@enzedonline/quill-blot-formatter2';
-import { Save, Edit, Image } from 'lucide-react';
+import { Save, Edit, Image, ChevronRight, FileText, PanelLeftOpen } from 'lucide-react';
 
 // Register the BlotFormatter2 module with Quill
 if (typeof window !== 'undefined') {
@@ -32,10 +32,14 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
     const isResizingRef = useRef(false);
     const editorRef = useRef<HTMLDivElement | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [showPlaceholder, setShowPlaceholder] = useState(!initialContent);
 
     useEffect(() => {
       if (initialContent) {
         setContent(initialContent);
+        setShowPlaceholder(false);
+      } else {
+        setShowPlaceholder(true);
       }
     }, [initialContent]);
 
@@ -111,8 +115,11 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
       },
       blotFormatter2: {
         align: {
-          allowAligning: true,
-          alignments: ['left', 'center', 'right']
+          allowAligning: false,
+        
+        },
+        image: {
+          allowAltTitleEdit: false
         },
         resize: {
           allowResizing: true,
@@ -126,8 +133,31 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
             }
           }
         },
+      
       }
     };
+
+    // Render the placeholder when no content is selected
+    if (showPlaceholder) {
+      return (
+        <div className="flex flex-col mx-auto w-full h-full">
+          <EditorStyles />
+          
+          {/* Empty state placeholder */}
+          <div className="border rounded-lg h-[calc(100vh-240px)] flex flex-col items-center justify-center bg-gray-50 text-center p-6">
+            <div className="bg-white rounded-full p-4 shadow-md mb-6">
+              <FileText className="h-12 w-12 text-purple-400" />
+            </div>
+            <h3 className="text-xl font-semibold text-gray-800 mb-2">No Chapter Selected</h3>
+            <p className="text-gray-600 max-w-md mb-6">
+              Please select a chapter from the side panel to start editing its content.
+            </p>
+            
+            
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="flex flex-col mx-auto w-full">
