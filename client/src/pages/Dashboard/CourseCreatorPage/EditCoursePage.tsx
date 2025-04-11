@@ -15,6 +15,8 @@ import AlertDialog from "../../../components/AlertDialog";
 import { GenerateQuiz } from "../../../components/GenerateQuiz";
 import { ExternalLink } from "lucide-react";
 import { useNavigate, useLocation } from "react-router";
+import { Music } from "lucide-react";
+
 
 import {
   processChapterSelection,
@@ -727,15 +729,15 @@ const handleDeleteQuiz = async () => {
                 <PackagePlus className="w-4 h-4" />
                 <span className="text-xs whitespace-nowrap">Create Quiz</span>
               </Button>
-              {/* <Button
+              <Button
                 variant="soft"
                 size="sm"
                 className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-                onClick={handleCreateAudio}
-              >
-                <PackagePlus className="w-4 h-4" />
-                <span className="text-xs whitespace-nowrap">Create Audio</span>
-              </Button> */}
+                onClick={() => navigate(`/create-audio/course/${id}`)}
+                >
+  <Music className="w-4 h-4" />
+  <span className="text-xs whitespace-nowrap">Create Audio</span>
+              </Button>
             
     
               <GenerateCover onCoverImageGenerated={handleAddCoverImage}  courseId={id} contentType={"course"}/>

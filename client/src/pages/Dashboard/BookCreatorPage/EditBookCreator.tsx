@@ -14,6 +14,8 @@ import toast from "react-hot-toast";
 import AlertDialog from "../../../components/AlertDialog";
 import { GenerateQuiz } from "../../../components/GenerateQuiz";
 import { ExternalLink, FileText } from "lucide-react";
+import { Music } from "lucide-react";
+
 
 import {
   processChapterSelection,
@@ -810,17 +812,17 @@ const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
                 <PackagePlus className="w-4 h-4" />
                 <span className="text-xs whitespace-nowrap">Create Quiz</span>
               </Button>
-              {/* <Button
-                variant="soft"
-                size="sm"
-                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-                onClick={handleCreateAudio}
-              >
-                <PackagePlus className="w-4 h-4" />
-                <span className="text-xs whitespace-nowrap">Create Audio</span>
-              </Button> */}
               
-    
+              
+    <Button
+                    variant="soft"
+                    size="sm"
+                    className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+                    onClick={() => navigate(`/create-audio/course/${id}`)}
+                    >
+      <Music className="w-4 h-4" />
+      <span className="text-xs whitespace-nowrap">Create Audio</span>
+                  </Button>
               <GenerateCover onCoverImageGenerated={handleAddCoverImage}  courseId={id} contentType={"book"}/>
               
               <div className="">

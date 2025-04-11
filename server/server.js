@@ -20,8 +20,7 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(cors());
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
-app.use('/audio', express.static(path.join(__dirname, 'public/audio'))); 
-
+app.use('/audio', express.static(path.join(__dirname, 'public/audio')));
 syncDatabase();
 app.use(express.json());
 app.get('/', (req, res) => {

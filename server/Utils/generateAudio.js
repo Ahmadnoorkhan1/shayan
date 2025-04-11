@@ -234,4 +234,171 @@ const generateAudio = async (data) => {
     }
 };
 
-module.exports = { generateAudio };
+/**
+ * Generates audio for a specific chapter
+ * 
+ * @param {Object} data - Chapter data including content, ID, and chapter index
+ * @returns {String} - Path to the generated audio file
+ */
+const generateChapterAudio = async (data) => {
+    try {
+        // Extract data
+        const { 
+            chapterContent, 
+            chapterIndex, 
+            voice = 'alloy', 
+            type = 'course',
+            id 
+        } = data;
+        
+        if (!chapterContent || !id || chapterIndex === undefined) {
+            throw new Error("Missing required parameters: chapterContent, id, and chapterIndex");
+        }
+        
+        // Create directory structure: /audio/[type]/[id]/chapters/
+        const baseDir = path.join(__dirname, '../public/audio', type, id.toString(), 'chapters');
+        await fs.ensureDir(baseDir);
+        
+        // Create unique filename based on chapter index
+        const filename = `chapter_${chapterIndex}.mp3`;
+        const filepath = path.join(baseDir, filename);
+        
+        // Prepare content for audio conversion
+        const preparedText = prepareContentForAudio(chapterContent);
+        
+        // Create an array to store audio buffers
+        const audioBuffers = [];
+        
+        // Process content in chunks (OpenAI limit is 4096 characters)
+        const MAX_CHUNK_SIZE = 3500; // Leave some margin below the 4096 limit
+        
+        // Split by paragraphs first
+        const paragraphs = preparedText.split(/\n{2,}/);
+        let currentChunk = '';
+        const chunks = [];
+        
+        // Process each paragraph into chunks
+        for (const paragraph of paragraphs) {
+            if (currentChunk.length + paragraph.length > MAX_CHUNK_SIZE) {
+                if (currentChunk.length > 0) {
+                    chunks.push(currentChunk);
+                    currentChunk = '';
+                }
+                
+                if (paragraph.length > MAX_CHUNK_SIZE) {
+                    // Split long paragraphs into sentences
+                    const sentences = paragraph.split(/(?<=[.!?])\s+/);
+                    
+                    for (const sentence of sentences) {
+                        if (currentChunk.length + sentence.length > MAX_CHUNK_SIZE) {
+                            if (currentChunk.length > 0) {
+                                chunks.push(currentChunk);
+                                currentChunk = sentence + ' ';
+                            } else {
+                                // If a single sentence is too long, split by words
+                                if (sentence.length > MAX_CHUNK_SIZE) {
+                                    const words = sentence.split(' ');
+                                    let wordChunk = '';
+                                    
+                                    for (const word of words) {
+                                        if (wordChunk.length + word.length + 1 > MAX_CHUNK_SIZE) {
+                                            chunks.push(wordChunk);
+                                            wordChunk = word + ' ';
+                                        } else {
+                                            wordChunk += word + ' ';
+                                        }
+                                    }
+                                    
+                                    if (wordChunk.length > 0) {
+                                        currentChunk = wordChunk;
+                                    }
+                                } else {
+                                    chunks.push(sentence);
+                                }
+                            }
+                        } else {
+                            currentChunk += sentence + ' ';
+                        }
+                    }
+                } else {
+                    currentChunk = paragraph + '\n\n';
+                }
+            } else {
+                currentChunk += paragraph + '\n\n';
+            }
+        }
+        
+        // Add the last chunk if not empty
+        if (currentChunk.length > 0) {
+            chunks.push(currentChunk);
+        }
+        
+        console.log(`Chapter ${chapterIndex} content split into ${chunks.length} chunks for audio processing`);
+        
+        // Generate audio for each chunk
+        for (let i = 0; i < chunks.length; i++) {
+            try {
+                console.log(`Processing audio chunk ${i+1}/${chunks.length} for chapter ${chapterIndex}`);
+                
+                const response = await openai.audio.speech.create({
+                    model: "tts-1",
+                    voice: voice,
+                    input: chunks[i],
+                    response_format: "mp3"
+                });
+                
+                // Get audio data as buffer
+                const chunkBuffer = Buffer.from(await response.arrayBuffer());
+                audioBuffers.push(chunkBuffer);
+                
+                // Add a small pause between chunks
+                if (i < chunks.length - 1) {
+                    const silence = Buffer.alloc(2000);
+                    audioBuffers.push(silence);
+                }
+            } catch (chunkError) {
+                console.error(`Error processing chunk ${i+1} for chapter ${chapterIndex}:`, chunkError.message);
+                // Continue with other chunks
+            }
+        }
+        
+        // Combine all audio buffers
+        const combinedAudioBuffer = Buffer.concat(audioBuffers);
+        
+        // Save the combined audio file
+        await fs.writeFile(filepath, combinedAudioBuffer);
+        
+        // Return the path to the audio file
+        const publicPath = `/audio/${type}/${id}/chapters/${filename}`;
+        
+        // Update metadata file
+        const metadataPath = path.join(path.dirname(baseDir), 'metadata.json');
+        let metadata = { chapters: {} };
+        
+        if (await fs.pathExists(metadataPath)) {
+            try {
+                metadata = await fs.readJson(metadataPath);
+                metadata.chapters = metadata.chapters || {};
+            } catch (error) {
+                console.error('Error reading metadata file, creating new one:', error);
+            }
+        }
+        
+        // Add chapter info to metadata
+        metadata.chapters[chapterIndex] = {
+            path: publicPath,
+            createdAt: new Date().toISOString(),
+            voice: voice,
+            duration: Math.floor(combinedAudioBuffer.length / 1000) // Rough estimate of duration in seconds
+        };
+        
+        await fs.writeJson(metadataPath, metadata, { spaces: 2 });
+        
+        return publicPath;
+    } catch (error) {
+        console.error("Chapter Audio Generation Error:", error.message);
+        return null;
+    }
+};
+
+module.exports = { generateAudio, generateChapterAudio };

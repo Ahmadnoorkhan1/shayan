@@ -1,6 +1,8 @@
 const express = require('express');
-const { generateAudio } = require('../Utils/generateAudio');
+const { generateAudio, generateChapterAudio } = require('../Utils/generateAudio');
 const Course = require('../Models/CourseModel');
+const path = require('path');
+const fs = require('fs-extra');
 
 const router = express.Router();
 
@@ -73,6 +75,72 @@ router.post('/generate/:contentId/:contentType', async (req, res) => {
     }
 });
 
+// Generate audio for a specific chapter
+router.post('/generate-chapter/:id/:contentType', async (req, res) => {
+    try {
+        const { id, contentType } = req.params;
+        const { chapterIndex, chapterContent, voice, timeout = 60000 } = req.body;
+        
+        // Validate required fields
+        if (!chapterContent || chapterIndex === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Missing required parameters: chapterContent and chapterIndex" 
+            });
+        }
+        
+        // Validate the content type
+        if (contentType !== 'course' && contentType !== 'book') {
+            return res.status(400).json({ 
+                success: false, 
+                message: "Invalid content type. Must be 'course' or 'book'." 
+            });
+        }
+        
+        // Generate audio with timeout protection
+        const audioGeneration = generateChapterAudio({
+            chapterContent,
+            chapterIndex,
+            voice,
+            type: contentType,
+            id
+        });
+        
+        const audioTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Audio generation timed out")), parseInt(timeout) || 60000)
+        );
+        
+        const audioPath = await Promise.race([audioGeneration, audioTimeout]);
+        
+        if (!audioPath) {
+            return res.status(500).json({ 
+                success: false, 
+                message: "Failed to generate chapter audio" 
+            });
+        }
+        
+        // Return success response with audio path
+        return res.status(200).json({
+            success: true,
+            data: {
+                audioPath,
+                chapterIndex,
+                contentType,
+                contentId: id
+            },
+            message: `Chapter ${chapterIndex} audio generated successfully`
+        });
+        
+    } catch (error) {
+        console.error("Error generating chapter audio:", error.message);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Error occurred while generating chapter audio", 
+            error: error.message 
+        });
+    }
+});
+
 // Get audio status and path for a content
 router.get('/status/:contentId', async (req, res) => {
     try {
@@ -107,6 +175,54 @@ router.get('/status/:contentId', async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Error occurred while checking audio status",
+            error: error.message
+        });
+    }
+});
+
+// Get chapters audio status
+router.get('/chapters/:contentType/:contentId', async (req, res) => {
+    try {
+        const { contentType, contentId } = req.params;
+        
+        // Path to metadata file
+        const metadataPath = path.join(
+            __dirname, 
+            '../public/audio', 
+            contentType, 
+            contentId.toString(), 
+            'metadata.json'
+        );
+        
+        // Check if metadata exists
+        if (!await fs.pathExists(metadataPath)) {
+            return res.status(200).json({
+                success: true,
+                data: { 
+                    chaptersWithAudio: {},
+                    hasAudio: false 
+                },
+                message: "No audio files found for this content"
+            });
+        }
+        
+        // Get metadata
+        const metadata = await fs.readJson(metadataPath);
+        
+        return res.status(200).json({
+            success: true,
+            data: {
+                chaptersWithAudio: metadata.chapters || {},
+                hasAudio: Object.keys(metadata.chapters || {}).length > 0
+            },
+            message: "Chapter audio status retrieved successfully"
+        });
+        
+    } catch (error) {
+        console.error("Error checking chapter audio status:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Error occurred while checking chapter audio status",
             error: error.message
         });
     }

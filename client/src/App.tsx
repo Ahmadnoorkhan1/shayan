@@ -26,6 +26,7 @@ import GlobalLoader from './components/shared/GlobalLoader';
 import Home from './pages/onboarding/Home';
 import './App.css';
 import TokenHandler from './components/TokenHandler';
+import AudioCreator from './components/AudioCreator';
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -247,8 +248,7 @@ function App() {
           </Route>
 
           <Route path="/shared/:type/:id" element={<SharedContent />} />
-          <Route path="/preview/:type/:id" element={<SharedContent />} />
-
+          <Route path="/create-audio/:contentType/:id" element={<AudioCreator />} />
           <Route path="/onboard" element={<Home />} />
         </Routes>
       )}
