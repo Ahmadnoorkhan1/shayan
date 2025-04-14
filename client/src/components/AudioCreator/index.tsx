@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import apiService from "../../utilities/service/api";
-import { Play, Pause, SkipForward, SkipBack, Music, Check, Download, ArrowLeft, RefreshCw } from "lucide-react";
+import { Play, Pause, SkipForward, SkipBack, Music, Check, Download, ArrowLeft, RefreshCw, Loader2, AlertCircle, Volume2, VolumeX } from "lucide-react";
 import toast from "react-hot-toast";
 
 // Get the API base URL based on environment
@@ -49,6 +49,8 @@ const AudioCreator: React.FC = () => {
   const [selectedVoice, setSelectedVoice] = useState("alloy");
   const [existingAudios, setExistingAudios] = useState<ExistingAudio[]>([]);
   const [fetchingExisting, setFetchingExisting] = useState(false);
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
   const audioRefs = useRef<{[key: number]: HTMLAudioElement | null}>({});
   const navigate = useNavigate();
   
@@ -95,14 +97,9 @@ const AudioCreator: React.FC = () => {
           let parsedChapters: string[] = [];
           
           try {
-            // Clean and parse the content based on its format
-            const cleanContent = contentResponse.data.content
-              .replace(/^"/, '')
-              .replace(/"$/, '')
-              .replace(/\\\\/g, '\\')
-              .replace(/\\"/g, '"');
+           
               
-            let parsed = JSON.parse(cleanContent);
+            let parsed = JSON.parse(contentResponse.data?.content);
             
             // Handle different content formats
             if (typeof parsed === "string") {
@@ -281,6 +278,7 @@ const AudioCreator: React.FC = () => {
     }
   };
 
+  // Generate audio for a single chapter
   const generateChapterAudio = async (chapterIndex: number) => {
     // Update status to loading
     setGenerationStatus(prev => {
@@ -346,7 +344,9 @@ const AudioCreator: React.FC = () => {
             return updated;
           });
           
-          toast.success(`Audio for ${chapterDetails[chapterIndex].title} generated successfully!`);
+          // if (!batchGenerating) {
+          //   toast.success(`Audio for ${chapterDetails[chapterIndex].title} generated successfully!`);
+          // }
           return true;
         }
       }
@@ -366,9 +366,82 @@ const AudioCreator: React.FC = () => {
         return updated;
       });
       
-      toast.error(`Failed to generate audio: ${err.message || "Unknown error"}`);
+      if (!batchGenerating) {
+        toast.error(`Failed to generate audio: ${err.message || "Unknown error"}`);
+      }
       return false;
     }
+  };
+
+  // New function to generate all chapters sequentially
+  const generateAllChapters = async () => {
+    // Make sure we're not already generating
+    if (batchGenerating) return;
+    
+    setBatchGenerating(true);
+    setIsGenerating(true);
+    
+    // Identify chapters that need generation (those in idle or error state)
+    const chaptersToGenerate = generationStatus
+      .map((status, index) => ({ index, status: status.status }))
+      .filter(item => item.status === "idle" || item.status === "error");
+    
+    // If no chapters need generation, show a message and return
+    if (chaptersToGenerate.length === 0) {
+      toast.success("All chapters already have audio!");
+      setBatchGenerating(false);
+      setIsGenerating(false);
+      return;
+    }
+    
+    // Create a toast notification for overall progress
+    const toastId = toast.loading(`Starting audio generation for ${chaptersToGenerate.length} chapters...`);
+    
+    // Track success/failure counts
+    let successCount = 0;
+    let failureCount = 0;
+    
+    // Process chapters sequentially
+    for (let i = 0; i < chaptersToGenerate.length; i++) {
+      const chapterIndex = chaptersToGenerate[i].index;
+      setCurrentGeneratingIndex(chapterIndex);
+      
+      // Update progress toast
+      toast.loading(`Generating chapter ${i + 1} of ${chaptersToGenerate.length}: "${chapterDetails[chapterIndex].title}"`, 
+        { id: toastId });
+      
+      try {
+        // Use existing function to generate this chapter
+        const success = await generateChapterAudio(chapterIndex);
+        
+        if (success) {
+          successCount++;
+        } else {
+          failureCount++;
+        }
+        
+        // Add a small delay between chapters
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+      } catch (err) {
+        console.error(`Error in batch generation for chapter ${chapterIndex}:`, err);
+        failureCount++;
+      }
+    }
+    
+    // Show final results
+    if (failureCount === 0) {
+      toast.success(`Successfully generated audio for all ${successCount} chapters!`, { id: toastId });
+    } else {
+      toast.error(
+        `Generated ${successCount} chapters, but ${failureCount} failed. You can retry those individually.`, 
+        { id: toastId, duration: 5000 }
+      );
+    }
+    
+    setCurrentGeneratingIndex(null);
+    setBatchGenerating(false);
+    setIsGenerating(false);
   };
 
   const handlePlay = (chapterIndex: number) => {
@@ -378,15 +451,30 @@ const AudioCreator: React.FC = () => {
     }
     
     // Play the selected chapter
-    if (audioRefs.current[chapterIndex]) {
-      audioRefs.current[chapterIndex]?.play();
-      setCurrentlyPlaying(chapterIndex);
+    const audioElement = audioRefs.current[chapterIndex];
+    if (audioElement) {
+      // Set new event listeners for this specific playback
+      const playPromise = audioElement.play();
+      
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setCurrentlyPlaying(chapterIndex);
+          })
+          .catch(err => {
+            console.error("Error playing audio:", err);
+            setCurrentlyPlaying(null);
+          });
+      } else {
+        setCurrentlyPlaying(chapterIndex);
+      }
     }
   };
 
   const handlePause = (chapterIndex: number) => {
-    if (audioRefs.current[chapterIndex]) {
-      audioRefs.current[chapterIndex]?.pause();
+    const audioElement = audioRefs.current[chapterIndex];
+    if (audioElement) {
+      audioElement.pause();
       setCurrentlyPlaying(null);
     }
   };
@@ -394,33 +482,45 @@ const AudioCreator: React.FC = () => {
   const handleAudioEnded = () => {
     setCurrentlyPlaying(null);
   };
-  
-  
 
+  const handleDownload = (audioUrl: string, title: string) => {
+    const a = document.createElement('a');
+    a.href = audioUrl;
+    a.download = `${title}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+  
   // Calculate overall progress
   const generatedCount = generationStatus.filter(s => s.status === "success").length;
   const errorCount = generationStatus.filter(s => s.status === "error").length;
   const totalProgress = chapterDetails.length ? Math.round((generatedCount / chapterDetails.length) * 100) : 0;
+  const chaptersNeedingGeneration = generationStatus.filter(s => s.status === "idle" || s.status === "error").length;
 
+  // Loading state
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
         <div className="relative">
-          <Music className="w-12 h-12 text-primary/20 animate-pulse" />
+          <Music className="w-14 h-14 text-primary/20 animate-pulse" />
         </div>
-        <h3 className="mt-4 text-lg font-medium text-gray-700">Loading content...</h3>
-        <p className="mt-2 text-sm text-gray-500">Please wait while we prepare your audio generation</p>
-        <div className="mt-6 w-48 h-1 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-primary/80 rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
+        <h3 className="mt-6 text-xl font-medium text-gray-700">Preparing Audio Studio</h3>
+        <p className="mt-3 text-sm text-gray-500">Loading your content and existing audio files...</p>
+        <div className="mt-8 w-64 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+          <div className="h-full bg-primary/70 rounded-full animate-[loading_1.5s_ease-in-out_infinite]"></div>
         </div>
       </div>
     );
   }
   
+  // Error state
   if (error) {
     return (
-      <div className="p-6 flex flex-col items-center justify-center">
-        <div className="text-red-500 mb-4">{error}</div>
+      <div className="p-8 flex flex-col items-center justify-center">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h3 className="text-xl font-medium text-gray-700 mb-3">Something went wrong</h3>
+        <div className="text-red-500 p-4 bg-red-50 rounded-lg mb-6 max-w-lg text-center">{error}</div>
         <Button 
           variant="outline" 
           onClick={() => navigate(-1)}
@@ -434,32 +534,34 @@ const AudioCreator: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-5xl">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+    <div className="container mx-auto p-6 max-w-5xl">
+      {/* Header section */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-5 mb-8">
         <div>
           <button 
             onClick={() => navigate(-1)}
-            className="text-gray-500 hover:text-gray-700 mb-4 flex items-center gap-1"
+            className="text-gray-500 hover:text-gray-700 mb-3 flex items-center gap-1.5 text-sm font-medium transition-colors"
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Editor
+            <ArrowLeft className="w-3.5 h-3.5" /> Back to Editor
           </button>
-          <h1 className="text-2xl font-bold">Create Audio {contentType === "book" ? "Book" : "Course"}</h1>
-          <p className="text-gray-600 mt-1">Generate and manage audio for your {contentType}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent">
+            Create Audio {contentType === "book" ? "Book" : "Course"}
+          </h1>
+          <p className="text-gray-600 mt-1.5">Create professional audio narration for your {contentType}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           {/* Voice selection dropdown */}
           <div>
-            <label htmlFor="voice-select" className="block text-sm font-medium text-gray-700 mb-1">
-              Voice
+            <label htmlFor="voice-select" className="block text-sm font-medium text-gray-700 mb-1.5">
+              Voice Style
             </label>
             <select
               id="voice-select"
               value={selectedVoice}
               onChange={(e) => setSelectedVoice(e.target.value)}
-              className="block w-full rounded-md border-gray-300 shadow-sm py-2 px-3 text-sm"
-              disabled={isGenerating}
+              className="block w-full rounded-md border border-gray-200 shadow-sm py-2.5 px-3 text-sm bg-white focus:ring-1 focus:ring-primary/30 focus:border-primary"
+              disabled={isGenerating || batchGenerating}
             >
               {voiceOptions.map(voice => (
                 <option key={voice.id} value={voice.id}>
@@ -469,107 +571,187 @@ const AudioCreator: React.FC = () => {
             </select>
           </div>
           
-          {/* Refresh button */}
-          <Button
-            // variant="outline"
-            // size="sm"
-            onClick={refreshExistingAudio}
-            disabled={fetchingExisting}
-            className="flex text-white items-center bg-gradient-to-tl gap-1 h-10"
-          >
-            <RefreshCw className={`w-4 h-4 ${fetchingExisting ? "animate-spin" : ""}`} />
-            <span>{fetchingExisting ? "Refreshing..." : "Refresh Audio Files"}</span>
-          </Button>
+          {/* Control buttons */}
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={refreshExistingAudio}
+              disabled={fetchingExisting || isGenerating}
+              className="h-10 text-sm font-medium border-gray-200 hover:bg-gray-50"
+            >
+              <RefreshCw className={`w-4 h-4 mr-2 ${fetchingExisting ? "animate-spin" : ""}`} />
+              <span>{fetchingExisting ? "Refreshing..." : "Refresh"}</span>
+            </Button>
+            
+            <Button
+              onClick={generateAllChapters}
+              disabled={isGenerating || chaptersNeedingGeneration === 0}
+              className="h-10 bg-primary hover:bg-primary/90 text-white text-sm font-medium"
+            >
+              {batchGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Music className="w-4 h-4 mr-2" />
+                  <span>Generate All {chaptersNeedingGeneration > 0 ? `(${chaptersNeedingGeneration})` : ""}</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
       
-      {/* Progress bar */}
-      <div className="mb-8">
-        <div className="flex justify-between text-sm font-medium mb-1">
-          <span>Overall Progress</span>
-          <span>{generatedCount} of {chapterDetails.length} chapters ({totalProgress}%)</span>
+      {/* Progress section */}
+      <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm mb-8">
+        <div className="flex justify-between text-sm font-medium mb-2">
+          <span className="text-gray-600">Overall Progress</span>
+          <div className="flex gap-2 items-center">
+            <span className="text-primary font-semibold">{generatedCount}</span>
+            <span className="text-gray-400">/</span>
+            <span>{chapterDetails.length} chapters</span>
+            <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs ml-1 font-medium">
+              {totalProgress}%
+            </span>
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        
+        <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
           <div 
-            className="bg-primary h-2.5 rounded-full transition-all duration-500"
+            className="bg-primary h-3 rounded-full transition-all duration-700 ease-out"
             style={{ width: `${totalProgress}%` }}
           ></div>
         </div>
+        
         {errorCount > 0 && (
-          <p className="text-sm text-red-500 mt-1">
+          <p className="flex items-center text-sm text-red-500 mt-2">
+            <AlertCircle className="w-4 h-4 mr-1.5" />
             {errorCount} chapter{errorCount > 1 ? 's' : ''} failed to generate
           </p>
         )}
       </div>
       
       {/* Chapters list */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {chapterDetails.map((chapter, index) => (
           <div 
             key={index}
-            className={`border rounded-lg p-4 ${
-              generationStatus[index]?.status === "error" ? "border-red-200 bg-red-50" : 
-              generationStatus[index]?.status === "success" ? "border-green-200 bg-green-50" : 
-              generationStatus[index]?.status === "loading" ? "border-blue-200 bg-blue-50" : 
-              "border-gray-200"
-            }`}
+            className={`rounded-xl p-5 shadow-sm transition-all duration-300 ${
+              generationStatus[index]?.status === "error" ? "bg-red-50 border border-red-100" : 
+              generationStatus[index]?.status === "success" ? "bg-white border border-gray-100" : 
+              generationStatus[index]?.status === "loading" ? "bg-blue-50 border border-blue-100" : 
+              "bg-white border border-gray-100"
+            } ${currentGeneratingIndex === index ? "ring-2 ring-primary/30" : ""}`}
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="font-medium text-lg">{chapter.title}</h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {chapter.content.length > 100 ? 
-                    `${chapter.content.substring(0, 100)}...` : 
+              <div className="flex-1">
+                <div className="flex items-center">
+                  {generationStatus[index]?.status === "success" && (
+                    <span className="flex h-6 w-6 mr-2 rounded-full bg-green-100 items-center justify-center">
+                      <Check className="h-3.5 w-3.5 text-green-600" />
+                    </span>
+                  )}
+                  <h2 className="font-semibold text-lg text-gray-800">{chapter.title}</h2>
+                </div>
+                <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                  {chapter.content.length > 150 ? 
+                    `${chapter.content.substring(0, 150)}...` : 
                     chapter.content}
                 </p>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 self-end sm:self-center">
+                {/* Show different UI based on generation status */}
                 {(!generationStatus[index] || generationStatus[index]?.status === "idle") && (
                   <Button
-                    // variant="outline"
-                    // size="sm"
+                    size="sm"
                     onClick={() => generateChapterAudio(index)}
-                    disabled={isGenerating}
-                    className="flex text-white items-center bg-gradient-to-tl gap-1 h-10"
+                    disabled={isGenerating || batchGenerating}
+                    className="bg-primary hover:bg-primary/90 text-white text-xs px-3 py-1.5 h-8"
                   >
-                    <Music className="w-4 h-4 mr-1" />
+                    <Music className="w-3.5 h-3.5 mr-1.5" />
                     Generate
                   </Button>
                 )}
                 
                 {generationStatus[index]?.status === "loading" && (
-                  <div className="flex items-center text-blue-600">
+                  <div className="flex items-center text-blue-600 bg-blue-50 px-3 py-1.5 rounded-md">
                     <div className="animate-spin mr-2 h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                    Generating...
+                    <span className="text-sm">Generating...</span>
                   </div>
                 )}
                 
                 {generationStatus[index]?.status === "error" && (
                   <div className="flex items-center">
-                    <span className="text-red-500 text-sm mr-2">{generationStatus[index]?.error}</span>
+                    <span className="text-red-500 text-sm mr-2 max-w-[200px] line-clamp-1">
+                      {generationStatus[index]?.error || "Error"}
+                    </span>
                     <Button
-                      variant="outline"
                       size="sm"
                       onClick={() => generateChapterAudio(index)}
-                      className="border-red-500 text-red-500 hover:bg-red-50"
+                      disabled={isGenerating || batchGenerating}
+                      className="border-red-400 text-red-500 hover:bg-red-50 text-xs"
                     >
+                      <RefreshCw className="w-3.5 h-3.5 mr-1" />
                       Retry
                     </Button>
                   </div>
                 )}
                 
-             
+                {generationStatus[index]?.status === "success" && (
+                  <div className="flex items-center gap-2">
+                    {currentlyPlaying === index ? (
+                      <Button
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handlePause(index)}
+                        className="border-primary text-primary hover:bg-primary/5 h-8 w-8 p-0"
+                      >
+                        <Pause className="h-3.5 w-3.5" />
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePlay(index)}
+                        className="border-primary text-primary hover:bg-primary/5 h-8 w-8 p-0"
+                      >
+                        <Play className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownload(generationStatus[index].audioUrl!, chapter.title)}
+                      className="border-gray-200 text-gray-700 hover:bg-gray-50 h-8 w-8 p-0"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    {/* Hidden audio element */}
+                    <audio 
+                      ref={el => audioRefs.current[index] = el}
+                      src={generationStatus[index].audioUrl}
+                      onEnded={handleAudioEnded}
+                      className="hidden"
+                      preload="metadata"
+                    />
+                  </div>
+                )}
               </div>
             </div>
             
-            {/* Show audio player UI when generated successfully */}
+            {/* Audio player when generated successfully */}
             {generationStatus[index]?.status === "success" && generationStatus[index]?.audioUrl && (
-              <div className="mt-3">
+              <div className="mt-4 bg-gray-50 rounded-lg p-3">
                 <audio
                   controls
-                  className="w-full mt-2"
+                  className="w-full"
                   src={generationStatus[index].audioUrl}
+                  controlsList="nodownload"
                 >
                   Your browser does not support the audio element.
                 </audio>
@@ -579,14 +761,17 @@ const AudioCreator: React.FC = () => {
         ))}
       </div>
       
+      {/* Empty state */}
       {chapterDetails.length === 0 && (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-          <Music className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <h3 className="text-lg font-medium text-gray-700">No chapters found</h3>
-          <p className="text-gray-500 mt-1">This {contentType} doesn't have any chapters to convert to audio.</p>
+        <div className="text-center py-16 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+          <Music className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-700 mb-2">No chapters found</h3>
+          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            This {contentType} doesn't have any chapters available to convert to audio.
+          </p>
           <Button
             variant="outline"
-            className="mt-4"
+            className="border-gray-300 hover:bg-gray-100"
             onClick={() => navigate(-1)}
           >
             Return to Editor

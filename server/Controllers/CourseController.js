@@ -48,24 +48,34 @@ const gptSummary = async (data) => {
     const courseTitle = data.prompt || "Untitled Course";
     
     // Simplified prompt focused only on content
-    const question = `Write professional content for a course summary titled "${courseTitle}".
+    const question = `Create a professional course summary for "${courseTitle}".
 
-I need exactly 5 sections: Introduction, Course Overview, Key Benefits, Target Audience, and Conclusion.
-Each section should be 1-2 paragraphs (approximately 100-120 words per section).
-
-Write ONLY the CONTENT for each section. Do NOT include any HTML formatting, section titles, or tags.
-Separate each section with THREE HYPHENS (---).
-
-For example:
-[Introduction content here]
----
-[Course Overview content here]
----
-[Key Benefits content here]
----
-[Target Audience content here]
----
-[Conclusion content here]`;
+    IMPORTANT FORMATTING INSTRUCTIONS:
+    1. You MUST provide EXACTLY 5 sections in the order listed below
+    2. Each section must be separated by exactly three hyphens (---) on a line by themselves
+    3. Do NOT include section titles, HTML tags, or any formatting
+    4. Write 1-2 paragraphs (100-120 words) for each section
+    5. STRICTLY follow this structure - any deviation will cause errors
+    
+    REQUIRED SECTIONS IN THIS EXACT ORDER:
+    - Introduction section
+    - Course Overview section
+    - Key Benefits section
+    - Target Audience section
+    - Conclusion section
+    
+    YOUR RESPONSE MUST STRICTLY FOLLOW THIS STRUCTURE:
+    [Introduction content here]
+    ---
+    [Course Overview content here]
+    ---
+    [Key Benefits content here]
+    ---
+    [Target Audience content here]
+    ---
+    [Conclusion content here]
+    
+    If you understand these requirements, proceed with creating the summary NOW. Include ONLY the content with the separators, nothing else.`;
 
     const timeout = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("AI response timed out")), 60000) // 60 seconds
@@ -153,7 +163,7 @@ const getCourseChapter = async (req, res) => {
     const question = `Write a detailed educational chapter of 100-200 words for Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter} 
     of the course "${data.prompt.title}". Use HTML formatting with the following structure:
     
-    <h1>Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter}</h1>
+    <h1>Chapter ${data.prompt.chapter}</h1>
     
     <p>Introduction paragraph here...</p>
     

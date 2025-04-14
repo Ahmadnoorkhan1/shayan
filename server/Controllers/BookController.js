@@ -163,7 +163,7 @@ const getBookChapter = async (req, res) => {
     const question = `Write a detailed educational chapter of 100-200 words for Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter} 
     of the book "${data.prompt.title}". Use HTML formatting with the following structure:
     
-    <h1>Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter}</h1>
+    <h1>Chapter ${data.prompt.chapter}</h1>
     
     <p>Introduction paragraph here...</p>
     

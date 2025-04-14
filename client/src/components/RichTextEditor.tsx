@@ -134,6 +134,10 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
           }
         },
       
+      }, 
+      clipboard: {
+        // Configure the clipboard module to normalize pasted content
+        matchVisual: false,
       }
     };
 

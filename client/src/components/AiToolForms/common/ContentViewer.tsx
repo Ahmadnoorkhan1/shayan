@@ -600,9 +600,9 @@ useEffect(() => {
                 disabled={!isChapterReady}
                 onClick={() => handleChapterSelect(index)}
               >
-                <div className="text-xs sm:text-sm font-medium tracking-wide">
+                {/* <div className="text-xs sm:text-sm font-medium tracking-wide">
                   Chapter {index + 1}
-                </div>
+                </div> */}
                 
                 {/* Full title display without truncation */}
                 <div className="text-center font-medium text-sm sm:text-base max-w-full px-1 break-words">
@@ -664,7 +664,7 @@ useEffect(() => {
               <div className="flex justify-center">
                 <BookOpen size={isMobile ? 16 : 20} className={index === currentChapterIndex ? 'text-white' : 'text-primary'} />
               </div>
-              <div className="text-xs sm:text-sm font-semibold">Chapter {index + 1}</div>
+              {/* <div className="text-xs sm:text-sm font-semibold">Chapter {index + 1}</div> */}
               
               {/* Full title display without truncation */}
               <div className="text-center text-xs sm:text-sm max-w-full px-1 break-words mt-1">

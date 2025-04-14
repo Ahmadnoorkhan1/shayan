@@ -390,7 +390,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
           const chapterResponse = await apiService.post(
             apiEndpoints.content,
             chapterPayload,
-            { timeout: 600000 }
+            { timeout: 30000 }
           );
   
           if (chapterResponse.success) {
@@ -453,11 +453,7 @@ const ContentCreator: React.FC<ContentCreatorProps> = ({
         toast.success("All chapters generated successfully!");
         setSaveButton(true);
         setIsGeneratingChapters(false);
-        
-        // Auto-save the content after a brief delay
-        setTimeout(() => {
-          saveCompleteContent();
-        }, 1500);
+        // Auto-save removed - user will need to click Save button manually
       }, 1000);
     } else {
       // If generation was stopped manually
