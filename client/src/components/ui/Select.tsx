@@ -1,4 +1,5 @@
 interface SelectProps {
+  id?: string;
   value: string;
   options: string[];
   placeholder: string;
@@ -8,6 +9,7 @@ interface SelectProps {
 }
 
 export const CustomSelect: React.FC<SelectProps> = ({
+  id,
   value,
   options,
   placeholder,

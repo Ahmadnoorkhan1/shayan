@@ -23,8 +23,9 @@ export type ContentDetail = {
   name: string
   options: string[]
   value: string
+  icon?: React.ReactNode
+  description?: string
 }
-
 export type ContentData = {
   purpose: string
   details: Record<string, string>

@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { ContentDetail } from "../BookGenerationStepper"
 import { CustomSelect } from "../../../components/ui/Select"
+import { ChevronDown, ChevronUp, Settings, Users, BookOpen } from "lucide-react"
 
 interface ContentDetailsStepProps {
   selectedDetails: Record<string, string>
@@ -12,17 +13,14 @@ interface ContentDetailsStepProps {
 
 const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails, onChange }) => {
   const [activeDetail, setActiveDetail] = useState<string | null>(null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
-  const details: ContentDetail[] = [
-    {
-      id: "style",
-      name: "Content Style",
-      options: ["Academic", "Conversational", "Technical", "Narrative", "Instructional", "Poetic", "Journalistic", "Business"],
-      value: selectedDetails.style || "",
-    },
+  // Split details into essential and advanced categories
+  const essentialDetails: ContentDetail[] = [
     {
       id: "audience",
       name: "Target Audience",
+      icon: <Users size={18} className="text-purple-500" />,
       options: [
         "Children (Ages 5-12)",
         "Young Adults (Ages 13-17)",
@@ -36,16 +34,31 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
         "Educators",
       ],
       value: selectedDetails.audience || "",
+      description: "Who will be reading or consuming your content?"
+    },
+    {
+      id: "style",
+      name: "Content Style",
+      icon: <BookOpen size={18} className="text-purple-500" />,
+      options: ["Academic", "Conversational", "Technical", "Narrative", "Instructional", "Poetic", "Journalistic", "Business"],
+      value: selectedDetails.style || "",
+      description: "The overall writing approach and presentation style"
     },
     {
       id: "length",
       name: "Length/Depth",
+      icon: <BookOpen size={18} className="text-purple-500" />,
       options: ["Brief", "Standard", "Comprehensive", "In-depth", "Bite-sized", "Extended Series"],
       value: selectedDetails.length || "",
+      description: "How extensive should the content be?"
     },
+  ]
+
+  const advancedDetails: ContentDetail[] = [
     {
       id: "structure",
       name: "Content Structure",
+      icon: <Settings size={18} className="text-purple-500" />,
       options: [
         "Standard Chapters",
         "Modules/Lessons",
@@ -58,16 +71,20 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
         "Thematic Organization"
       ],
       value: selectedDetails.structure || "",
+      description: "How the content is organized and presented"
     },
     {
       id: "tone",
       name: "Tone",
+      icon: <Settings size={18} className="text-purple-500" />,
       options: ["Formal", "Informal", "Humorous", "Serious", "Inspirational", "Critical", "Neutral", "Enthusiastic", "Authoritative"],
       value: selectedDetails.tone || "",
+      description: "The emotional quality of the writing"
     },
     {
       id: "media",
       name: "Media Type",
+      icon: <Settings size={18} className="text-purple-500" />,
       options: [
         "Text-only",
         "Text with Graphics",
@@ -78,54 +95,124 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
         "Multi-format"
       ],
       value: selectedDetails.media || "",
+      description: "What formats and media elements to include"
     },
   ]
 
+  const renderDetailCard = (detail: ContentDetail) => {
+    const isActive = activeDetail === detail.id;
+    const isSelected = !!selectedDetails[detail.id];
+
+    return (
+      <div
+        key={detail.id}
+        onClick={() => setActiveDetail(detail.id)}
+        className={`relative rounded-xl transition-all duration-300 ${
+          isSelected
+            ? "bg-gradient-to-r from-purple-50 to-white border border-purple-100"
+            : "bg-white border border-gray-100 hover:border-purple-100"
+        } ${isActive ? "shadow-md" : ""} p-5`}
+      >
+        <div className="flex items-center gap-2 mb-3">
+          {detail.icon}
+          <label
+            htmlFor={detail.id}
+            className={`block text-sm font-medium transition-colors ${
+              isSelected ? "text-purple-700" : "text-gray-700"
+            }`}
+          >
+            {detail.name}
+          </label>
+        </div>
+
+        {detail?.description && (
+          <p className="text-xs text-gray-500 mb-3">{detail.description}</p>
+        )}
+
+        <CustomSelect
+          id={detail.id as any}
+          value={selectedDetails[detail.id] || ""}
+          options={detail.options}
+          placeholder={`Select ${detail.name}`}
+          onChange={(value) => onChange(detail.id, value)}
+          isSelected={isSelected}
+          className="hover:border-purple-300 focus:ring-purple-200"
+        />
+
+        {isSelected && (
+          <div className="absolute top-0 right-0 w-3 h-3 bg-purple-500 rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
+        )}
+      </div>
+    );
+  }
+
+  // Count total selections for progress
+  const totalSelections = Object.keys(selectedDetails).length;
+  const requiredSelections = 3;
+  const progress = Math.min(100, (totalSelections / requiredSelections) * 100);
+  
+  // Count selections in each category for showing badges
+  const essentialSelectionsCount = essentialDetails.filter(detail => 
+    selectedDetails[detail.id]).length;
+  const advancedSelectionsCount = advancedDetails.filter(detail => 
+    selectedDetails[detail.id]).length;
+
   return (
-    <div className="space-y-2">
-      <p className="text-sm text-gray-500 mb-6">
-        Customize your content by selecting options for each category below. Fill at least 3 categories to continue.
-      </p>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-1">Essential Details</h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Please select these basic options to help us tailor your content.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {essentialDetails.map(renderDetailCard)}
+        </div>
+        {essentialSelectionsCount > 0 && (
+          <div className="mt-2 text-sm text-right text-purple-600 font-medium">
+            {essentialSelectionsCount}/{essentialDetails.length} selected
+          </div>
+        )}
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {details?.map((detail) => {
-          const isActive = activeDetail === detail.id
-          const isSelected = !!detail.value
-
-          return (
-            <div
-              key={detail.id}
-              onClick={() => setActiveDetail(detail.id)}
-              className={`relative rounded-xl transition-all duration-300 ${
-                isSelected
-                  ? "bg-gradient-to-r from-purple-50 to-white border border-purple-100"
-                  : "bg-white border border-gray-100 hover:border-purple-100"
-              } ${isActive ? "shadow-md" : ""} p-5`}
-            >
-              <label
-                htmlFor={detail.id}
-                className={`block text-sm font-medium mb-2 transition-colors ${
-                  isSelected ? "text-purple-700" : "text-gray-700"
-                }`}
-              >
-                {detail.name}
-              </label>
-
-              <CustomSelect
-                value={detail.value}
-                options={detail.options}
-                placeholder={`Select ${detail.name}`}
-                onChange={(value) => onChange(detail.id, value)}
-                isSelected={isSelected}
-                className="hover:border-purple-300 focus:ring-purple-200"
-              />
-
-              {isSelected && (
-                <div className="absolute top-0 right-0 w-3 h-3 bg-purple-500 rounded-full transform translate-x-1/2 -translate-y-1/2"></div>
+      <div className="relative pt-6 mt-6 border-t border-gray-100">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center text-sm font-medium text-gray-600 hover:text-purple-600 transition-colors"
+        >
+          {showAdvanced ? (
+            <>
+              <ChevronUp size={16} className="mr-2" />
+              Hide Advanced Options
+            </>
+          ) : (
+            <>
+              <ChevronDown size={16} className="mr-2" />
+              Show Advanced Options {advancedSelectionsCount > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 text-xs bg-purple-100 text-purple-600 rounded-full">
+                  {advancedSelectionsCount}
+                </span>
               )}
+            </>
+          )}
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-1">Advanced Options <span className="text-sm font-normal text-gray-500">(Optional)</span></h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Fine-tune your content with these additional settings.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {advancedDetails.map(renderDetailCard)}
             </div>
-          )
-        })}
+            {advancedSelectionsCount > 0 && (
+              <div className="mt-2 text-sm text-right text-purple-600 font-medium">
+                {advancedSelectionsCount}/{advancedDetails.length} selected
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-8 pt-4 border-t border-gray-100">
@@ -133,15 +220,15 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
           <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-purple-500 to-purple-600 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, (Object.keys(selectedDetails).length / 3) * 100)}%` }}
+              style={{ width: `${progress}%` }}
             ></div>
           </div>
 
           <div className="ml-4 text-sm font-medium text-gray-600">
-            {Object.keys(selectedDetails).length >= 3 ? (
+            {totalSelections >= requiredSelections ? (
               <span className="text-purple-600">Ready to continue!</span>
             ) : (
-              <span>{3 - Object.keys(selectedDetails).length} more selections needed</span>
+              <span>{requiredSelections - totalSelections} more selections needed</span>
             )}
           </div>
         </div>
