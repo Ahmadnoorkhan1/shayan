@@ -125,20 +125,20 @@ const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) 
 
   // Select a random set of 6 titles each time, rather than always the same slice
   const displayTitles = suggestedTitles 
-    ? [...suggestedTitles].sort(() => 0.5 - Math.random()).slice(0, 6) 
+    ? [...suggestedTitles].sort(() => 0.5 - Math.random()).slice(0, 9) 
     : [];
 
   return (
     <>
       <div className="w-full flex justify-end max-w-lg px-4 mb-2">
-        <button
+        {/* <button
           onClick={handleRegenerateTitles}
           className="flex items-center gap-2 text-primary hover:text-primary/80 font-medium"
           disabled={loading || regenerating}
         >
           <RefreshCw size={16} className={regenerating ? "animate-spin" : ""} />
           Regenerate titles
-        </button>
+        </button> */}
       </div>
       
       <TitleSelectionComponent
@@ -146,6 +146,8 @@ const StepOneCourseCreatorTool: React.FC<StepTwoProps> = ({ handleStepChange }) 
         onSelectTitle={selectTitle}
         contentType="Easy Course"
         showCustomInput={false}
+        onRegenerateTitle={handleRegenerateTitles}
+        isRegenerating={regenerating}
       />
       
       <div className="w-full max-w-lg px-4 mt-2 mb-8 text-center">

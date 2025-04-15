@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PenSquare } from 'lucide-react';
+import { PenSquare, RefreshCw } from 'lucide-react';
 
 interface TitleSelectionProps {
   titles: string[];
@@ -7,13 +7,17 @@ interface TitleSelectionProps {
   storageKey?: string;
   contentType?: string;
   showCustomInput?: boolean;
+  onRegenerateTitle?: () => void;
+  isRegenerating?: boolean;
 }
 
 const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
   titles,
   onSelectTitle,
   contentType = 'Content',
-  showCustomInput = true
+  showCustomInput = true,
+  onRegenerateTitle,
+  isRegenerating = false
 }) => {
   // Get storage key based on content type
   const getCustomTitleKey = () => {
@@ -46,6 +50,9 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
     "from-cyan-600 to-cyan-500", // Professional cyan
     "from-gray-700 to-gray-600", // Professional gray
     "from-sky-600 to-sky-500", // Professional sky blue
+    "from-indigo-600 to-indigo-500", // Professional indigo
+    "from-emerald-600 to-emerald-500", // Professional emerald green
+    "from-stone-700 to-stone-600", // Professional warm gray
   ];
 
   // Clean titles by removing quotation marks
@@ -87,13 +94,28 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
 
   return (
     <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
-      <h2 className="text-xl md:text-2xl font-bold text-primary mb-6 text-center">
-        Choose a Title Below or Create Your Own!
-      </h2>
+      <div className="flex justify-between items-center w-full mb-6 px-4">
+        <h2 className="text-xl md:text-2xl font-bold text-primary text-center">
+          Choose a Title Below or Create Your Own!
+        </h2>
+        
+        {/* Added regenerate button */}
+        {onRegenerateTitle && (
+          <button
+            onClick={onRegenerateTitle}
+            className="flex items-center gap-2 text-primary hover:text-primary/80 font-medium transition-all duration-200"
+            disabled={isRegenerating}
+            title="Generate new title suggestions"
+          >
+            <RefreshCw size={18} className={isRegenerating ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Regenerate titles</span>
+          </button>
+        )}
+      </div>
 
       {/* Title cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full px-4 py-6">
-        {cleanTitles?.slice(0, 6)?.map((title: string, index: number) => {
+        {cleanTitles?.map((title: string, index: number) => {
           const colorClass = colorVariants[index % colorVariants.length];
           const isHovered = hoverIndex === index;
           
@@ -107,6 +129,7 @@ const TitleSelectionComponent: React.FC<TitleSelectionProps> = ({
               onMouseEnter={() => setHoverIndex(index)}
               onMouseLeave={() => setHoverIndex(null)}
             >
+              {/* Button content remains the same */}
               {/* Background effect */}
               <div 
                 className={`absolute inset-0 bg-gradient-to-br from-gray-50 to-white 

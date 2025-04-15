@@ -26,9 +26,32 @@ interface RichTextEditorProps {
   onImageClick?: (imageUrl: string) => void;
 }
 
+// Helper function to clean empty list items
+// Helper function to clean HTML content
+const cleanHtmlContent = (htmlContent: string): string => {
+  if (!htmlContent) return htmlContent;
+  
+  // Clean empty list items
+  let cleanedContent = htmlContent
+    .replace(/<li><br><\/li>/g, '')
+    .replace(/<li><p><br><\/p><\/li>/g, '')
+    .replace(/<li>\s*<\/li>/g, '')
+    .replace(/<ul>\s*<\/ul>/g, '')
+    .replace(/<ol>\s*<\/ol>/g, '');
+  
+  // Remove pre tags but keep their content
+  cleanedContent = cleanedContent.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/g, (match, content) => {
+    // Return just the content inside the pre tags
+    return content;
+  });
+  
+  return cleanedContent;
+};
+
+
 const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
   ({ initialContent, imageUrl, id, onContentChange, onSave, onImageClick }, ref) => {
-    const [content, setContent] = useState(initialContent);
+    const [content, setContent] = useState(() => cleanHtmlContent(initialContent));
     const isResizingRef = useRef(false);
     const editorRef = useRef<HTMLDivElement | null>(null);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -36,12 +59,16 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
 
     useEffect(() => {
       if (initialContent) {
-        setContent(initialContent);
+        // Clean the content before setting it
+        setContent(cleanHtmlContent(initialContent));
         setShowPlaceholder(false);
       } else {
         setShowPlaceholder(true);
       }
     }, [initialContent]);
+
+    console.log(content)
+
 
     useEffect(() => {
       if (imageUrl && ref && 'current' in ref && ref.current) {
@@ -95,10 +122,13 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
     }, []);
 
     const handleChange = (value: string) => {
-      setContent(value);
-      onContentChange(value);
+      // Clean the content when it changes
+      const cleanedContent = cleanHtmlContent(value);
+      setContent(cleanedContent);
+      onContentChange(cleanedContent);
     };
 
+    // Enhanced Quill configuration to handle lists better
     const modules = {
       toolbar: {
         container: [
@@ -116,7 +146,6 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
       blotFormatter2: {
         align: {
           allowAligning: false,
-        
         },
         image: {
           allowAltTitleEdit: false
@@ -133,12 +162,25 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
             }
           }
         },
-      
       }, 
       clipboard: {
-        // Configure the clipboard module to normalize pasted content
-        matchVisual: false,
-      }
+        // Toggle matchVisual to false to prevent Quill from adding extra elements when pasting
+        matchVisual: false
+      },
+      // keyboard: {
+      //   // Customize how lists work with keyboard interaction
+      //   bindings: {
+      //     // Override the default "list" behavior
+      //     list: {
+      //       key: 'backspace',
+      //       format: ['list'],
+      //       handler: function(range: any, context: any) {
+      //         // Custom handling here if needed
+      //         return true; // Let Quill handle it by default
+      //       }
+      //     }
+      //   }
+      // }
     };
 
     // Render the placeholder when no content is selected
@@ -156,8 +198,6 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
             <p className="text-gray-600 max-w-md mb-6">
               Please select a chapter from the side panel to start editing its content.
             </p>
-            
-            
           </div>
         </div>
       );
@@ -199,7 +239,6 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
             preserveWhitespace
           />
         </div>
-    
       </div>
     );
   }

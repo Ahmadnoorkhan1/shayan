@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { Button } from "../ui/button";
 import apiService from "../../utilities/service/api";
-import { Play, Pause, SkipForward, SkipBack, Music, Check, Download, ArrowLeft, RefreshCw, Loader2, AlertCircle, Volume2, VolumeX } from "lucide-react";
+import { Play, Pause, SkipForward, SkipBack, Music, Check, Download, ArrowLeft, RefreshCw, Loader2, AlertCircle, Volume2, VolumeX, FileAudio } from "lucide-react";
 import toast from "react-hot-toast";
 
 // Get the API base URL based on environment
@@ -37,6 +37,12 @@ interface ExistingAudio {
   createdAt?: string;
 }
 
+interface CompleteAudioStatus {
+  status: "idle" | "loading" | "success" | "error";
+  url?: string;
+  error?: string;
+}
+
 const AudioCreator: React.FC = () => {
   const { contentType, id } = useParams<{ contentType: string; id: string }>();
   const [chapters, setChapters] = useState<string[]>([]);
@@ -51,6 +57,7 @@ const AudioCreator: React.FC = () => {
   const [fetchingExisting, setFetchingExisting] = useState(false);
   const [batchGenerating, setBatchGenerating] = useState(false);
   const [currentGeneratingIndex, setCurrentGeneratingIndex] = useState<number | null>(null);
+  const [completeAudioStatus, setCompleteAudioStatus] = useState<CompleteAudioStatus>({ status: "idle" });
   const audioRefs = useRef<{[key: number]: HTMLAudioElement | null}>({});
   const navigate = useNavigate();
   
@@ -344,9 +351,6 @@ const AudioCreator: React.FC = () => {
             return updated;
           });
           
-          // if (!batchGenerating) {
-          //   toast.success(`Audio for ${chapterDetails[chapterIndex].title} generated successfully!`);
-          // }
           return true;
         }
       }
@@ -444,40 +448,40 @@ const AudioCreator: React.FC = () => {
     setIsGenerating(false);
   };
 
-  const handlePlay = (chapterIndex: number) => {
-    // Stop any currently playing audio
-    if (currentlyPlaying !== null && audioRefs.current[currentlyPlaying]) {
-      audioRefs.current[currentlyPlaying]?.pause();
-    }
+  // const handlePlay = (chapterIndex: number) => {
+  //   // Stop any currently playing audio
+  //   if (currentlyPlaying !== null && audioRefs.current[currentlyPlaying]) {
+  //     audioRefs.current[currentlyPlaying]?.pause();
+  //   }
     
-    // Play the selected chapter
-    const audioElement = audioRefs.current[chapterIndex];
-    if (audioElement) {
-      // Set new event listeners for this specific playback
-      const playPromise = audioElement.play();
+  //   // Play the selected chapter
+  //   const audioElement = audioRefs.current[chapterIndex];
+  //   if (audioElement) {
+  //     // Set new event listeners for this specific playback
+  //     const playPromise = audioElement.play();
       
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => {
-            setCurrentlyPlaying(chapterIndex);
-          })
-          .catch(err => {
-            console.error("Error playing audio:", err);
-            setCurrentlyPlaying(null);
-          });
-      } else {
-        setCurrentlyPlaying(chapterIndex);
-      }
-    }
-  };
+  //     if (playPromise !== undefined) {
+  //       playPromise
+  //         .then(() => {
+  //           setCurrentlyPlaying(chapterIndex);
+  //         })
+  //         .catch(err => {
+  //           console.error("Error playing audio:", err);
+  //           setCurrentlyPlaying(null);
+  //         });
+  //     } else {
+  //       setCurrentlyPlaying(chapterIndex);
+  //     }
+  //   }
+  // };
 
-  const handlePause = (chapterIndex: number) => {
-    const audioElement = audioRefs.current[chapterIndex];
-    if (audioElement) {
-      audioElement.pause();
-      setCurrentlyPlaying(null);
-    }
-  };
+  // const handlePause = (chapterIndex: number) => {
+  //   const audioElement = audioRefs.current[chapterIndex];
+  //   if (audioElement) {
+  //     audioElement.pause();
+  //     setCurrentlyPlaying(null);
+  //   }
+  // };
 
   const handleAudioEnded = () => {
     setCurrentlyPlaying(null);
@@ -491,12 +495,78 @@ const AudioCreator: React.FC = () => {
     a.click();
     document.body.removeChild(a);
   };
+
+  const allChaptersHaveAudio = () => {
+    return generationStatus.length > 0 && 
+           generationStatus.every(status => status.status === "success" && status.audioUrl);
+  };
+
+  const combineAndDownloadAudio = async () => {
+    if (!allChaptersHaveAudio()) {
+      toast.error("Not all chapters have audio generated. Please generate all chapter audios first.");
+      return;
+    }
+    
+    setCompleteAudioStatus({ status: "loading" });
+    
+    try {
+      // Create an array of chapter audio information to send to the server
+      const chapterAudios = generationStatus.map(status => ({
+        chapterId: status.chapterId,
+        title: status.title,
+        audioUrl: status.audioUrl
+      }));
+      
+      // Get content title for the filename
+      let contentTitle = contentType === "book" ? "Book" : "Course";
+      
+      // Call API to combine audio files
+      const response = await apiService.post(
+        `/audio/combine/${contentType}/${id}`, 
+        { chapters: chapterAudios },
+        // { timeout: 300000 } // 5 minute timeout for potentially large files
+      );
+      
+      if (response.success && response.data?.audioPath) {
+        const fullAudioUrl = getFullAudioUrl(response.data.audioPath);
+        
+        setCompleteAudioStatus({
+          status: "success",
+          url: fullAudioUrl
+        });
+        
+        // Download the file
+        handleDownloadComplete(fullAudioUrl, `Complete-${contentTitle}-${id}`);
+        
+        toast.success("Complete audio created successfully!");
+      } else {
+        throw new Error(response.message || "Failed to combine audio files");
+      }
+    } catch (err: any) {
+      console.error("Error combining audio files:", err);
+      setCompleteAudioStatus({
+        status: "error",
+        error: err.message || "Failed to create complete audio"
+      });
+      toast.error(`Failed to create complete audio: ${err.message || "Unknown error"}`);
+    }
+  };
+
+  const handleDownloadComplete = (audioUrl: string, title: string) => {
+    const a = document.createElement('a');
+    a.href = audioUrl;
+    a.download = `${title}.mp3`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
   
   // Calculate overall progress
   const generatedCount = generationStatus.filter(s => s.status === "success").length;
   const errorCount = generationStatus.filter(s => s.status === "error").length;
   const totalProgress = chapterDetails.length ? Math.round((generatedCount / chapterDetails.length) * 100) : 0;
   const chaptersNeedingGeneration = generationStatus.filter(s => s.status === "idle" || s.status === "error").length;
+  const isCompleteAudioAvailable = allChaptersHaveAudio();
 
   // Loading state
   if (loading) {
@@ -631,6 +701,31 @@ const AudioCreator: React.FC = () => {
             {errorCount} chapter{errorCount > 1 ? 's' : ''} failed to generate
           </p>
         )}
+        
+        {/* Complete Audio Download Button - New addition */}
+        {isCompleteAudioAvailable && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex justify-end">
+            <Button
+              onClick={combineAndDownloadAudio}
+              disabled={completeAudioStatus.status === "loading"}
+              className={`bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-700 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-300 ${
+                completeAudioStatus.status === "loading" ? "opacity-75" : ""
+              }`}
+            >
+              {completeAudioStatus.status === "loading" ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Creating Complete Audio...</span>
+                </>
+              ) : (
+                <>
+                  <FileAudio className="w-4 h-4" />
+                  <span>Download Complete Audio</span>
+                </>
+              )}
+            </Button>
+          </div>
+        )}
       </div>
       
       {/* Chapters list */}
@@ -702,7 +797,7 @@ const AudioCreator: React.FC = () => {
                 
                 {generationStatus[index]?.status === "success" && (
                   <div className="flex items-center gap-2">
-                    {currentlyPlaying === index ? (
+                    {/* {currentlyPlaying === index ? (
                       <Button
                         size="sm" 
                         variant="outline"
@@ -721,7 +816,7 @@ const AudioCreator: React.FC = () => {
                         <Play className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    
+                     */}
                     <Button
                       size="sm"
                       variant="outline"

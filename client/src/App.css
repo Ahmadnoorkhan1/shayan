@@ -8,6 +8,165 @@
 @tailwind utilities;
 
 
+/* Global Animation System - Applied Automatically */
+
+/* Animation timing variables */
+:root {
+  --animation-duration-fast: 150ms;
+  --animation-duration-default: 300ms;
+  --animation-duration-slow: 500ms;
+  --animation-timing: cubic-bezier(0.4, 0, 0.2, 1);
+  --animation-timing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Base animation for all elements */
+* {
+  transition-property: transform, opacity, background-color, border-color, color, box-shadow;
+  transition-duration: var(--animation-duration-default);
+  transition-timing-function: var(--animation-timing);
+  will-change: auto;
+}
+
+/* Element-specific animations (no classes needed) */
+button, a, .btn, input[type="button"], input[type="submit"] {
+  transition: all var(--animation-duration-default) var(--animation-timing);
+  transform-origin: center;
+}
+
+button:hover, a:hover, .btn:hover, input[type="button"]:hover, input[type="submit"]:hover {
+  transform: translateY(-2px);
+}
+
+button:active, a:active, .btn:active, input[type="button"]:active, input[type="submit"]:active {
+  transform: translateY(1px);
+}
+
+/* Cards and interactive containers */
+div[class*="card"], div[class*="box"], div[class*="container"], section, article {
+  transition: all var(--animation-duration-default) var(--animation-timing);
+}
+
+/* Images, avatars, and media */
+img {
+  transition: all var(--animation-duration-default) var(--animation-timing);
+}
+
+img:hover {
+  transform: scale(1.02);
+}
+
+/* Elements that appear in lists */
+li, tr {
+  animation: fadeIn 0.5s forwards;
+  animation-delay: calc(var(--index, 0) * 50ms);
+}
+
+/* Page entry animations */
+body > div > main, body > div > div[class*="container"] {
+  animation: pageEnter 0.4s var(--animation-timing) forwards;
+}
+
+/* Automatically staggered animations for lists */
+ul > li, ol > li, tbody > tr {
+  opacity: 0;
+}
+
+ul:hover > li, ol:hover > li, tbody:hover > tr {
+  animation-name: fadeIn;
+  animation-duration: 0.3s;
+  animation-fill-mode: forwards;
+}
+
+ul > li:nth-child(1), ol > li:nth-child(1), tbody > tr:nth-child(1) { animation-delay: 0ms; }
+ul > li:nth-child(2), ol > li:nth-child(2), tbody > tr:nth-child(2) { animation-delay: 50ms; }
+ul > li:nth-child(3), ol > li:nth-child(3), tbody > tr:nth-child(3) { animation-delay: 100ms; }
+ul > li:nth-child(4), ol > li:nth-child(4), tbody > tr:nth-child(4) { animation-delay: 150ms; }
+ul > li:nth-child(5), ol > li:nth-child(5), tbody > tr:nth-child(5) { animation-delay: 200ms; }
+ul > li:nth-child(6), ol > li:nth-child(6), tbody > tr:nth-child(6) { animation-delay: 250ms; }
+
+/* Form elements */
+input, select, textarea {
+  transition: all var(--animation-duration-default) var(--animation-timing);
+}
+
+input:focus, select:focus, textarea:focus {
+  transform: translateY(-1px);
+}
+
+/* Headers with gradient text effects */
+h1, h2, h3 {
+  background-size: 200% auto;
+  background-position: 0% 0%;
+  transition: all 0.8s ease;
+}
+
+h1:hover, h2:hover, h3:hover {
+  background-position: 100% 0%;
+}
+
+/* Animation keyframes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Modal and dialog animations */
+dialog, [role="dialog"], div[class*="modal"], div[class*="popup"] {
+  animation: modalEnter 0.4s var(--animation-timing-bounce) forwards;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Page transitions for route changes */
+#root > div {
+  animation: routeTransition 0.3s var(--animation-timing) forwards;
+}
+
+@keyframes routeTransition {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Respect user preferences for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* // navbar toggler */
 input#nav-toggle:checked~label#show-button {
   @apply hidden;
