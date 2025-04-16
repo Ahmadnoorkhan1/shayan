@@ -27,6 +27,7 @@ import Home from './pages/onboarding/Home';
 import './App.css';
 import TokenHandler from './components/TokenHandler';
 import AudioCreator from './components/AudioCreator';
+import OnboardingFlow from './pages/onboardingFlow/OnboardingFlow';
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -249,7 +250,7 @@ function App() {
 
           <Route path="/shared/:type/:id" element={<SharedContent />} />
           <Route path="/create-audio/:contentType/:id" element={<AudioCreator />} />
-          <Route path="/onboard" element={<Home />} />
+          <Route path="/onboard" element={<OnboardingFlow />} />
         </Routes>
       )}
       

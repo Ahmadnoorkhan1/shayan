@@ -77,6 +77,7 @@ module.exports = {
         'leave': 'leave 0.15s ease-in forwards',
         'pulse-gradient': 'pulseGradient 2s ease infinite',
         loader: 'loader 1.5s ease-in-out infinite',
+        'float': 'float 10s ease-in-out infinite',
       },
       keyframes: {
         'infinite-scroll': {
@@ -103,6 +104,10 @@ module.exports = {
           '0%': { width: '0%', marginLeft: '0%' },
           '50%': { width: '40%', marginLeft: '30%' },
           '100%': { width: '0%', marginLeft: '100%' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-20px)' },
         },
       },
     },

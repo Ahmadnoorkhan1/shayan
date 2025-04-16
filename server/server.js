@@ -10,6 +10,7 @@ const sharingRoutes = require('./Routes/SharingRoutes');
 const answerCheckRoutes = require('./Routes/AnswerCheckRoutes');
 const onboardingRoutes = require('./Routes/OnboardingRoutes');
 const audioRoutes = require('./Routes/AudioRoutes'); 
+const userDataRoutes = require('./Routes/UserDataRoutes');
 const cors = require("cors");
 const path = require('path');
 
@@ -36,7 +37,8 @@ app.use('/api/shared', sharingRoutes);
 app.use('/api', answerCheckRoutes); // This will add the /api/check-answer route
 app.use('/api/auth', authRoutes);
 app.use('/api/onboard', onboardingRoutes); // New route for onboarding process
-app.use('/api/audio', audioRoutes); // Add this line
+app.use('/api/audio', audioRoutes);
+app.use('/api/user-data', userDataRoutes); // Add this line
 
 
 const PORT = process.env.PORT || 5000;

@@ -1,21 +1,40 @@
-import AccessTokenRedirect from "../ExternalAccess/AccessTokenRedirect"
+import { Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Environment, OrbitControls, useGLTF } from "@react-three/drei";
+import AccessTokenRedirect from "../ExternalAccess/AccessTokenRedirect";
+import Scene from "../Scene";
 
 interface GettingStartedProps {
-    button:boolean,
-    title:string,
-    description:string
+  button: boolean;
+  title: string;
+  description: string;
+  modelPath?: string;
+  onTutorialClick?: () => void;
 }
-const GettingStarted: React.FC<GettingStartedProps> = ({ button, title, description }) => {
-    return (
-      <section className="bg-gradient-to-tl w-full rounded-lg">
-        <div className="py-4 px-4 mx-auto max-w-screen-xl sm:py-8 lg:px-6">
-          <div className="max-w-screen-md">
-            <h2 className="mb-2 text-3xl tracking-tight font-extrabold text-white">{title}</h2>
-            <p className="mb-4 font-light text-white sm:text-lg">{description}</p>
+
+const GettingStarted: React.FC<GettingStartedProps> = ({ 
+  button, 
+  title, 
+  description, 
+  modelPath = "/models/robot.glb",
+  onTutorialClick
+}) => {
+  return (
+    <section id="dashboard-getting-started" className="bg-gradient-to-tl w-full rounded-xl overflow-hidden">
+      <div className="flex flex-col lg:flex-row">
+        {/* Content side */}
+        <div className="py-6 px-6 lg:w-1/2">
+          <div>
+            <h2 className="mb-3 text-3xl tracking-tight font-extrabold text-white">{title}</h2>
+            <p className="mb-6 font-light text-white sm:text-lg">{description}</p>
             <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4">
               {button && (
                 <a
                   href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (onTutorialClick) onTutorialClick();
+                  }}
                   className="btn-secondary inline-flex items-center justify-center px-4 py-2 text-base font-medium text-white border border-gray-300 rounded-lg hover:translate-y-1 hover:border-white focus:ring-4 focus:ring-gray-100"
                 >
                   <svg
@@ -32,9 +51,14 @@ const GettingStarted: React.FC<GettingStartedProps> = ({ button, title, descript
             </div>
           </div>
         </div>
-      </section>
-    );
-  };
-  
 
-export default GettingStarted
+        {/* 3D Model side */}
+        <div className="h-80 lg:h-auto lg:w-1/2">
+          {/* <Scene/> */}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default GettingStarted;

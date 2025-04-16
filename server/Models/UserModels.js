@@ -26,6 +26,14 @@ const User = sequelize?.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    preferences: {
+      type: DataTypes.TEXT, // Stores JSON as text
+      allowNull: true
+  },
+  onboarding_completed: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+  },
     courses_created: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

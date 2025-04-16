@@ -1,24 +1,27 @@
-import Sidebar from "../components/dashboard/Sidebar";
-import Header from "../components/dashboard/Header";
 import { Outlet } from "react-router";
-import { useState } from "react";
+import { useEffect } from "react";
 
 const DashboardLayout = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  // Optional: Add animation for content entry
+  useEffect(() => {
+    const mainContent = document.querySelector('.dashboard-content');
+    if (mainContent) {
+      mainContent.classList.add('animate-fadeIn');
+    }
+  }, []);
 
   return (
-    <div className="dark:bg-boxdark-2 dark:text-bodydark overflow-hidden h-screen grid grid-rows-[auto_1fr] grid-cols-1 md:grid-cols-[250px_1fr]">
-      <Sidebar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar}/>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      
 
-      <Header toggleSidebar={toggleSidebar}/>
-
-      <main className="p-4 bg-transparent overflow-y-scroll overflow-x-hidden">
-        <Outlet/>
-      </main>
+        <div className="dashboard-content rounded-xl bg-white shadow-sm p-6">
+          <Outlet />
+        </div>
+        
+       
+      </div>
     </div>
-
   );
 };
 

@@ -51,12 +51,12 @@ const Tabs = () => {
     setCourses(item)
   }
 
-
   return (
     <>
       <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 pt-6 ">
         <li className="me-2">
           <a
+            id="course-tab" // Added ID for Driver.js
             onClick={() => {setShowBook(false); setTab('course');}}
             aria-current="page"
             className={
@@ -70,6 +70,7 @@ const Tabs = () => {
         </li>
         <li className="me-2">
           <a
+            id="book-tab" // Added ID for Driver.js
             onClick={() => {setShowBook(true); setTab('book');}}
             className={
               showBook
@@ -81,36 +82,37 @@ const Tabs = () => {
           </a>
         </li>
       </ul>
-      {!showBook ? (
-        <>
-          <Table
-            headers={["Name", "Description", "Created At", "Updated At","Type"]}
-            data={courses}
-            isAdd={false}
-            addItem={addItem}
-            deleteItem={deleteItem}
-            setData={handleCourses}
-            downloadItem={(row: any) => downloadItem(row, setLoading)}
-            editItem={editItem}
-            pre={"course-creator"}
-          />
-        </>
-      ) : (
-        <>
-          {" "}
-          <Table
-            headers={["Name", "Description", "Created At", "Updated At","Type"]}
-            data={books}
-            isAdd={false}
-            addItem={addItem}
-            deleteItem={deleteItem}
-            setData={handleBooks}
-            downloadItem={(row: any) => downloadItem(row, setLoading)}
-            editItem={editItem}
-            pre={"book-creator"}
-          />
-        </>
-      )}
+      <div id="data-table"> // Added ID for Driver.js
+        {!showBook ? (
+          <>
+            <Table
+              headers={["Name", "Description", "Created At", "Updated At","Type"]}
+              data={courses}
+              isAdd={false}
+              addItem={addItem}
+              deleteItem={deleteItem}
+              setData={handleCourses}
+              downloadItem={(row: any) => downloadItem(row, setLoading)}
+              editItem={editItem}
+              pre={"course-creator"}
+            />
+          </>
+        ) : (
+          <>
+            <Table
+              headers={["Name", "Description", "Created At", "Updated At","Type"]}
+              data={books}
+              isAdd={false}
+              addItem={addItem}
+              deleteItem={deleteItem}
+              setData={handleBooks}
+              downloadItem={(row: any) => downloadItem(row, setLoading)}
+              editItem={editItem}
+              pre={"book-creator"}
+            />
+          </>
+        )}
+      </div>
     </>
   );
 };
