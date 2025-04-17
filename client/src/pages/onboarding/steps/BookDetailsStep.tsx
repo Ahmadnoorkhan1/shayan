@@ -1,8 +1,6 @@
 "use client"
 
-import type React from "react"
 import { useState } from "react"
-import { ContentDetail } from "../BookGenerationStepper"
 import { CustomSelect } from "../../../components/ui/Select"
 import { ChevronDown, ChevronUp, Settings, Users, BookOpen } from "lucide-react"
 
@@ -16,7 +14,7 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   // Split details into essential and advanced categories
-  const essentialDetails: ContentDetail[] = [
+  const essentialDetails: any[] = [
     {
       id: "audience",
       name: "Target Audience",
@@ -54,7 +52,7 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
     },
   ]
 
-  const advancedDetails: ContentDetail[] = [
+  const advancedDetails: any[] = [
     {
       id: "structure",
       name: "Content Structure",
@@ -99,7 +97,7 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
     },
   ]
 
-  const renderDetailCard = (detail: ContentDetail) => {
+  const renderDetailCard = (detail: any) => {
     const isActive = activeDetail === detail.id;
     const isSelected = !!selectedDetails[detail.id];
 

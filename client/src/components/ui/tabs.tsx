@@ -82,7 +82,7 @@ const Tabs = () => {
           </a>
         </li>
       </ul>
-      <div id="data-table"> // Added ID for Driver.js
+      <div id="data-table">
         {!showBook ? (
           <>
             <Table

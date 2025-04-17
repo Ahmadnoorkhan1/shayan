@@ -1246,23 +1246,3 @@ select::-webkit-scrollbar-track {
 }
 
 
-/* Driver.js additional styles */
-.driver-popover {
-  max-width: 400px;
-  padding: 15px;
-}
-
-.driver-popover-title {
-  margin: 0 0 10px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid #f1f1f1;
-}
-
-.driver-popover-description {
-  margin: 0 0 15px;
-  padding: 5px 0;
-}
-
-.driver-popover-footer {
-  margin-top: 15px;
-}

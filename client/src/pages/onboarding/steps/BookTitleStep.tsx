@@ -1,9 +1,8 @@
 "use client"
 
-import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { Loader2, FileText, Check, RefreshCw } from "lucide-react"
-import { ContentData } from "../BookGenerationStepper"
+import { ContentData } from "../ContentGenerationStepper"
 import apiService from "../../../utilities/service/api"
 
 interface ContentTitleStepProps {
@@ -33,7 +32,7 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
       const response = await apiService.post("/onboard/generate-titles", {
         contentType: bookData.purpose,
         details: bookData.details,
-        count: 6 // Request 6 title suggestions
+        count: 10 // Request 6 title suggestions
       });
 
       if (response.success && response.data) {

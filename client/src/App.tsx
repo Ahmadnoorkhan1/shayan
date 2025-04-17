@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import { Route, Routes, useNavigate, useLocation } from 'react-router';
 import Homepage from './pages/Homepage';
 import Faqpage from './pages/Faqpage';
@@ -28,6 +28,7 @@ import './App.css';
 import TokenHandler from './components/TokenHandler';
 import AudioCreator from './components/AudioCreator';
 import OnboardingFlow from './pages/onboardingFlow/OnboardingFlow';
+import ContentGenerationStepper from './pages/onboarding/ContentGenerationStepper';
 
 function App() {
   const [token, setToken] = useState<string | null>(null);
@@ -251,6 +252,8 @@ function App() {
           <Route path="/shared/:type/:id" element={<SharedContent />} />
           <Route path="/create-audio/:contentType/:id" element={<AudioCreator />} />
           <Route path="/onboard" element={<OnboardingFlow />} />
+          <Route path="/create" element={<ContentGenerationStepper />} />
+
         </Routes>
       )}
       

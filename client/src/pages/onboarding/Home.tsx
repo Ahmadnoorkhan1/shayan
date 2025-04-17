@@ -1,5 +1,5 @@
 
-import BookGenerationStepper from "./BookGenerationStepper";
+import BookGenerationStepper from "./ContentGenerationStepper";
 
 export default function Home() {
   return (

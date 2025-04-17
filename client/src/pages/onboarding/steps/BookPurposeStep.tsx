@@ -1,14 +1,12 @@
 "use client"
 
-import type React from "react"
 
 import { BookOpen, GraduationCap, Lightbulb, BookText, Palette, BookMarked, Video, FileText, Globe, Presentation, BookCopy, MonitorPlay, Blocks, FileQuestion } from "lucide-react"
 import { useState } from "react"
-import { ContentPurpose } from "../BookGenerationStepper"
 
 interface ContentPurposeStepProps {
   selectedPurpose: string
-  onSelect: (purposeId: string) => void
+  onSelect: (purposeId: string, categoryId: string) => void
 }
 
 const ContentPurposeStep: React.FC<ContentPurposeStepProps> = ({ selectedPurpose, onSelect }) => {
@@ -103,7 +101,7 @@ const ContentPurposeStep: React.FC<ContentPurposeStepProps> = ({ selectedPurpose
                       ? "ring-2 ring-purple-500 bg-gradient-to-br from-purple-50 to-white"
                       : "border border-gray-200 hover:border-purple-200 bg-white hover:shadow-md"
                   }`}
-                  onClick={() => onSelect(purpose.id)}
+                  onClick={() => onSelect(purpose.id, category.id)}
                   onMouseEnter={() => setHoveredPurpose(purpose.id)}
                   onMouseLeave={() => setHoveredPurpose(null)}
                 >
