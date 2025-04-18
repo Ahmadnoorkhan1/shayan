@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Loader2, FileText, Check, RefreshCw } from "lucide-react"
+import { Loader2, FileText, Check, RefreshCw, PenSquare } from "lucide-react"
 import { ContentData } from "../ContentGenerationStepper"
 import apiService from "../../../utilities/service/api"
 
@@ -16,9 +16,26 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
   const [error, setError] = useState<string | null>(null)
   const [titles, setTitles] = useState<string[]>([])
   const [animatedTitles, setAnimatedTitles] = useState<string[]>([])
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [showCustomField, setShowCustomField] = useState(false)
+  const [customTitle, setCustomTitle] = useState("")
   
   // Use a ref to track if initial fetch has happened
   const initialFetchDone = useRef(false)
+
+  // Color variants for cards
+  const colorVariants = [
+    'from-blue-400 to-blue-500',
+    'from-purple-400 to-purple-600',
+    'from-pink-400 to-pink-500',
+    'from-teal-400 to-teal-500',
+    'from-amber-400 to-amber-500',
+    'from-emerald-400 to-emerald-500',
+    'from-rose-400 to-rose-500',
+    'from-cyan-400 to-cyan-500',
+    'from-violet-400 to-violet-500',
+    'from-indigo-400 to-indigo-500',
+  ];
 
   const fetchTitlesFromAPI = async (isInitialFetch = false) => {
     // Don't fetch if we're deliberately selecting a title
@@ -32,7 +49,7 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
       const response = await apiService.post("/onboard/generate-titles", {
         contentType: bookData.purpose,
         details: bookData.details,
-        count: 10 // Request 6 title suggestions
+        count: 9 // Request 9 title suggestions (fits better in 3x3 grid)
       });
 
       if (response.success && response.data) {
@@ -56,7 +73,7 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
             }
             return [...prev, cleanTitles[prev.length]];
           });
-        }, 300);
+        }, 200);
       } else {
         throw new Error(response.message || "Failed to generate titles");
       }
@@ -97,6 +114,21 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
     // Prevent re-renders and API calls by checking if it's already selected
     if (title !== selectedTitle) {
       onSelect(title);
+      setCustomTitle(title); // Also update custom title field if it's visible
+    }
+  };
+
+  // Handle custom title submission
+  const handleCustomTitleSubmit = () => {
+    if (customTitle.trim()) {
+      handleTitleSelect(customTitle);
+    }
+  };
+
+  // Handle enter key press in custom title input
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && customTitle.trim()) {
+      handleCustomTitleSubmit();
     }
   };
 
@@ -117,102 +149,174 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
   }
 
   return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-purple-50 to-white border border-purple-100 rounded-xl p-5 mb-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start">
-            <div className="mr-4 mt-1 bg-white p-2 rounded-lg shadow-sm">
-              <FileText className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="font-medium text-purple-800 mb-1">AI-Generated Title Suggestions</h3>
-              <p className="text-sm text-gray-600">
-                Based on your selections, our AI has generated these title suggestions for your {bookData.purpose} content. 
-                Choose one that resonates with your vision.
-              </p>
-            </div>
-          </div>
-          
-          <button 
-            onClick={() => fetchTitlesFromAPI(false)}
-            disabled={isLoading}
-            className="flex items-center justify-center p-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-full transition-colors"
-            title="Generate new suggestions"
-          >
-            <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-        </div>
+    <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
+      <div className="flex justify-between items-center w-full mb-6 px-4">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 md:text-center">
+        </h2>
+        
+        {/* Regenerate button */}
+        <button
+          onClick={() => fetchTitlesFromAPI(false)}
+          className="flex items-center gap-2 text-purple-600 hover:text-purple-800 font-medium transition-all duration-200"
+          disabled={isLoading}
+          title="Generate new title suggestions"
+        >
+          <RefreshCw size={18} className={isLoading ? "animate-spin" : ""} />
+          <span className="hidden sm:inline">Regenerate</span>
+        </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-4 w-full">
           <p className="text-sm">{error}</p>
           <p className="text-sm mt-1">We've provided some fallback titles below. You can try regenerating or choose from these options.</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4">
-        {animatedTitles.map((title, index) => (
-          <div
-            key={index}
-            className={`border rounded-xl p-5 cursor-pointer transition-all duration-300 animate-fadeIn ${
-              selectedTitle === title
-                ? "border-purple-400 bg-gradient-to-r from-purple-50 to-white shadow-md"
-                : "border-gray-200 hover:border-purple-200 hover:shadow-sm bg-white"
-            }`}
-            onClick={() => handleTitleSelect(title)}
-            style={{ animationDelay: `${index * 150}ms` }}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className={`font-medium text-lg ${selectedTitle === title ? "text-purple-800" : "text-gray-800"}`}>
-                {title}
-              </h3>
-
-              {selectedTitle === title && (
-                <div className="bg-purple-600 text-white rounded-full p-1">
-                  <Check className="w-4 h-4" />
+      {/* Title cards grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full px-4 py-6 animate-fadeIn">
+        {animatedTitles.map((title, index) => {
+          const colorClass = colorVariants[index % colorVariants.length];
+          const isHovered = hoverIndex === index;
+          const isSelected = selectedTitle === title;
+          
+          return (
+            <button
+              key={index}
+              className={`
+                group relative shadow-md h-32 bg-white border rounded-lg 
+                transition-all duration-300 transform hover:-translate-y-1 cursor-pointer overflow-hidden
+                ${isSelected ? 'border-purple-400 shadow-lg ring-1 ring-purple-400' : 'border-gray-200 hover:shadow-lg'}
+              `}
+              onClick={() => handleTitleSelect(title)}
+              onMouseEnter={() => setHoverIndex(index)}
+              onMouseLeave={() => setHoverIndex(null)}
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              {/* Background effect */}
+              <div 
+                className={`absolute inset-0 bg-gradient-to-br transition-opacity duration-300
+                  ${isSelected ? 'from-purple-50 to-white opacity-100' : 'from-gray-50 to-white opacity-100'}
+                  ${isHovered ? 'opacity-0' : 'opacity-100'}`}
+              ></div>
+              
+              {/* Accent line at top with animated width */}
+              <div 
+                className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${
+                  isSelected ? 'from-purple-400 to-purple-600' : colorClass
+                } transition-all duration-300 ease-out`}
+                style={{ 
+                  width: isHovered || isSelected ? '100%' : '40%',
+                  left: 0,
+                  opacity: isHovered || isSelected ? 1 : 0.7
+                }}
+              ></div>
+              
+              {/* Content with subtle animation */}
+              <div className="relative h-full flex flex-col items-center justify-center p-4 z-10">
+                <h3 
+                  className="text-base font-medium text-center transition-all duration-300 ease-in-out"
+                  style={{ 
+                    transform: isHovered || isSelected ? 'scale(1.05)' : 'scale(1)',
+                    color: isSelected ? '#6b46c1' : isHovered ? '#000000' : '#1f2937'
+                  }}
+                >
+                  {title}
+                </h3>
+              </div>
+              
+              {/* Bottom accent line with animation */}
+              <div 
+                className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r ${
+                  isSelected ? 'from-purple-400 to-purple-600' : colorClass
+                } transition-all duration-500 ease-in-out`}
+                style={{ 
+                  width: isHovered || isSelected ? '100%' : '0%',
+                  opacity: isHovered || isSelected ? 0.8 : 0
+                }}
+              ></div>
+              
+              {/* Corner decoration */}
+              <div 
+                className="absolute bottom-0 right-0 w-12 h-12 rounded-tl-xl transition-all duration-500 ease-in-out"
+                style={{
+                  background: isHovered || isSelected ? 
+                    'linear-gradient(to top left, rgba(107, 70, 193, 0.1), transparent)' : 'transparent',
+                  transform: isHovered || isSelected ? 'scale(1)' : 'scale(0)',
+                  opacity: isHovered || isSelected ? 1 : 0
+                }}
+              ></div>
+              
+              {/* Check indicator */}
+              {isSelected && (
+                <div className="absolute top-2 right-2 w-6 h-6 bg-purple-600 rounded-full flex items-center justify-center">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
               )}
-            </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Custom title input */}
+      <div className="w-full max-w-lg mt-6 mb-8 px-4">
+        {!showCustomField ? (
+          <button 
+            onClick={() => setShowCustomField(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 border border-gray-300 
+                    rounded-lg text-gray-700 hover:text-purple-600 hover:border-purple-300 
+                    hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
+          >
+            <PenSquare size={18} />
+            <span className="font-medium">Create your own title</span>
+          </button>
+        ) : (
+          <div className="flex flex-col gap-4 p-5 bg-white rounded-lg border border-gray-300 
+                        shadow-sm hover:shadow-md transition-all duration-300">
+            <label htmlFor="custom-title" className="text-sm font-semibold text-gray-800">
+              Enter your own title:
+            </label>
+            
+            <input
+              id="custom-title"
+              type="text"
+              value={customTitle}
+              onChange={(e) => setCustomTitle(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={`Enter a title for your ${bookData.purpose.toLowerCase()}...`}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg 
+                        focus:ring-2 focus:ring-purple-500 focus:border-purple-500 
+                        outline-none text-gray-900 bg-gray-50 hover:bg-white
+                        transition-all duration-200"
+              autoFocus
+            />
+            
+            <button
+              onClick={handleCustomTitleSubmit}
+              disabled={!customTitle.trim()}
+              className={`w-full py-3 rounded-lg transition-all duration-300 font-medium text-sm
+                        transform hover:shadow-lg ${
+                          customTitle.trim() 
+                            ? 'bg-purple-600 text-white hover:-translate-y-0.5 active:translate-y-0' 
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+            >
+              Use This Title
+            </button>
           </div>
-        ))}
+        )}
       </div>
 
-      {titles.length === 0 && !isLoading && (
-        <div className="text-center p-8">
-          <p className="text-gray-500">No titles were generated. Please try again or enter a custom title.</p>
-          <button
-            onClick={() => fetchTitlesFromAPI(false)}
-            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      )}
-
-      {/* Option to enter custom title */}
-      <div className="mt-6 pt-4 border-t border-gray-100">
-        <h3 className="font-medium text-gray-700 mb-2">Or enter your own title:</h3>
-        <div className="flex space-x-3">
-          <input
-            type="text"
-            placeholder="Enter a custom title..."
-            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-purple-500"
-            value={selectedTitle && !titles.includes(selectedTitle) ? selectedTitle : ""}
-            onChange={(e) => handleTitleSelect(e.target.value)}
-          />
-          <button
-            onClick={() => {
-              if (selectedTitle && !titles.includes(selectedTitle)) return;
-              const input = document.querySelector('input') as HTMLInputElement;
-              if (input && input.value) handleTitleSelect(input.value);
-            }}
-            className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Use This
-          </button>
-        </div>
-      </div>
+      {/* Add fadeIn animation to stylesheet */}
+      <style >{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };

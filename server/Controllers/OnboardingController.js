@@ -65,6 +65,14 @@ const generateSummaryHandler = async (req, res) => {
     try {
         const { contentType, contentCategory, contentTitle, contentDetails } = req.body;
 
+
+        console.dir('Received request to generate summary:', {
+            contentType,
+            contentCategory,
+            contentTitle,
+            contentDetails
+        });
+
         // Validation
         if (!contentType || !contentCategory || !contentTitle || !contentDetails) {
             return res.status(400).json({
@@ -176,6 +184,19 @@ const generateSummaryHandler = async (req, res) => {
             return mediaMap[media] || mediaMap['Text-only'];
         };
 
+        console.log("Generating summary with the following details:", {
+            contentType,
+            contentCategory,
+            contentTitle,
+            audience,
+            style,
+            length,
+            structure,
+            tone,
+            media
+        }
+        )
+
         // Craft the prompt with detailed instructions based on all options
         const prompt = `Generate a comprehensive HTML summary for "${contentTitle}" which is a ${contentType} in the category of ${contentCategory}.
 
@@ -251,8 +272,8 @@ IMPORTANT REQUIREMENTS:
 The summary should be comprehensive enough to give readers a clear understanding of what to expect from the full content.`;
 
 
-const chapterCount = Math.floor(Math.random() * 6) + 10; // Random number between 10-15
-        
+// const chapterCount = Math.floor(Math.random() * 6) + 10; // Random number between 10-15
+        const chapterCount = 2; // Fixed number of chapters for now
         const chapterTitlesPrompt = `Generate ${chapterCount} engaging chapter titles for "${contentTitle}" which is a ${contentType} in the category of ${contentCategory}.
 
 CONTENT SPECIFICATIONS:
@@ -279,7 +300,7 @@ Format your response as follows:
         // Call OpenAI API to generate the summary
         const [summaryResponse, chapterTitlesResponse] = await Promise.all([
             openAi.chat.completions.create({
-                model: "gpt-4-turbo",
+                model: "gpt-4o-mini",
                 messages: [
                     {
                         role: "system", 
@@ -291,11 +312,12 @@ Format your response as follows:
                     }
                 ],
                 temperature: 0.7,
-                max_tokens: 2000
+                max_tokens: 2000,
+                top_p: 1,
             }),
             
             openAi.chat.completions.create({
-                model: "gpt-4-turbo",
+                model: "gpt-4o-mini",
                 messages: [
                     {
                         role: "system", 
@@ -308,7 +330,8 @@ Format your response as follows:
                 ],
                 temperature: 0.8, // Slightly higher temperature for more creative titles
                 max_tokens: 800
-            })
+,
+top_p: 1,            })
         ]);
 
         // Extract and validate the response
@@ -345,6 +368,8 @@ Format your response as follows:
             console.warn(`Expected at least 10 chapter titles, but only ${chapterTitles.length} were generated.`);
         }
 
+        console.log("Generated summary and chapter titles successfully.");
+
         // Return both the summary and chapter titles
         return res.status(200).json({
             success: true,
@@ -376,7 +401,166 @@ Format your response as follows:
     }
 };
 
+const generateChapterContentHandler = async (req, res) => {
+    try {
+        const data = req.body;
+        
+        console.log("Received chapter content generation request:", JSON.stringify(data, null, 2));
+        
+        // Validation with better error messages
+        if (!data) {
+            return res.status(400).json({
+                success: false,
+                message: 'Request body is empty'
+            });
+        }
+        
+        // Access fields directly from request body
+        const chapterNo = data.chapterNo;
+        const chapter = data.chapter;
+        const title = data.title;
+        const summary = data.summary;
+        
+        // Validate all required fields
+        if (!chapterNo) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: chapterNo'
+            });
+        }
+        
+        if (!chapter) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: chapter'
+            });
+        }
+        
+        if (!title) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: title'
+            });
+        }
+        
+        if (!summary) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: summary'
+            });
+        }
+
+        console.log(`Generating content for Chapter ${chapterNo}: ${chapter} of "${title}"`);
+        
+        // Parse the summary to extract relevant information for context
+        const summaryText = summary.replace(/<[^>]*>/g, ' ').substring(0, 500) + '...';
+        
+        // Create the prompt for content generation
+        const question = `Write a detailed educational chapter of 500-800 words for Chapter ${chapterNo}: ${chapter} 
+        of the book "${title}". Use HTML formatting with the following structure:
+        
+        <h1>Chapter ${chapterNo}: ${chapter}</h1>
+        
+        <p>Introduction paragraph here...</p>
+        
+        <h2>Key Concepts</h2>
+        <p>Content here...</p>
+        
+        <h2>Main Topics</h2>
+        <p>Content with <strong>bold</strong> and <em>italic</em> text where needed.</p>
+        
+        <ul>
+            <li>Key points</li>
+            <li>Important concepts</li>
+        </ul>
+        
+        <h2>Summary</h2>
+        <p>Concluding paragraph here...</p>
+        
+        Here is the book summary for context: "${summaryText}"
+        
+        Make sure to:
+        1. Follow the HTML structure exactly as shown above
+        2. Create engaging, educational content that fits the book's theme and title
+        3. Use proper HTML tags with no markdown
+        4. Ensure the content flows naturally and is appropriate for the chapter's position in the book
+        5. Make the chapter content consistent with the book's summary
+        6. Include relevant examples and explanations
+        
+        Return only the formatted HTML content without any additional text, explanations, or code blocks.`;
+        
+        // Call OpenAI to generate the content
+        const completion = await openAi.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                {
+                    role: "system", 
+                    content: "You are an expert content writer specializing in creating engaging, educational chapters for books and courses."
+                },
+                { 
+                    role: "user", 
+                    content: question
+                }
+            ],
+            temperature: 0.9,
+            max_tokens: 3000,
+            top_p: 1,
+        });
+
+        // Extract and clean the response
+        let chapterContent = completion.choices[0].message.content.trim();
+        
+        // Clean up the response - remove any code block markers or extra text
+        chapterContent = chapterContent.replace(/```html|```/g, '').trim();
+        
+        // Check if the response starts with <h1> tag
+        if (!chapterContent.startsWith('<h1>')) {
+            const h1Start = chapterContent.indexOf('<h1>');
+            if (h1Start >= 0) {
+                chapterContent = chapterContent.substring(h1Start);
+            } else {
+                // If no h1 tag found, wrap in proper structure
+                chapterContent = `<h1>Chapter ${chapterNo}: ${chapter}</h1>\n\n${chapterContent}`;
+            }
+        }
+        
+        // Check for required sections
+        const requiredSections = ['Key Concepts', 'Main Topics', 'Summary'];
+        let missingSections = [];
+        
+        for (const section of requiredSections) {
+            if (!chapterContent.includes(`<h2>${section}</h2>`)) {
+                missingSections.push(section);
+            }
+        }
+        
+        if (missingSections.length > 0) {
+            console.warn(`Generated chapter content is missing required headings: ${missingSections.join(', ')}`);
+        }
+        
+        return res.status(200).json({
+            success: true,
+            data: {
+                content: chapterContent,
+                chapterNo: chapterNo,
+                chapter: chapter,
+                title: title
+            },
+            message: 'Chapter content generated successfully'
+        });
+        
+    } catch (error) {
+        console.error('Error generating chapter content:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error generating chapter content',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     generateTitlesHandler,
     generateSummaryHandler,
+    generateChapterContentHandler
 };

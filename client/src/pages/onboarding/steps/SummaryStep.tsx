@@ -98,7 +98,7 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ summary, onUpdate }) => {
         {!isEditing ? (
           <button 
             onClick={() => setIsEditing(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-tl from-purple-600 to-purple-700 rounded-md shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-tr from-purple-600 to-purple-700 rounded-md shadow-sm transition-colors"
           >
             <Edit className="w-4 h-4" />
             Edit Summary

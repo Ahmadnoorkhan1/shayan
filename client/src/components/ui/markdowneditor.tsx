@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Markdown from "markdown-to-jsx";
 import { Code, Link, AlertTriangle } from "lucide-react";
+import { parse } from "marked";
 
 interface MarkdownEditorProps {
   data: string;
@@ -9,8 +10,9 @@ interface MarkdownEditorProps {
 
 const MarkdownEditor = ({ data, editable = false }: MarkdownEditorProps) => {
   // Process content to handle common issues
-  const processedContent = data
-    ? data
+
+   const parsedData = typeof(data) === 'string' ? data : JSON.stringify(data);
+  const processedContent = data ? parsedData
         .replace(/\\"/g, '"') // Handle escaped quotes
         .replace(/\\n/g, '\n') // Fix escaped newlines
         .replace(/^"|"$/g, '') // Remove surrounding quotes if present

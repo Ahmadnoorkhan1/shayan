@@ -7,8 +7,11 @@ import BookDetailsStep from "./steps/BookDetailsStep"
 import BookTitleStep from "./steps/BookTitleStep"
 import SummaryStep from "./steps/SummaryStep"
 import apiService from "../../utilities/service/api"
+// import ContentViewer from "../../components/AiToolForms/common/ContentViewer"
 
-// Existing types remain the same
+import ContentGenerationViewer from "../../components/ContentGeneration/ContentGenerationViewer";
+import toast from "react-hot-toast"
+
 
 // Update ContentData type to include summary
 export type ContentData = {
@@ -39,6 +42,8 @@ const ContentGenerationStepper = () => {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [contentId, setContentId] = useState<string | null>(null)
   const [isSummaryGenerated, setIsSummaryGenerated] = useState(false)
+  const [chaptersData, setChaptersData] = useState<any[]>([])
+  const [chapterFetchCount, setChapterFetchCount] = useState(0)
 
   // Update steps to include summary step
   const steps = [
@@ -46,6 +51,7 @@ const ContentGenerationStepper = () => {
     { id: "details", name: "Content Details", description: "Customize your content's style and structure" },
     { id: "title", name: "Choose Title", description: "Select the perfect title for your creation" },
     { id: "summary", name: "Review Summary", description: "Review and edit the generated summary" },
+    { id: "finalize", name: "Finalize Content", description: "Read your content by chapters and save" },
   ]
 
   useEffect(() => {
@@ -110,7 +116,11 @@ const ContentGenerationStepper = () => {
         // Save to localStorage
         localStorage.setItem('content_summary', response.data.summary || "");
 
-        localStorage.setItem('chapter_titles',response.data.chapterTitles);
+        // localStorage.setItem('chapter_titles',response.data.chapterTitles);
+        setContentData(prev => ({
+          ...prev,
+          chapter_titles: response.data.chapterTitles || []
+        }));
         
         // Set summary as generated
         setIsSummaryGenerated(true);
@@ -133,56 +143,29 @@ const ContentGenerationStepper = () => {
     }
   };
 
-  // Final creation function that uses the edited summary
-  const finalizeContent = async () => {
-    setIsSubmitting(true)
-    setSubmitError(null)
-    
+
+
+  // Modify handleNext to not check isSummaryGenerated flag
+ // Update handleNext function
+ const handleNext = async () => {
+  if (currentStep === 2) {
+    // When on the title step (step 2), generate summary
+    setIsSubmitting(true);
     try {
-      // Call API to create content with all data including summary
-      const response = await apiService.post("/onboard/create-content", {
-        contentType: contentData.purpose,
-        contentCategory: contentData.category,
-        contentTitle: contentData.title,
-        contentDetails: contentData.details,
-        summary: contentData.summary,
-      });
-      
-      if (response.success) {
-        // Store the content ID if returned by the API
-        if (response.data && response.data.id) {
-          setContentId(response.data.id);
-        }
-        // Show completion screen
-        setIsCompleted(true);
-        
-        // Clean up localStorage
-        localStorage.removeItem('content_summary');
-      } else {
-        throw new Error(response.message || "Failed to create content");
-      }
-    } catch (err) {
-      console.error("Error creating content:", err);
-      setSubmitError(err instanceof Error ? err.message : "Failed to create your content. Please try again.");
+      await generateSummary();
+      // Next step handled in generateSummary function
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Modify handleNext to not check isSummaryGenerated flag
-  const handleNext = () => {
-    if (currentStep < steps.length - 2) {
-      // Standard step progression for steps 0-2
-      setCurrentStep((prev) => prev + 1)
-    } else if (currentStep === steps.length - 2) {
-      // When on the title step (step 2), generate summary
-      // The navigation happens inside generateSummary after successful API call
-      generateSummary();
-    } else {
-      // On final step (summary), create the content
-      finalizeContent();
-    }
+  } else if (currentStep === 3) {
+    // On summary step (step 3), just move to the content viewer step
+    // The ContentGenerationViewer will handle chapter generation
+    setCurrentStep(prev => prev + 1);
+  } else if (currentStep < steps.length - 1) {
+    // Standard progression for other steps
+    setCurrentStep(prev => prev + 1);
   }
+}
 
   const handleBack = () => {
     if (currentStep > 0) {
@@ -190,37 +173,54 @@ const ContentGenerationStepper = () => {
     }
   }
 
-  // Modified canProceed to include summary condition
-  const canProceed = () => {
-    if (currentStep === 0) {
-      return contentData.purpose !== ""
-    } else if (currentStep === 1) {
-      // Require at least 3 details to be filled
-      return Object.keys(contentData.details).length >= 3
-    } else if (currentStep === 2) {
-      return contentData.title !== ""
-    } else if (currentStep === 3) {
-      // For the summary step, we just need a summary to exist
-      return contentData.summary !== ""
-    }
-    return false
-  }
 
-  // Modified renderStep to include the summary step
-  const renderStep = () => {
-    switch (currentStep) {
-      case 0:
-        return <BookPurposeStep selectedPurpose={contentData.purpose} onSelect={handlePurposeSelect as any} />
-      case 1:
-        return <BookDetailsStep selectedDetails={contentData.details} onChange={handleDetailChange} />
-      case 2:
-        return <BookTitleStep bookData={contentData} selectedTitle={contentData.title} onSelect={handleTitleSelect} />
-      case 3:
-        return <SummaryStep summary={contentData.summary} onUpdate={handleSummaryUpdate} />
-      default:
-        return null
-    }
+
+
+  // Modified canProceed to include summary condition
+ // Modified canProceed to include final step condition
+const canProceed = () => {
+  if (currentStep === 0) {
+    return contentData.purpose !== ""
+  } else if (currentStep === 1) {
+    // Require at least 3 details to be filled
+    return Object.keys(contentData.details).length >= 3
+  } else if (currentStep === 2) {
+    return contentData.title !== ""
+  } else if (currentStep === 3) {
+    // For the summary step, we just need a summary to exist
+    return contentData.summary !== ""
+  } else if (currentStep === 4) {
+    // For the final step, allow proceeding if at least one chapter is generated
+    return chaptersData.filter(Boolean).length > 0
   }
+  return false
+}
+
+ // Modified renderStep to include ContentViewer
+const renderStep = () => {
+  switch (currentStep) {
+    case 0:
+      return <BookPurposeStep selectedPurpose={contentData.purpose} onSelect={handlePurposeSelect as any} />
+    case 1:
+      return <BookDetailsStep selectedDetails={contentData.details} onChange={handleDetailChange} />
+    case 2:
+      return <BookTitleStep bookData={contentData} selectedTitle={contentData.title} onSelect={handleTitleSelect} />
+    case 3:
+      return <SummaryStep summary={contentData.summary} onUpdate={handleSummaryUpdate} />
+    case 4:
+      return <ContentGenerationViewer 
+      title={contentData.title}
+      summary={contentData.summary}
+      chapterTitles={contentData.chapter_titles as string[]}
+      contentType={contentData.purpose}
+      contentCategory={contentData.category}
+      contentDetails={contentData.details}
+      onBack={() => setCurrentStep(3)}
+    />
+    default:
+      return null
+  }
+}
 
   if (isCompleted) {
     return (
@@ -342,19 +342,26 @@ const ContentGenerationStepper = () => {
           animateStep ? "opacity-0 transform translate-y-4" : "opacity-100 transform translate-y-0"
         }`}
       >
-        <div className="border-b border-gray-100">
-          <div className="px-6 py-5">
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">{steps[currentStep].name}</h2>
-            <p className="text-gray-500">
-              {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
-              {currentStep === 1 && "Provide details about your content to customize its structure and style."}
-              {currentStep === 2 && "Choose a title for your creation from our suggestions."}
-              {currentStep === 3 && "Review and edit the AI-generated summary for your content."}
-            </p>
-          </div>
+       {currentStep < 4 ? (
+    <>
+      <div className="border-b border-gray-100">
+        <div className="px-6 py-5">
+          <h2 className="text-2xl font-bold text-gray-800 mb-1">{steps[currentStep].name}</h2>
+          <p className="text-gray-500">
+            {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
+            {currentStep === 1 && "Provide details about your content to customize its structure and style."}
+            {currentStep === 2 && "Choose a title for your creation from our suggestions."}
+            {currentStep === 3 && "Review and edit the AI-generated summary for your content."}
+          </p>
         </div>
+      </div>
 
-        <div className="p-6 min-h-[450px]">{renderStep()}</div>
+      <div className="p-6 min-h-[450px]">{renderStep()}</div>
+    </>
+  ) : (
+    // The ContentViewer has its own layout, so render it directly
+    <div className="min-h-[650px]">{renderStep()}</div>
+  )}
 
         {/* Navigation */}
         <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
@@ -400,27 +407,33 @@ const ContentGenerationStepper = () => {
               }
             `}
           >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                Processing...
-              </>
-            ) : currentStep === steps.length - 1 ? (
-              <>
-                Create My Content
-                <Sparkles className="w-4 h-4" />
-              </>
-            ) : currentStep === steps.length - 2 ? (
-              <>
-                Generate Summary
-                <ChevronRight className="w-4 h-4" />
-              </>
-            ) : (
-              <>
-                Continue
-                <ChevronRight className="w-4 h-4" />
-              </>
-            )}
+          {isSubmitting ? (
+  <>
+    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+    {currentStep === 2 ? "Generating Summary..." : 
+     currentStep === 3 ? "Creating Content..." : "Processing..."}
+  </>
+) : currentStep === 2 ? ( // Title step - generate summary next
+  <>
+    Generate Summary
+    <ChevronRight className="w-4 h-4" />
+  </>
+) : currentStep === 3 ? ( // Summary step - create content next
+  <>
+    Create My Content
+    <Sparkles className="w-4 h-4" />
+  </>
+) : currentStep === 4 ? ( // Final step
+  <>
+    {/* Finish & Save
+    <FileText className="w-4 h-4" /> */} {null}
+  </>
+) : (
+  <>
+    Continue
+    <ChevronRight className="w-4 h-4" />
+  </>
+)}
           </button>
         </div>
       </div>
