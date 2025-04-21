@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { ShareItem } from "../../utilities/shared/tableUtils";
 import { 
@@ -18,21 +18,47 @@ import {
 interface TableProps {
   headers: string[];
   data: { [key: string]: string | number }[];
-  isAdd: Boolean,
-  addItem: CallableFunction,
-  deleteItem: CallableFunction,
-  downloadItem: CallableFunction,
-  editItem: CallableFunction,
-  setData: any
-  highlightedId?: string | null,
-  pre: any
+  isAdd: Boolean;
+  addItem: CallableFunction;
+  deleteItem: CallableFunction;
+  downloadItem: CallableFunction;
+  editItem: CallableFunction;
+  setData: any;
+  highlightedId?: string | null;
+  pre: any;
+  // New pagination props
+  totalItems?: number;
+  currentPage: number;
+  itemsPerPage: number;
+  onPageChange: (page: number) => void;
+  onItemsPerPageChange?: (limit: number) => void;
 }
 
-const Table = ({ headers, data, addItem, isAdd, deleteItem, downloadItem, editItem, setData, highlightedId, pre }: TableProps) => {
+const Table = ({ 
+  headers, 
+  data, 
+  addItem, 
+  isAdd, 
+  deleteItem, 
+  downloadItem, 
+  editItem, 
+  setData, 
+  highlightedId, 
+  pre,
+  // Pagination props with defaults
+  totalItems = 0,
+  currentPage = 1,
+  itemsPerPage = 10,
+  onPageChange,
+  onItemsPerPageChange
+}: TableProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
-  // Filter the data based on the search term
+  // Calculate total pages
+  const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+  
+  // For client-side search/filter
   const filteredData = data.filter((item) =>
     Object.values(item).some((value) =>
       value.toString().toLowerCase().includes(searchTerm.toLowerCase())
@@ -44,28 +70,44 @@ const Table = ({ headers, data, addItem, isAdd, deleteItem, downloadItem, editIt
     editItem(navigate, item, pre);
   };
   
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      onPageChange(newPage);
+    }
+  };
+  
   // Get relevant fields to display
   const getRelevantField = (item: any, fieldType: 'title' | 'created' | 'updated' | 'type') => {
     switch (fieldType) {
       case 'title':
-        // Look for title, name, or description fields
         return item['Course Title'] || item['Book Title'] || item['Title'] || item['Name'] || item['Description'] || '';
-      
       case 'created':
-        // Look for created or date fields
         return item['Created'] || item['CreatedAt'] || item['Date Created'] || '';
-        
       case 'updated':
-        // Look for updated fields
         return item['Updated'] || item['UpdatedAt'] || item['Last Modified'] || '';
-        
       case 'type':
-        // Look for type field
         return item['type'] || item['Type'] || item['Content Type'] || '';
-        
       default:
         return '';
     }
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    
+    if (currentPage <= 3) {
+      return [1, 2, 3, 4, 5, '...', totalPages];
+    }
+    
+    if (currentPage >= totalPages - 2) {
+      return [1, '...', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+    }
+    
+    return [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
   };
 
   return (
@@ -93,7 +135,7 @@ const Table = ({ headers, data, addItem, isAdd, deleteItem, downloadItem, editIt
               {isAdd && (
                 <button
                   type="button"
-                  className="flex items-center justify-center text-white bg-gradient-to-tl font-medium rounded-md text-sm px-4 py-2 transition-all duration-200 shadow-sm"
+                  className="flex items-center justify-center text-white bg-gradient-to-tl from-purple-600 to-purple-700 font-medium rounded-md text-sm px-4 py-2 transition-all duration-200 shadow-sm"
                   onClick={() => addItem(navigate)}
                 >
                   <PlusCircle className="h-4 w-4 mr-1.5" />
@@ -118,14 +160,15 @@ const Table = ({ headers, data, addItem, isAdd, deleteItem, downloadItem, editIt
                 </tr>
               </thead>
               <tbody>
-                {filteredData?.length > 0 ? (
-                  filteredData.map((item, index) => (
+                {data.length > 0 ? (
+                  data.map((item, index) => (
                     <tr 
                       key={index} 
                       className={`border-b border-gray-200 hover:bg-gray-50 transition-colors
-                        ${item.ID == highlightedId ? 'bg-gray-50 border-l-4 border-l-gray-500' : ''}
+                        ${item.ID == highlightedId ? 'bg-gray-50 border-l-4 border-l-purple-500' : ''}
                       `}
                     >
+                      {/* Table row content remains the same */}
                       {/* Title */}
                       <td 
                         className="px-4 py-3 font-medium text-gray-900 cursor-pointer"
@@ -205,7 +248,7 @@ const Table = ({ headers, data, addItem, isAdd, deleteItem, downloadItem, editIt
                         <p>No content found. Try a different search or create a new item.</p>
                         {isAdd && (
                           <button
-                            className="mt-4 flex items-center justify-center text-white bg-gradient-to-tl font-medium rounded-md text-sm px-4 py-2 transition-all duration-200 shadow-sm"
+                            className="mt-4 flex items-center justify-center text-white bg-gradient-to-tl from-purple-600 to-purple-700 font-medium rounded-md text-sm px-4 py-2 transition-all duration-200 shadow-sm"
                             onClick={() => addItem(navigate)}
                           >
                             <PlusCircle className="h-4 w-4 mr-1.5" />
@@ -220,33 +263,73 @@ const Table = ({ headers, data, addItem, isAdd, deleteItem, downloadItem, editIt
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Enhanced Pagination */}
           <nav
             className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 p-4 border-t border-gray-200"
             aria-label="Table navigation"
           >
-            <span className="text-sm text-gray-500">
-              Showing <span className="font-medium text-gray-700">{filteredData.length}</span> of{" "}
-              <span className="font-medium text-gray-700">{data.length}</span> items
-            </span>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">
+                Showing <span className="font-medium text-gray-700">{data.length > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0}</span> - 
+                <span className="font-medium text-gray-700">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
+                <span className="font-medium text-gray-700">{totalItems}</span> items
+              </span>
+              
+              {onItemsPerPageChange && (
+  <div className="flex items-center space-x-2">
+    <label className="text-sm text-gray-500">Items per page:</label>
+    <select 
+      className="bg-white border border-gray-300 text-gray-700 text-sm rounded px-3 py-1 pr-8 focus:outline-none focus:ring-1 focus:ring-purple-500 appearance-none"
+      value={itemsPerPage}
+      onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+      style={{ minWidth: '70px' }}
+    >
+      {[5, 10, 25, 50].map((option) => (
+        <option key={option} value={option}>{option}</option>
+      ))}
+    </select>
+   
+  </div>
+)}
+            </div>
+            
             <ul className="inline-flex items-center -space-x-px">
               <li>
                 <button
-                  className="flex items-center justify-center h-8 px-3 text-gray-500 bg-white rounded-l-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center justify-center h-8 px-3 text-gray-500 bg-white rounded-l-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <ChevronLeft size={16} />
                 </button>
               </li>
+              
+              {getPageNumbers().map((page, index) => (
+                <li key={index}>
+                  {page === '...' ? (
+                    <span className="flex items-center justify-center h-8 px-3 text-gray-500 bg-white border border-gray-300">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handlePageChange(page as number)}
+                      className={`flex items-center justify-center h-8 px-3 border border-gray-300 
+                        ${currentPage === page 
+                          ? 'text-white bg-purple-600 hover:bg-purple-700' 
+                          : 'text-gray-500 bg-white hover:bg-gray-50'}`
+                      }
+                    >
+                      {page}
+                    </button>
+                  )}
+                </li>
+              ))}
+              
               <li>
                 <button
-                  className="flex items-center justify-center h-8 px-3 text-gray-700 bg-gray-100 border border-gray-300 font-medium"
-                >
-                  1
-                </button>
-              </li>
-              <li>
-                <button
-                  className="flex items-center justify-center h-8 px-3 text-gray-500 bg-white rounded-r-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="flex items-center justify-center h-8 px-3 text-gray-500 bg-white rounded-r-md border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none"
                 >
                   <ChevronRight size={16} />
                 </button>

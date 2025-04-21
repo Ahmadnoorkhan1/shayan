@@ -29,6 +29,9 @@ interface Operation {
 export const extractQuizContent = (html: string): QuizContent | null => {
   const editorQuizRegex = /<h2>Exercises<\/h2>([\s\S]*?)(?=<!-- SHARED_QUIZ_START -->|$)/;
   const sharedQuizRegex = /<!-- SHARED_QUIZ_START -->([\s\S]*?)<!-- SHARED_QUIZ_END -->/;
+  if (!html || typeof html !== 'string') {
+    return null;
+  }
   
   const editorMatch = html.match(editorQuizRegex);
   const sharedMatch = html.match(sharedQuizRegex);
@@ -53,8 +56,11 @@ export const processChapterSelection = (
   const doc = parser.parseFromString(chapterContent, 'text/html');
   
   // Special handling for cover pages
-  const isCover = chapterContent.includes('data-cover="true"') || 
-                  chapterContent.includes('book-cover-image');
+// Check if this is a cover chapter
+const isCover = typeof html === 'string' && (
+  html.includes('data-cover="true"') || 
+  html.includes('book-cover-image')
+);
   
   if (isCover) {
     const coverImg = doc.querySelector('.book-cover-image');

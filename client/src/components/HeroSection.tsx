@@ -14,7 +14,7 @@ const HeroSection = () => {
             </p>
             <div className="mt-6 flex items-center gap-4"> 
             <button className="btn btn-white ">Free Trail</button>
-            {/* <AccessTokenRedirect userId={1}  /> */}
+            <AccessTokenRedirect userId={1}  />
 
             </div>
           </div>

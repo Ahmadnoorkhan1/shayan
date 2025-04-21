@@ -273,7 +273,7 @@ The summary should be comprehensive enough to give readers a clear understanding
 
 
 // const chapterCount = Math.floor(Math.random() * 6) + 10; // Random number between 10-15
-        const chapterCount = 2; // Fixed number of chapters for now
+        const chapterCount = contentDetails?.numOfChapters; // Fixed number of chapters for now
         const chapterTitlesPrompt = `Generate ${chapterCount} engaging chapter titles for "${contentTitle}" which is a ${contentType} in the category of ${contentCategory}.
 
 CONTENT SPECIFICATIONS:

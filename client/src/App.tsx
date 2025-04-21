@@ -252,7 +252,8 @@ function App() {
           <Route path="/shared/:type/:id" element={<SharedContent />} />
           <Route path="/create-audio/:contentType/:id" element={<AudioCreator />} />
           <Route path="/onboard" element={<OnboardingFlow />} />
-          <Route path="/create-my-content" element={<ContentGenerationStepper />} />
+          <Route path="/create" element={<ContentGenerationStepper />} />
+          <Route path="/create/:contentType" element={<ContentGenerationStepper />} />
 
         </Routes>
       )}

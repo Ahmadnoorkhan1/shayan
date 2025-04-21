@@ -149,6 +149,7 @@ const EditCoursePage = () => {
   };
 
   const handleChapterSelect = (chapterContent: string, index: number) => {
+    console.log(chapterContent, "======================>")
     const {
       isCover,
       content,
@@ -758,6 +759,7 @@ const handleDeleteQuiz = async () => {
               
               {selectedChapterIndex !== -1 && 
               chapters[selectedChapterIndex] && 
+              typeof(chapters[selectedChapterIndex]) === 'string' &&
               (chapters[selectedChapterIndex].includes('data-cover="true"') || 
                chapters[selectedChapterIndex].includes('book-cover-image')) && (
                 <Button

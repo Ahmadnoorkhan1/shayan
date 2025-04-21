@@ -8,9 +8,9 @@ import BookTitleStep from "./steps/BookTitleStep"
 import SummaryStep from "./steps/SummaryStep"
 import apiService from "../../utilities/service/api"
 // import ContentViewer from "../../components/AiToolForms/common/ContentViewer"
+import { useNavigate, useParams } from "react-router"
 
 import ContentGenerationViewer from "../../components/ContentGeneration/ContentGenerationViewer";
-import toast from "react-hot-toast"
 
 
 // Update ContentData type to include summary
@@ -21,21 +21,37 @@ export type ContentData = {
   title: string
   summary: string // Add this field
   chapter_titles: []
+  numOfChapters: number
 }
 
   
 
 // Rename the component to be more generic
 const ContentGenerationStepper = () => {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [contentData, setContentData] = useState<ContentData>({
-    purpose: "",
-    category: "",
-    details: {},
-    title: "",
-    summary: "", // Initialize summary field
-    chapter_titles: []
-  })
+  const navigate = useNavigate();
+  const { contentType } = useParams<{ contentType?: string }>();
+  
+  const [currentStep, setCurrentStep] = useState(() => {
+    // If contentType param exists, start at step 1 (details), otherwise at step 0 (purpose)
+    return contentType ? 1 : 0;
+  });
+  
+  const [contentData, setContentData] = useState<ContentData>(() => {
+    // Initialize with values from URL param or localStorage if available
+    const savedData = localStorage.getItem(`content_data_${contentType || ''}`);
+    const defaultData = {
+      purpose: contentType ? (contentType.includes("book") ? "educational_book" : "educational_course") : "",
+      category: contentType ? (contentType.includes("book") ? "book" : "course") : "",
+      details: {},
+      title: "",
+      summary: "",
+      chapter_titles: [],
+      numOfChapters:3
+    };
+    
+    return savedData ? JSON.parse(savedData) : defaultData;
+  });
+  
   const [isCompleted, setIsCompleted] = useState(false)
   const [animateStep, setAnimateStep] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -55,6 +71,13 @@ const ContentGenerationStepper = () => {
   ]
 
   useEffect(() => {
+    if (contentType || contentData.category) {
+      const storageKey = `content_data_${contentType || contentData.category || ''}`;
+      localStorage.setItem(storageKey, JSON.stringify(contentData));
+    }
+  }, [contentData, contentType]);
+
+  useEffect(() => {
     // Trigger animation when step changes
     setAnimateStep(true)
     const timer = setTimeout(() => {
@@ -68,7 +91,17 @@ const ContentGenerationStepper = () => {
       ...prev, 
       purpose: purposeId,
       category: categoryId 
-    }))
+    }));
+    
+    // Save to localStorage before navigation
+    localStorage.setItem(`content_data_${categoryId}`, JSON.stringify({
+      ...contentData,
+      purpose: purposeId,
+      category: categoryId
+    }));
+    
+    // Navigate to the dynamic route
+    navigate(`/create/${categoryId}`);
   }
 
   const handleDetailChange = (detailId: string, value: string) => {
@@ -197,7 +230,7 @@ const canProceed = () => {
 }
 
  // Modified renderStep to include ContentViewer
-const renderStep = () => {
+ const renderStep = () => {
   switch (currentStep) {
     case 0:
       return <BookPurposeStep selectedPurpose={contentData.purpose} onSelect={handlePurposeSelect as any} />
@@ -209,14 +242,14 @@ const renderStep = () => {
       return <SummaryStep summary={contentData.summary} onUpdate={handleSummaryUpdate} />
     case 4:
       return <ContentGenerationViewer 
-      title={contentData.title}
-      summary={contentData.summary}
-      chapterTitles={contentData.chapter_titles as string[]}
-      contentType={contentData.purpose}
-      contentCategory={contentData.category}
-      contentDetails={contentData.details}
-      onBack={() => setCurrentStep(3)}
-    />
+        title={contentData.title}
+        summary={contentData.summary}
+        chapterTitles={contentData.chapter_titles as string[]}
+        contentType={contentData.purpose}
+        contentCategory={contentData.category}
+        contentDetails={contentData.details}
+        onBack={() => setCurrentStep(3)}
+      />
     default:
       return null
   }
@@ -351,7 +384,7 @@ const renderStep = () => {
             {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
             {currentStep === 1 && "Provide details about your content to customize its structure and style."}
             {currentStep === 2 && "Choose a title for your creation from our suggestions."}
-            {currentStep === 3 && "Review and edit the AI-generated summary for your content."}
+            {currentStep === 3 && "Review and edit the generated summary for your content."}
           </p>
         </div>
       </div>
@@ -365,22 +398,22 @@ const renderStep = () => {
 
         {/* Navigation */}
         <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 0 || isSubmitting}
-            className={`
-              px-4 py-2 rounded-lg font-medium text-sm
-              flex items-center gap-2
-              transform transition-all duration-200
-              ${currentStep === 0 || isSubmitting
-                ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
-                : 'hover:bg-purple-50 hover:text-purple-700 active:scale-95 text-gray-600 bg-white border border-gray-200'
-              }
-            `}
-          >
-            <ChevronLeft className="w-4 h-4" />
-            Back
-          </button>
+        <button
+  onClick={handleBack}
+  disabled={currentStep === 0 || currentStep === 4 || isSubmitting}
+  className={`
+    px-4 py-2 rounded-lg font-medium text-sm
+    flex items-center gap-2
+    transform transition-all duration-200
+    ${currentStep === 0 || currentStep === 4 || isSubmitting
+      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
+      : 'hover:bg-purple-50 hover:text-purple-700 active:scale-95 text-gray-600 bg-white border border-gray-200'
+    }
+  `}
+>
+  <ChevronLeft className="w-4 h-4" />
+  Back
+</button>
 
           <div className="px-4 py-1.5 bg-white rounded-full border border-gray-200">
             <div className="text-sm font-medium text-gray-600">

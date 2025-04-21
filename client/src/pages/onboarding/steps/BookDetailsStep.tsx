@@ -50,6 +50,14 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
       value: selectedDetails.length || "",
       description: "How extensive should the content be?"
     },
+    {
+      id: "numOfChapters",
+      name: "Number of Chapters",
+      icon: <BookOpen size={18} className="text-purple-500" />,
+      options: ["3", "5", "7", "10", "12", "15"],  // Add options for chapter count
+      value: selectedDetails.numOfChapters?.toString() || "3",
+      description: "How many chapters should the content have?"
+    },
   ]
 
   const advancedDetails: any[] = [
@@ -146,7 +154,7 @@ const ContentDetailsStep: React.FC<ContentDetailsStepProps> = ({ selectedDetails
 
   // Count total selections for progress
   const totalSelections = Object.keys(selectedDetails).length;
-  const requiredSelections = 3;
+  const requiredSelections = 4;
   const progress = Math.min(100, (totalSelections / requiredSelections) * 100);
   
   // Count selections in each category for showing badges

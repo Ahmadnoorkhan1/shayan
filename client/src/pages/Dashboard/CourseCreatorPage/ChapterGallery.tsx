@@ -26,8 +26,11 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
     const doc = parser.parseFromString(html, 'text/html');
     
     // Check if this is a cover chapter
-    const isCover = html.includes('data-cover="true"') || 
-                    html.includes('book-cover-image');
+    // Check if this is a cover chapter
+const isCover = typeof html === 'string' && (
+  html.includes('data-cover="true"') || 
+  html.includes('book-cover-image')
+);
     
     // Get chapter title (h1)
     const titleElement = doc.querySelector('h1');

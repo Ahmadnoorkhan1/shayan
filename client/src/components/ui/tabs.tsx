@@ -4,19 +4,36 @@ import apiService from "../../utilities/service/api";
 import { addItem, deleteItem, downloadItem, editItem } from "../../utilities/shared/tableUtils";
 
 const Tabs = () => {
-  const [courses,setCourses] = useState([]);
-  const [books,setBooks] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [books, setBooks] = useState([]);
   const [showBook, setShowBook] = useState(false);
-  const [tab,setTab] = useState('course')
+  const [tab, setTab] = useState('course');
   const [loading, setLoading] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  
+  // Reset pagination when tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab]);
 
-  try {
-    useEffect(() => {
-      const fetchData = async () => {
-        const response = await await apiService.get(
-          "course-creator/getCourses/"+tab,
-          {}
-        );
+  // Fetch data with pagination
+  // Replace the fetch data function in the useEffect with this implementation:
+
+useEffect(() => {
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Add pagination params to API request
+      const response = await apiService.get(
+        `course-creator/getCourses/${tab}?page=${currentPage}&limit=${itemsPerPage}`
+      );
+      
+      if (response.success) {
+        // Format the response data from response.data array
         const formattedCourses = response.data.map((course: any) => {
           const formatDate = (dateString: string) => {
             const options: Intl.DateTimeFormatOptions = {
@@ -33,36 +50,69 @@ const Tabs = () => {
             Created: formatDate(course.createdAt),
             Updated: formatDate(course.updatedAt),
             Content: course.content,
-            type:course.type
+            type: course.type
           };
         });
-        tab==='course' ? setCourses(formattedCourses) : setBooks(formattedCourses);
-      };
-      fetchData();
-    }, [tab]);
-  } catch (error) {
-    console.log(error);
-  }
+        
+        // Update state with formatted data and total count
+        if (tab === 'course') {
+          setCourses(formattedCourses);
+        } else {
+          setBooks(formattedCourses);
+        }
+        
+        // Set pagination info from the response
+        if (response.pagination) {
+          setTotalItems(response.pagination.totalItems);
+          // Only update itemsPerPage if it differs from current state to avoid loops
+          if (response.pagination.itemsPerPage !== itemsPerPage) {
+            setItemsPerPage(response.pagination.itemsPerPage);
+          }
+          // Update current page if it differs from what we expect (defensive)
+          if (response.pagination.currentPage !== currentPage) {
+            setCurrentPage(response.pagination.currentPage);
+          }
+        }
+      } else {
+        console.error("API returned error:", response.message);
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  fetchData();
+}, [tab, currentPage, itemsPerPage]);
 
-  const handleCourses = (item:any) =>{
-    setCourses(item)
-  }
-  const handleBooks = (item:any) =>{
-    setCourses(item)
-  }
+  // Handle tab change
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    setShowBook(newTab === 'book');
+  };
+  
+  // Handler for data updates
+  const handleContentUpdate = (item: any) => {
+    if (tab === 'course') {
+      setCourses(item);
+    } else {
+      setBooks(item);
+    }
+  };
 
   return (
     <>
-      <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 pt-6 ">
+      <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 pt-6">
         <li className="me-2">
           <a
-            id="course-tab" // Added ID for Driver.js
-            onClick={() => {setShowBook(false); setTab('course');}}
+            id="course-tab"
+            onClick={() => handleTabChange('course')}
             aria-current="page"
             className={
               !showBook
-                ? "inline-block p-4 rounded-t-lg text-primary bg-gray-100 cursor-pointer  "
-                : "inline-block p-4 rounded-t-lg text-gray-500 bg-gray-50 cursor-pointer "
+                ? "inline-block p-4 rounded-t-lg text-primary bg-gray-100 cursor-pointer"
+                : "inline-block p-4 rounded-t-lg text-gray-500 bg-gray-50 cursor-pointer"
             }
           >
             Course
@@ -70,12 +120,12 @@ const Tabs = () => {
         </li>
         <li className="me-2">
           <a
-            id="book-tab" // Added ID for Driver.js
-            onClick={() => {setShowBook(true); setTab('book');}}
+            id="book-tab"
+            onClick={() => handleTabChange('book')}
             className={
               showBook
-                ? "inline-block p-4 rounded-t-lg cursor-pointer text-primary bg-gray-100  "
-                : " inline-block p-4 rounded-t-lg cursor-pointer text-gray-500 bg-gray-50  "
+                ? "inline-block p-4 rounded-t-lg cursor-pointer text-primary bg-gray-100"
+                : "inline-block p-4 rounded-t-lg cursor-pointer text-gray-500 bg-gray-50"
             }
           >
             Books
@@ -83,34 +133,46 @@ const Tabs = () => {
         </li>
       </ul>
       <div id="data-table">
-        {!showBook ? (
-          <>
-            <Table
-              headers={["Name", "Description", "Created At", "Updated At","Type"]}
-              data={courses}
-              isAdd={false}
-              addItem={addItem}
-              deleteItem={deleteItem}
-              setData={handleCourses}
-              downloadItem={(row: any) => downloadItem(row, setLoading)}
-              editItem={editItem}
-              pre={"course-creator"}
-            />
-          </>
+        {loading ? (
+          <div className="flex justify-center items-center p-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-700"></div>
+          </div>
+        ) : !showBook ? (
+          <Table
+            headers={["Name", "Description", "Created At", "Updated At", "Type"]}
+            data={courses}
+            isAdd={false}
+            addItem={addItem}
+            deleteItem={deleteItem}
+            setData={handleContentUpdate}
+            downloadItem={(row: any) => downloadItem(row, setLoading)}
+            editItem={editItem}
+            pre={"course-creator"}
+            // Add pagination props
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
         ) : (
-          <>
-            <Table
-              headers={["Name", "Description", "Created At", "Updated At","Type"]}
-              data={books}
-              isAdd={false}
-              addItem={addItem}
-              deleteItem={deleteItem}
-              setData={handleBooks}
-              downloadItem={(row: any) => downloadItem(row, setLoading)}
-              editItem={editItem}
-              pre={"book-creator"}
-            />
-          </>
+          <Table
+            headers={["Name", "Description", "Created At", "Updated At", "Type"]}
+            data={books}
+            isAdd={false}
+            addItem={addItem}
+            deleteItem={deleteItem}
+            setData={handleContentUpdate}
+            downloadItem={(row: any) => downloadItem(row, setLoading)}
+            editItem={editItem}
+            pre={"book-creator"}
+            // Add pagination props
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+            totalItems={totalItems}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
         )}
       </div>
     </>
