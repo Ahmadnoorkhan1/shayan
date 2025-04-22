@@ -1,5 +1,6 @@
 const Course = require('../Models/CourseModel');
-
+const axios = require('axios');
+const cheerio = require('cheerio');
 const letsAi = require('../Utils/gpt')
 
 const createCourseTitle = async (req, res) => {
@@ -163,8 +164,10 @@ const getCourseChapter = async (req, res) => {
     const question = `Write a detailed educational chapter of 100-200 words for Chapter ${data.prompt.chapterNo}: ${data.prompt.chapter} 
     of the course "${data.prompt.title}". Use HTML formatting with the following structure:
     
-    <h1>Chapter ${data.prompt.chapter}</h1>
     
+    <div class="chapter-title"><h1>Chapter ${data.prompt.chapter}</h1></div>
+    
+    <div class="chapter-content">
     <p>Introduction paragraph here...</p>
     
     <h2>Key Concepts</h2>
@@ -180,7 +183,7 @@ const getCourseChapter = async (req, res) => {
     
     <h2>Summary</h2>
     <p>Concluding paragraph here...</p>
-    
+    </div>
     Make sure to use proper HTML tags and return only the formatted HTML content without any markdown.`;
 
     const timeout = new Promise((_, reject) =>
@@ -338,5 +341,154 @@ const deleteCourse = async (req, res) => {
     }
 };
 
+const convertBlobToChapters = async (req, res) => {
+    try {
+      const { blobUrl } = req.body;
+  
+      if (!blobUrl) {
+        return res.status(400).json({
+          success: false,
+          message: 'Blob URL is required'
+        });
+      }
+  
+      // Fetch the HTML content from the blob URL
+      const response = await axios.get(blobUrl);
+      const htmlContent = response.data;
+  
+      // Parse the HTML content
+      const $ = cheerio.load(htmlContent);
+      const chapters = [];
+  
+      // Find all chapter-title divs
+      $('.chapter-title').each((index, element) => {
+        // First try to get the data-title attribute
+        const dataTitle = $(element).attr('data-title');
+        // If data-title exists, use it, otherwise use the text content
+        const title = dataTitle || $(element).text().trim();
+        
+        // Find the corresponding chapter-content div
+        // This assumes chapter-content follows chapter-title in the DOM
+        const contentDiv = $(element).next('.chapter-content');
+        let content = contentDiv.html() || '';
+        
+        // Clean up the content by removing extra slashes
+        content = content.replace(/\\/g, '');
+  
+        chapters.push({
+          title,
+          content
+        });
+      });
+  
+      if (chapters.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No chapters found in the blob content'
+        });
+      }
+  
+      return res.status(200).json({
+        success: true,
+        data: {
+          chapters
+        }
+      });
+  
+    } catch (error) {
+      console.error('Error converting blob to chapters:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error converting blob to chapters',
+        error: error.message
+      });
+    }
+  };
+
+const convertExternalQuiz = async (req, res) => {
+  try {
+    const { quizUrl } = req.body;
+    const courseId = quizUrl.match(/\/quiz\/(\d+)\//)?.[1];
+
+    // Fetch the quiz data from the external URL
+    const response = await axios.get(quizUrl);
+    const courseData = response.data;
+
+    // Get the current course content
+    const course = await Course.findOne({
+      where: { course_id: courseId }
+    });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found'
+      });
+    }
+
+    // Parse the current course content
+    let courseContent = [];
+    try {
+      courseContent = JSON.parse(course.content);
+      if (typeof courseContent === 'string') {
+        courseContent = JSON.parse(courseContent);
+      }
+    } catch (e) {
+      console.error("Error parsing course content:", e);
+      return res.status(500).json({
+        success: false,
+        message: 'Error parsing course content'
+      });
+    }
+
+    // Process each chapter that has a quiz
+    // Object.entries(courseData.courseChapters).forEach(([chapterKey, chapterData]) => {
+    //     chapterData.map((item)=>{
+    //         console.log(item.quizContents, ' <<<< ')
+    //     })
+    // });
+    const chaptersArray = Object.entries(courseData.courseChapters).map(([key, value]) => ({
+        id: key, // you can name it `id`, `slug`, etc.
+        ...value,
+      }));
+    chaptersArray.map((item,index)=>{
+        if(item.quiz){
+            courseContent[index].quiz = item.quizContents   
+        }
+    })
+
+    // Update the course with the new content
+    const updatedCourse = await Course.update(
+      {
+        content: JSON.stringify(courseContent)
+      },
+      {
+        where: { course_id: courseId }
+      }
+    );
+
+    if (updatedCourse[0] === 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to update course with quiz content'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Quiz content added to course successfully',
+      data: courseContent
+    });
+
+  } catch (error) {
+    console.error('Error converting external quiz:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error converting external quiz',
+      error: error.message
+    });
+  }
+};
+
 module.exports = { createCourseTitle,createCourseSummary,createCompleteCourse, getCourseChapter, 
-                addCourse, getCourses, getCourseById, updateCourse, deleteCourse };
+                addCourse, getCourses, getCourseById, updateCourse, deleteCourse,convertBlobToChapters, convertExternalQuiz };

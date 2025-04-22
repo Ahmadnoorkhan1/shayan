@@ -21,7 +21,7 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
   const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState<number | null>(null);
 
-  const parseChapter = (html: string) => {
+  const parseChapter = (html: any) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
@@ -33,10 +33,9 @@ const isCover = typeof html === 'string' && (
 );
     
     // Get chapter title (h1)
-    const titleElement = doc.querySelector('h1');
+    // const titleElement = doc.querySelector('chapter-title');
     const title = isCover ? 'Course Cover' : 
-                  (titleElement ? titleElement.textContent || 'Untitled' : 'Untitled');
-    
+                  (html.title);
     // Get sections (h2)
     const sectionElements = doc.querySelectorAll('h2');
     const sections = Array.from(sectionElements).map(section => {
@@ -72,11 +71,11 @@ const isCover = typeof html === 'string' && (
   
     // Get editable content (everything except h1)
     let editableContent = '';
-    let currentNode = titleElement?.nextElementSibling;
-    while (currentNode) {
-      editableContent += currentNode.outerHTML;
-      currentNode = currentNode.nextElementSibling;
-    }
+    // let currentNode = titleElement?.nextElementSibling;
+    // while (currentNode) {
+    //   editableContent += currentNode.outerHTML;
+    //   currentNode = currentNode.nextElementSibling;
+    // }
   
     const description = isCover ? 'Course cover image' : 
       (sections.length > 0 ? 
@@ -107,7 +106,7 @@ const isCover = typeof html === 'string' && (
   return (
 <div 
   style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} 
-  className="sticky top-0 w-full sm:w-[40%] lg:w-auto h-[90vh] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden"
+  className="sticky top-0 w-full sm:w-[40%] lg:w-full h-[90vh] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden"
 >      <div className=" top-0 bg-white z-20 px-4 py-3 border-b border-purple-100">
         <h3 className="text-lg font-semibold text-primary flex items-center">
           <Book className="w-5 h-5 mr-2 text-primary" />

@@ -44,6 +44,15 @@ const cleanHtmlContent = (htmlContent: string): string => {
     // Return just the content inside the pre tags
     return content;
   });
+
+  // Clean up image tags by removing extra slashes
+  cleanedContent = cleanedContent.replace(/<img src=\\"([^"]*)\\" alt=\\"([^"]*)\\" class=\\"([^"]*)\\" width=\\"([^"]*)\\" height=\\"([^"]*)\\"\\>/g, 
+    '<img src="$1" alt="$2" class="$3" width="$4" height="$5">');
+  
+  // Remove any remaining backslashes
+  cleanedContent = cleanedContent.replace(/\\/g, '');
+
+  console.log(cleanedContent, 'cleanedContent')
   
   return cleanedContent;
 };
@@ -66,8 +75,6 @@ const RichTextEditor = forwardRef<ReactQuill, RichTextEditorProps>(
         setShowPlaceholder(true);
       }
     }, [initialContent]);
-
-    console.log(content)
 
 
     useEffect(() => {

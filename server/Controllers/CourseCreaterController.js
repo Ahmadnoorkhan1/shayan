@@ -16,4 +16,6 @@ const gptTitles = async (data) => {
     return response;
 }
 
+
+
 module.exports = { createCourse };

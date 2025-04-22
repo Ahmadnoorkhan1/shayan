@@ -1,5 +1,5 @@
 const express = require('express');
-const { createCourseTitle, createCourseSummary, createCompleteCourse, getCourseChapter, addCourse, getCourses, getCourseById, updateCourse, deleteCourse } = require('../Controllers/CourseController');
+const { createCourseTitle, createCourseSummary, createCompleteCourse, getCourseChapter, addCourse, getCourses, getCourseById, updateCourse, deleteCourse, convertBlobToChapters, convertExternalQuiz } = require('../Controllers/CourseController');
 
 const router = express.Router();
 
@@ -13,6 +13,7 @@ router.get('/getCourseById/:id/:type', getCourseById);
 
 router.post('/updateCourse/:id/:type', updateCourse);
 router.post('/deleteCourse/:id/:type', deleteCourse);
-
+router.post('/convert-blob-to-chapters', convertBlobToChapters);
+router.post('/convert-external-quiz', convertExternalQuiz);
 
 module.exports = router;

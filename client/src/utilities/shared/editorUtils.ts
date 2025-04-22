@@ -97,7 +97,7 @@ const isCover = typeof html === 'string' && (
   });
 
   // Extract title and clean content
-  const titleElement = cleanDoc.querySelector('h1');
+  const titleElement = cleanDoc.querySelector('chapter-title');
   const title = titleElement?.textContent || `Chapter ${index + 1}`;
   
   if (titleElement) {
@@ -153,13 +153,13 @@ export const handleContentUpdate = (
   }
 
   // Build updated content
-  let updatedContent = `<h1>${title}</h1>${cleanContent}`;
+  let updatedContent = `${cleanContent}`;
 
   // Check if content needs HTML structure
-  const hasHtmlStructure = cleanContent.includes('<h1>') || cleanContent.includes('<h2>');
-  if (!hasHtmlStructure) {
-    updatedContent = `<h1>${title}</h1>\n<h2>Section 1</h2>\n${cleanContent}`;
-  }
+  // const hasHtmlStructure = cleanContent.includes('<h1>') || cleanContent.includes('<h2>');
+  // if (!hasHtmlStructure) {
+  //   // updatedContent = `<h1>${title}</h1>\n<h2>Section 1</h2>\n${cleanContent}`;
+  // }
 
   // Preserve quiz content if it exists
   if (editorQuizContent && sharedQuizContent) {
@@ -182,13 +182,20 @@ export const handleContentUpdate = (
   }
 
   // Clean up JSON stringify artifacts
-  return updatedContent
+  const finalContent =  updatedContent
     .replace(/\\"/g, '"')
     .replace(/\\\\/g, '\\')
     .replace(/\\n/g, '\n')
     .replace(/\s*(<!-- SHARED_QUIZ_START -->)\s*/g, '\n$1\n')  // Clean quiz markers spacing
     .replace(/\s*(<!-- SHARED_QUIZ_END -->)\s*/g, '\n$1\n')
     .trim();
+
+  const finalTitle = title;
+  // @ts-ignore
+  return {
+    title: finalTitle,
+    content: finalContent,
+  }
 };
 
 /**
