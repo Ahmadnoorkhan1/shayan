@@ -141,7 +141,7 @@ function App() {
             </svg>
           </div>
           <div>
-            <h2 className="text-2xl text-white font-bold">Welcome to MiniSchools Academy!</h2>
+            <h2 className="text-2xl text-white font-bold">Welcome to Mini Lessons Accademy!</h2>
             {welcomeEmail && (
               <p className="text-purple-100 mt-1">
                 You're signed in as <span className="font-medium">{welcomeEmail}</span>

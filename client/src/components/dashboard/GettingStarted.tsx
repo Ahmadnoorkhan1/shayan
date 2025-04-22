@@ -4,6 +4,7 @@ import { useEffect } from "react"
 // import Scene from "./scene"
 import Scene from "./Scene"
 import { useNavigate } from "react-router"
+import { CircleFadingPlus } from "lucide-react"
 
 interface GettingStartedProps {
   button?: boolean
@@ -27,7 +28,7 @@ const GettingStarted: React.FC<GettingStartedProps> = ({
 onTutorialClick && onTutorialClick()
   },[])
 
-const handleContentCreation = () =>{
+const handleNavigate = () =>{
 navigate('/create')
 }
 
@@ -65,14 +66,25 @@ navigate('/create')
                   View Tutorial
                 </a>
               )}
+               {button && (
+                <button
+                  id="add-new-item"
+                  onClick={handleNavigate}
+                  className=" flex px-5 space-x-4 py-3 text-base font-medium text-white border border-white/30 rounded-lg hover:bg-white/10 focus:ring-4 focus:ring-white/20 transition-all"
+                >
+                
+                  <CircleFadingPlus  className="mr-2" />
+                  Create
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* 3D Model side */}
-        <div onClick={handleContentCreation} id="add-new-item" className="h-60 lg:h-80 w-full lg:w-1/2 relative">
+        {/* <div onClick={handleContentCreation} id="add-new-item" className="h-60 lg:h-80 w-full lg:w-1/2 relative">
           <Scene modelPath={modelPath} />
-        </div>
+        </div> */}
       </div>
     </section>
   )

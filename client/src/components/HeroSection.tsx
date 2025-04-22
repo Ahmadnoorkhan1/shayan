@@ -13,7 +13,7 @@ const HeroSection = () => {
               Turn Your Ideas into Profitable Courses in Minutes.
             </p>
             <div className="mt-6 flex items-center gap-4"> 
-            <button className="btn btn-white ">Free Trail</button>
+            <button className="btn btn-white ">Free Trial</button>
             <AccessTokenRedirect userId={1}  />
 
             </div>
