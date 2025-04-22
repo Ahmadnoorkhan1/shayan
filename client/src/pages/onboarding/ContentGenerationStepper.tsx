@@ -6,12 +6,11 @@ import BookPurposeStep from "./steps/BookPurposeStep"
 import BookDetailsStep from "./steps/BookDetailsStep"
 import BookTitleStep from "./steps/BookTitleStep"
 import SummaryStep from "./steps/SummaryStep"
+import ChapterManagementStep from "./steps/ChapterManagementStep"
 import apiService from "../../utilities/service/api"
-// import ContentViewer from "../../components/AiToolForms/common/ContentViewer"
 import { useNavigate, useParams } from "react-router"
 
-import ContentGenerationViewer from "../../components/ContentGeneration/ContentGenerationViewer";
-
+import ContentGenerationViewer from "../../components/ContentGeneration/ContentGenerationViewer"
 
 // Update ContentData type to include summary
 export type ContentData = {
@@ -19,39 +18,39 @@ export type ContentData = {
   category: string
   details: Record<string, string>
   title: string
-  summary: string // Add this field
+  summary: string
   chapter_titles: []
   numOfChapters: number
 }
 
-  
-
 // Rename the component to be more generic
 const ContentGenerationStepper = () => {
-  const navigate = useNavigate();
-  const { contentType } = useParams<{ contentType?: string }>();
-  
+  const navigate = useNavigate()
+  const { contentType } = useParams<{ contentType?: string }>()
+
   const [currentStep, setCurrentStep] = useState(() => {
-    // If contentType param exists, start at step 1 (details), otherwise at step 0 (purpose)
-    return contentType ? 1 : 0;
-  });
-  
+    return contentType ? 1 : 0
+  })
+
   const [contentData, setContentData] = useState<ContentData>(() => {
-    // Initialize with values from URL param or localStorage if available
-    const savedData = localStorage.getItem(`content_data_${contentType || ''}`);
+    const savedData = localStorage.getItem(`content_data_${contentType || ""}`)
     const defaultData = {
-      purpose: contentType ? (contentType.includes("book") ? "educational_book" : "educational_course") : "",
+      purpose: contentType
+        ? contentType.includes("book")
+          ? "educational_book"
+          : "educational_course"
+        : "",
       category: contentType ? (contentType.includes("book") ? "book" : "course") : "",
       details: {},
       title: "",
       summary: "",
       chapter_titles: [],
-      numOfChapters:3
-    };
-    
-    return savedData ? JSON.parse(savedData) : defaultData;
-  });
-  
+      numOfChapters: 3,
+    }
+
+    return savedData ? JSON.parse(savedData) : defaultData
+  })
+
   const [isCompleted, setIsCompleted] = useState(false)
   const [animateStep, setAnimateStep] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -61,24 +60,25 @@ const ContentGenerationStepper = () => {
   const [chaptersData, setChaptersData] = useState<any[]>([])
   const [chapterFetchCount, setChapterFetchCount] = useState(0)
 
-  // Update steps to include summary step
+  const isBookContent = contentData.category === "book"
+
   const steps = [
     { id: "purpose", name: "Content Purpose", description: "Define what type of content you want to create" },
     { id: "details", name: "Content Details", description: "Customize your content's style and structure" },
     { id: "title", name: "Choose Title", description: "Select the perfect title for your creation" },
     { id: "summary", name: "Review Summary", description: "Review and edit the generated summary" },
+    ...(isBookContent ? [{ id: "chapters", name: "Organize Chapters", description: "Edit and arrange your book chapters" }] : []),
     { id: "finalize", name: "Finalize Content", description: "Read your content by chapters and save" },
   ]
 
   useEffect(() => {
     if (contentType || contentData.category) {
-      const storageKey = `content_data_${contentType || contentData.category || ''}`;
-      localStorage.setItem(storageKey, JSON.stringify(contentData));
+      const storageKey = `content_data_${contentType || contentData.category || ""}`
+      localStorage.setItem(storageKey, JSON.stringify(contentData))
     }
-  }, [contentData, contentType]);
+  }, [contentData, contentType])
 
   useEffect(() => {
-    // Trigger animation when step changes
     setAnimateStep(true)
     const timer = setTimeout(() => {
       setAnimateStep(false)
@@ -87,21 +87,22 @@ const ContentGenerationStepper = () => {
   }, [currentStep])
 
   const handlePurposeSelect = (purposeId: string, categoryId: string) => {
-    setContentData((prev) => ({ 
-      ...prev, 
+    setContentData((prev) => ({
+      ...prev,
       purpose: purposeId,
-      category: categoryId 
-    }));
-    
-    // Save to localStorage before navigation
-    localStorage.setItem(`content_data_${categoryId}`, JSON.stringify({
-      ...contentData,
-      purpose: purposeId,
-      category: categoryId
-    }));
-    
-    // Navigate to the dynamic route
-    navigate(`/create/${categoryId}`);
+      category: categoryId,
+    }))
+
+    localStorage.setItem(
+      `content_data_${categoryId}`,
+      JSON.stringify({
+        ...contentData,
+        purpose: purposeId,
+        category: categoryId,
+      })
+    )
+
+    navigate(`/create/${categoryId}`)
   }
 
   const handleDetailChange = (detailId: string, value: string) => {
@@ -115,90 +116,75 @@ const ContentGenerationStepper = () => {
     setContentData((prev) => ({ ...prev, title }))
   }
 
-  // New handler to update summary
   const handleSummaryUpdate = (updatedSummary: string) => {
-    setContentData(prev => ({
+    setContentData((prev) => ({
       ...prev,
-      summary: updatedSummary
-    }));
-    // Save to localStorage for persistence
-    localStorage.setItem('content_summary', updatedSummary);
+      summary: updatedSummary,
+    }))
+    localStorage.setItem("content_summary", updatedSummary)
   }
 
-  // Modified generateSummary to automatically navigate to next step
+  const handleChapterTitlesUpdate = (updatedTitles: string[]) => {
+    setContentData((prev) => ({
+      ...prev,
+      chapter_titles: updatedTitles,
+    }))
+    localStorage.setItem("book_chapter_titles", JSON.stringify(updatedTitles))
+  }
+
   const generateSummary = async () => {
     setIsSubmitting(true)
     setSubmitError(null)
-    
+
     try {
-      // Call API to generate summary with collected data
       const response = await apiService.post("/onboard/generate-summary", {
         contentType: contentData.purpose,
         contentCategory: contentData.category,
         contentTitle: contentData.title,
         contentDetails: contentData.details,
-      });
-      
-      if (response.success) {
-        // Store the summary in state
-        setContentData(prev => ({
-          ...prev, 
-          summary: response.data.summary || ""
-        }));
-        
-        // Save to localStorage
-        localStorage.setItem('content_summary', response.data.summary || "");
+      })
 
-        // localStorage.setItem('chapter_titles',response.data.chapterTitles);
-        setContentData(prev => ({
+      if (response.success) {
+        setContentData((prev) => ({
           ...prev,
-          chapter_titles: response.data.chapterTitles || []
-        }));
-        
-        // Set summary as generated
-        setIsSummaryGenerated(true);
-        
-        // Move to next step immediately after successful generation
-        setCurrentStep(prev => prev + 1);
-        
-        // If there's a content ID, store it
+          summary: response.data.summary || "",
+          chapter_titles: response.data.chapters || [],
+        }))
+
+        localStorage.setItem("content_summary", response.data.summary || "")
+        setIsSummaryGenerated(true)
+        setCurrentStep((prev) => prev + 1)
+
         if (response.data && response.data.id) {
-          setContentId(response.data.id);
+          setContentId(response.data.id)
         }
       } else {
-        throw new Error(response.message || "Failed to generate summary");
+        throw new Error(response.message || "Failed to generate summary")
       }
     } catch (err) {
-      console.error("Error generating summary:", err);
-      setSubmitError(err instanceof Error ? err.message : "Failed to generate summary. Please try again.");
+      console.error("Error generating summary:", err)
+      setSubmitError(err instanceof Error ? err.message : "Failed to generate summary. Please try again.")
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
     }
-  };
-
-
-
-  // Modify handleNext to not check isSummaryGenerated flag
- // Update handleNext function
- const handleNext = async () => {
-  if (currentStep === 2) {
-    // When on the title step (step 2), generate summary
-    setIsSubmitting(true);
-    try {
-      await generateSummary();
-      // Next step handled in generateSummary function
-    } finally {
-      setIsSubmitting(false);
-    }
-  } else if (currentStep === 3) {
-    // On summary step (step 3), just move to the content viewer step
-    // The ContentGenerationViewer will handle chapter generation
-    setCurrentStep(prev => prev + 1);
-  } else if (currentStep < steps.length - 1) {
-    // Standard progression for other steps
-    setCurrentStep(prev => prev + 1);
   }
-}
+
+  const handleNext = async () => {
+    if (currentStep === 2) {
+      setIsSubmitting(true)
+      try {
+        await generateSummary()
+      } finally {
+        setIsSubmitting(false)
+      }
+    } else if (currentStep === 3) {
+      setCurrentStep((prev) => prev + 1)
+    } else if (currentStep === 4 && isBookContent) {
+      setCurrentStep((prev) => prev + 1)
+    } else if (currentStep < steps.length - 1) {
+      setCurrentStep((prev) => prev + 1)
+    }
+  }
 
   const handleBack = () => {
     if (currentStep > 0) {
@@ -206,54 +192,69 @@ const ContentGenerationStepper = () => {
     }
   }
 
-
-
-
-  // Modified canProceed to include summary condition
- // Modified canProceed to include final step condition
-const canProceed = () => {
-  if (currentStep === 0) {
-    return contentData.purpose !== ""
-  } else if (currentStep === 1) {
-    // Require at least 3 details to be filled
-    return Object.keys(contentData.details).length >= 3
-  } else if (currentStep === 2) {
-    return contentData.title !== ""
-  } else if (currentStep === 3) {
-    // For the summary step, we just need a summary to exist
-    return contentData.summary !== ""
-  } else if (currentStep === 4) {
-    // For the final step, allow proceeding if at least one chapter is generated
-    return chaptersData.filter(Boolean).length > 0
+  const canProceed = () => {
+    if (currentStep === 0) {
+      return contentData.purpose !== ""
+    } else if (currentStep === 1) {
+      return Object.keys(contentData.details).length >= 3
+    } else if (currentStep === 2) {
+      return contentData.title !== ""
+    } else if (currentStep === 3) {
+      return contentData.summary !== ""
+    } else if (currentStep === 4) {
+      if (isBookContent) {
+        return Array.isArray(contentData.chapter_titles) && contentData.chapter_titles.length >= 3
+      } else {
+        return chaptersData.filter(Boolean).length > 0
+      }
+    } else if (currentStep === 5 && isBookContent) {
+      return chaptersData.filter(Boolean).length > 0
+    }
+    return false
   }
-  return false
-}
 
- // Modified renderStep to include ContentViewer
- const renderStep = () => {
-  switch (currentStep) {
-    case 0:
-      return <BookPurposeStep selectedPurpose={contentData.purpose} onSelect={handlePurposeSelect as any} />
-    case 1:
-      return <BookDetailsStep selectedDetails={contentData.details} onChange={handleDetailChange} />
-    case 2:
-      return <BookTitleStep bookData={contentData} selectedTitle={contentData.title} onSelect={handleTitleSelect} />
-    case 3:
-      return <SummaryStep summary={contentData.summary} onUpdate={handleSummaryUpdate} />
-    case 4:
-      return <ContentGenerationViewer 
-        title={contentData.title}
-        summary={contentData.summary}
-        chapterTitles={contentData.chapter_titles as string[]}
-        contentType={contentData.purpose}
-        contentCategory={contentData.category}
-        contentDetails={contentData.details}
-        onBack={() => setCurrentStep(3)}
-      />
-    default:
-      return null
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return <BookPurposeStep selectedPurpose={contentData.purpose} onSelect={handlePurposeSelect as any} />
+      case 1:
+        return <BookDetailsStep selectedDetails={contentData.details} onChange={handleDetailChange} />
+      case 2:
+        return <BookTitleStep bookData={contentData} selectedTitle={contentData.title} onSelect={handleTitleSelect} />
+      case 3:
+        return <SummaryStep summary={contentData.summary} onUpdate={handleSummaryUpdate} />
+      case 4:
+        if (isBookContent) {
+          return <ChapterManagementStep chapterTitles={contentData.chapter_titles as string[]} onUpdate={handleChapterTitlesUpdate} />
+        } else {
+          return (
+            <ContentGenerationViewer
+              title={contentData.title}
+              summary={contentData.summary}
+              chapterTitles={contentData.chapter_titles as string[]}
+              contentType={contentData.purpose}
+              contentCategory={contentData.category}
+              contentDetails={contentData.details}
+              onBack={() => setCurrentStep(3)}
+            />
+          )
+        }
+      case 5:
+        return (
+          <ContentGenerationViewer
+            title={contentData.title}
+            summary={contentData.summary}
+            chapterTitles={contentData.chapter_titles as string[]}
+            contentType={contentData.purpose}
+            contentCategory={contentData.category}
+            contentDetails={contentData.details}
+            onBack={() => setCurrentStep(isBookContent ? 4 : 3)}
+          />
+        )
+      default:
+        return null
+    }
   }
-}
 
   if (isCompleted) {
     return (
@@ -312,8 +313,6 @@ const canProceed = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      
-      {/* Stepper Header */}
       <div className="mb-8 mt-8 px-4">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
           {steps.map((step, index) => (
@@ -324,8 +323,8 @@ const canProceed = () => {
                     index < currentStep
                       ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md"
                       : index === currentStep
-                        ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg ring-4 ring-purple-100"
-                        : "bg-gray-100 text-gray-400"
+                      ? "bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg ring-4 ring-purple-100"
+                      : "bg-gray-100 text-gray-400"
                   }`}
                 >
                   {index < currentStep ? (
@@ -361,7 +360,6 @@ const canProceed = () => {
         </div>
       </div>
 
-      {/* Error message if submission fails */}
       {submitError && (
         <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6 mx-4">
           <p className="text-sm font-medium">{submitError}</p>
@@ -369,104 +367,80 @@ const canProceed = () => {
         </div>
       )}
 
-      {/* Step Content */}
       <div
         className={`bg-white rounded-2xl shadow-[0_10px_50px_-12px_rgba(124,58,237,0.25)] overflow-hidden transition-all duration-300 ease-in-out ${
           animateStep ? "opacity-0 transform translate-y-4" : "opacity-100 transform translate-y-0"
         }`}
       >
-       {currentStep < 4 ? (
-    <>
-      <div className="border-b border-gray-100">
-        <div className="px-6 py-5">
-          <h2 className="text-2xl font-bold text-gray-800 mb-1">{steps[currentStep].name}</h2>
-          <p className="text-gray-500">
-            {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
-            {currentStep === 1 && "Provide details about your content to customize its structure and style."}
-            {currentStep === 2 && "Choose a title for your creation from our suggestions."}
-            {currentStep === 3 && "Review and edit the generated summary for your content."}
-          </p>
-        </div>
-      </div>
+        {currentStep < 4 ? (
+          <>
+            <div className="border-b border-gray-100">
+              <div className="px-6 py-5">
+                <h2 className="text-2xl font-bold text-gray-800 mb-1">{steps[currentStep].name}</h2>
+                <p className="text-gray-500">
+                  {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
+                  {currentStep === 1 && "Provide details about your content to customize its structure and style."}
+                  {currentStep === 2 && "Choose a title for your creation from our suggestions."}
+                  {currentStep === 3 && "Review and edit the generated summary for your content."}
+                  {currentStep === 4 && isBookContent && "Organize and edit your book chapters before content generation."}
+                </p>
+              </div>
+            </div>
 
-      <div className="p-6 min-h-[450px]">{renderStep()}</div>
-    </>
-  ) : (
-    // The ContentViewer has its own layout, so render it directly
-    <div className="min-h-[650px]">{renderStep()}</div>
-  )}
+            <div className="p-6 min-h-[450px]">{renderStep()}</div>
+          </>
+        ) : (
+          <div className="min-h-[650px]">{renderStep()}</div>
+        )}
 
-        {/* Navigation */}
         <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">
-        <button
-  onClick={handleBack}
-  disabled={currentStep === 0 || currentStep === 4 || isSubmitting}
-  className={`
-    px-4 py-2 rounded-lg font-medium text-sm
-    flex items-center gap-2
-    transform transition-all duration-200
-    ${currentStep === 0 || currentStep === 4 || isSubmitting
-      ? 'opacity-50 cursor-not-allowed bg-gray-100 text-gray-400'
-      : 'hover:bg-purple-50 hover:text-purple-700 active:scale-95 text-gray-600 bg-white border border-gray-200'
-    }
-  `}
->
-  <ChevronLeft className="w-4 h-4" />
-  Back
-</button>
+          <button
+            onClick={handleBack}
+            disabled={currentStep === 0 || currentStep === 4 || isSubmitting}
+            className={`px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transform transition-all duration-200 ${
+              currentStep === 0 || currentStep === 4 || isSubmitting
+                ? "opacity-50 cursor-not-allowed bg-gray-100 text-gray-400"
+                : "hover:bg-purple-50 hover:text-purple-700 active:scale-95 text-gray-600 bg-white border border-gray-200"
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </button>
 
           <div className="px-4 py-1.5 bg-white rounded-full border border-gray-200">
-            <div className="text-sm font-medium text-gray-600">
-              Step {currentStep + 1} of {steps.length}
-            </div>
+            <div className="text-sm font-medium text-gray-600">Step {currentStep + 1} of {steps.length}</div>
           </div>
 
           <button
             onClick={handleNext}
             disabled={!canProceed() || isSubmitting}
-            className={`
-              px-5 py-2.5 rounded-lg font-medium text-sm
-              flex items-center gap-2
-              transform transition-all duration-200
-              ${canProceed() && !isSubmitting
-                ? `
-                  bg-gradient-to-r from-purple-600 to-purple-700
-                  hover:from-purple-700 hover:to-purple-800
-                  active:scale-95 text-white
-                  shadow-[0_4px_10px_-3px_rgba(124,58,237,0.5)]
-                  hover:shadow-[0_6px_15px_-3px_rgba(124,58,237,0.6)]
-                `
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              }
-            `}
+            className={`px-5 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 transform transition-all duration-200 ${
+              canProceed() && !isSubmitting
+                ? "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 active:scale-95 text-white shadow-[0_4px_10px_-3px_rgba(124,58,237,0.5)] hover:shadow-[0_6px_15px_-3px_rgba(124,58,237,0.6)]"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
           >
-          {isSubmitting ? (
-  <>
-    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-    {currentStep === 2 ? "Generating Summary..." : 
-     currentStep === 3 ? "Creating Content..." : "Processing..."}
-  </>
-) : currentStep === 2 ? ( // Title step - generate summary next
-  <>
-    Generate Summary
-    <ChevronRight className="w-4 h-4" />
-  </>
-) : currentStep === 3 ? ( // Summary step - create content next
-  <>
-    Create My Content
-    <Sparkles className="w-4 h-4" />
-  </>
-) : currentStep === 4 ? ( // Final step
-  <>
-    {/* Finish & Save
-    <FileText className="w-4 h-4" /> */} {null}
-  </>
-) : (
-  <>
-    Continue
-    <ChevronRight className="w-4 h-4" />
-  </>
-)}
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                {currentStep === 2 ? "Generating Summary..." : currentStep === 3 ? "Creating Content..." : "Processing..."}
+              </>
+            ) : currentStep === 2 ? (
+              <>
+                Generate Summary
+                <ChevronRight className="w-4 h-4" />
+              </>
+            ) : currentStep === 4 ? (
+              <>
+                Create My Content
+                <Sparkles className="w-4 h-4" />
+              </>
+            ) : (
+              <>
+                Continue
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </div>

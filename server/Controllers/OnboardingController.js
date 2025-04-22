@@ -12,7 +12,7 @@ const openAi = new OpenAI({
  */
 const generateTitlesHandler = async (req, res) => {
     try {
-        const { contentType, details, count } = req.body;
+        const { contentType, details, count, prompt } = req.body;
         
         // Validate minimum required input
         if (!contentType) {
@@ -37,7 +37,8 @@ const generateTitlesHandler = async (req, res) => {
         const titles = await generateTitles({
             contentType,
             details: validDetails,
-            count: count || 5
+            count: count || 5,
+            prompt
         });
         
         return res.status(200).json({
@@ -276,26 +277,33 @@ The summary should be comprehensive enough to give readers a clear understanding
         const chapterCount = contentDetails?.numOfChapters; // Fixed number of chapters for now
         const chapterTitlesPrompt = `Generate ${chapterCount} engaging chapter titles for "${contentTitle}" which is a ${contentType} in the category of ${contentCategory}.
 
-CONTENT SPECIFICATIONS:
-- Target Audience: ${getAudienceInstruction(audience)}
-- Content Style: ${getStyleInstruction(style)}
-- Content Structure: ${getStructureInstruction(structure)}
-- Tone: ${getToneInstruction(tone)}
-
-REQUIREMENTS:
-1. Create exactly ${chapterCount} chapter titles.
-2. Titles should be concise yet descriptive (5-10 words each).
-3. The sequence should follow a logical progression appropriate for the "${structure}" format.
-4. Include a mix of engaging, informative, and action-oriented titles.
-5. Match the tone and style specifications.
-6. Ensure titles are appropriate for the target audience.
-7. Make each title unique and specific to the content.
-8. Return ONLY the numbered list of titles without any additional text.
-
-Format your response as follows:
-1. [First Chapter Title]
-2. [Second Chapter Title]
-...and so on.`;
+        CONTENT SPECIFICATIONS:
+        - Target Audience: ${getAudienceInstruction(audience)}
+        - Content Style: ${getStyleInstruction(style)}
+        - Content Structure: ${getStructureInstruction(structure)}
+        - Tone: ${getToneInstruction(tone)}
+        
+        REQUIREMENTS:
+        1. Create exactly ${chapterCount} chapter titles.
+        2. Titles should be concise yet descriptive (5-10 words each).
+        3. The sequence should follow a logical progression appropriate for the "${structure}" format.
+        4. Include a mix of engaging, informative, and action-oriented titles.
+        5. Match the tone and style specifications.
+        6. Ensure titles are appropriate for the target audience.
+        7. Make each title unique and specific to the content.
+        8. For EACH chapter title, include 3 brief key points that will be covered in that chapter.
+        9. Key points should be concise (5-10 words each) and highlight important subtopics.
+        
+        Format your response as follows:
+        1. [First Chapter Title]
+           - Key point one
+           - Key point two
+           - Key point three
+        2. [Second Chapter Title]
+           - Key point one
+           - Key point two
+           - Key point three
+        ...and so on.`;
 
         // Call OpenAI API to generate the summary
         const [summaryResponse, chapterTitlesResponse] = await Promise.all([
@@ -334,62 +342,85 @@ Format your response as follows:
 top_p: 1,            })
         ]);
 
-        // Extract and validate the response
-        const summaryContent = summaryResponse.choices[0].message.content.trim();
-        
-        // Check if all required sections are present
-        const requiredHeadings = ['Introduction', 'Overview', 'Key Topics', 'Main Content Sections', 'Learning Outcomes', 'Target Readers'];
-        
-        let missingHeadings = [];
-        for (const heading of requiredHeadings) {
-            if (!summaryContent.includes(`<h2>${heading}</h2>`)) {
-                missingHeadings.push(heading);
-            }
-        }
-        
-        if (missingHeadings.length > 0) {
-            console.warn(`Generated summary is missing required headings: ${missingHeadings.join(', ')}`);
-        }
 
-        // Process chapter titles
-        const rawChapterTitles = chapterTitlesResponse.choices[0].message.content.trim();
-        
-        // Parse the numbered list into an array of titles
-        const chapterTitles = [];
-        const titleMatches = rawChapterTitles.match(/\d+\.\s+(.+)(?:\r?\n|$)/g) || [];
-        
-        for (const match of titleMatches) {
-            const title = match.replace(/^\d+\.\s+/, '').trim();
-            if (title) chapterTitles.push(title);
-        }
-        
-        // Ensure we have the correct number of chapter titles
-        if (chapterTitles.length < 10) {
-            console.warn(`Expected at least 10 chapter titles, but only ${chapterTitles.length} were generated.`);
-        }
 
-        console.log("Generated summary and chapter titles successfully.");
+      // Process chapter titles and key points
+const rawChapterTitles = chapterTitlesResponse.choices[0].message.content.trim();
 
-        // Return both the summary and chapter titles
-        return res.status(200).json({
-            success: true,
-            data: {
-                summary: summaryContent,
-                chapterTitles: chapterTitles,
-                title: contentTitle,
-                contentType,
-                contentCategory,
-                contentDetails: {
-                    audience,
-                    style,
-                    length,
-                    structure,
-                    tone,
-                    media
-                }
-            },
-            message: 'Summary and chapter titles generated successfully'
-        });
+// Parse the response into structured chapters with key points
+const chapters = [];
+
+// Split the content by chapter numbers (looking for patterns like "1. ", "2. ", etc.)
+const chapterBlocks = rawChapterTitles.split(/\n\s*\d+\.\s+/).filter(Boolean);
+
+// Extract chapter numbers from the original content
+const chapterRegex = /(\d+)\.\s+/g;
+const chapterNumbers = [];
+let match;
+
+while ((match = chapterRegex.exec(rawChapterTitles)) !== null) {
+    chapterNumbers.push(parseInt(match[1], 10));
+}
+
+// Process each chapter block
+chapterBlocks.forEach((block, index) => {
+    // Skip if we've reached the desired chapter count
+    if (index >= chapterCount) return;
+    
+    // Split lines and process them
+    const lines = block.split('\n').map(line => line.trim()).filter(Boolean);
+    
+    if (lines.length === 0) return;
+    
+    // First line is the title (remove any markdown formatting)
+    const title = lines[0].replace(/\*\*/g, '').trim();
+    
+    // Remaining lines that start with "-" are key points
+    const keyPoints = lines
+        .slice(1)
+        .filter(line => line.trim().startsWith('-'))
+        .map(line => line.substring(line.indexOf('-') + 1).trim());
+    
+    // Get chapter number from extracted numbers or use index+1
+    const chapterNo = (index < chapterNumbers.length) ? 
+        chapterNumbers[index] : index + 1;
+    
+    // Add to chapters array
+    chapters.push({
+        chapterNo: chapterNo,
+        title: title,
+        keyPoints: keyPoints
+    });
+});
+
+// Debug output
+console.log(`Parsed ${chapters.length} chapters with key points`);
+
+// Ensure we have the correct number of chapter titles
+if (chapters.length < chapterCount) {
+    console.warn(`Expected ${chapterCount} chapter titles, but only ${chapters.length} were generated.`);
+}
+
+// Return both the summary and structured chapters
+return res.status(200).json({
+    success: true,
+    data: {
+        summary: summaryResponse.choices[0].message.content.trim(),
+        chapters: chapters,
+        title: contentTitle,
+        contentType,
+        contentCategory,
+        contentDetails: {
+            audience,
+            style,
+            length,
+            structure,
+            tone,
+            media
+        }
+    },
+    message: 'Summary, chapter titles and key points generated successfully'
+});
 
     } catch (error) {
         console.error('Error generating summary:', error);

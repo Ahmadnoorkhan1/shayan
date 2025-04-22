@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-// import Scene from "./scene"
 import Scene from "./Scene"
 import { useNavigate } from "react-router"
 import { CircleFadingPlus } from "lucide-react"
@@ -24,13 +23,21 @@ const GettingStarted: React.FC<GettingStartedProps> = ({
 
   const navigate = useNavigate()
 
-  useEffect(()=>{
-onTutorialClick && onTutorialClick()
-  },[])
+  useEffect(() => {
+    // Check if tutorial has been shown before
+    const tutorialShown = localStorage.getItem('tutorial_shown')
+    
+    // Only show tutorial if it hasn't been shown before
+    if (!tutorialShown && onTutorialClick) {
+      onTutorialClick()
+      // Mark tutorial as shown
+      localStorage.setItem('tutorial_shown', 'true')
+    }
+  }, [onTutorialClick]) // Add onTutorialClick to dependency array for proper cleanup
 
-const handleNavigate = () =>{
-navigate('/create')
-}
+  const handleNavigate = () => {
+    navigate('/create')
+  }
 
   return (
     <section
@@ -66,14 +73,13 @@ navigate('/create')
                   View Tutorial
                 </a>
               )}
-               {button && (
+              {button && (
                 <button
                   id="add-new-item"
                   onClick={handleNavigate}
                   className=" flex px-5 space-x-4 py-3 text-base font-medium text-white border border-white/30 rounded-lg hover:bg-white/10 focus:ring-4 focus:ring-white/20 transition-all"
                 >
-                
-                  <CircleFadingPlus  className="mr-2" />
+                  <CircleFadingPlus className="mr-2" />
                   Create
                 </button>
               )}

@@ -12,7 +12,7 @@ const openai = new OpenAI({
  */
 const generateTitles = async (data) => {
     try {
-        const { contentType = 'content', details = {}, count = 5 } = data;
+        const { contentType = 'content', details = {}, count = 5, prompt : userInput } = data;
         
         // Extract details with defaults
         const { 
@@ -33,7 +33,7 @@ const generateTitles = async (data) => {
         .join('\n');
         
         // Create prompt for AI
-        const prompt = `Generate ${count} engaging ${contentType} titles with the following characteristics:
+        const prompt = `Generate ${count} engaging ${contentType} titles for the user prompt ${userInput} with the following characteristics:
         ${providedDetails}
         
         The titles should be clear, appropriate for the specified criteria, and engaging.
@@ -41,7 +41,7 @@ const generateTitles = async (data) => {
         
         // Call OpenAI
         const response = await openai.chat.completions.create({
-            model: "gpt-4-turbo",
+            model: "gpt-4o-mini",
             messages: [
                 {
                     role: "system",

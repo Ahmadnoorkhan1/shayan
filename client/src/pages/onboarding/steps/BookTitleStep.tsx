@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Loader2, FileText, Check, RefreshCw, PenSquare } from "lucide-react"
+import { Loader2, FileText, Check, RefreshCw, PenSquare, SendHorizontal, Sparkles } from "lucide-react"
 import { ContentData } from "../ContentGenerationStepper"
 import apiService from "../../../utilities/service/api"
 
@@ -12,13 +12,17 @@ interface ContentTitleStepProps {
 }
 
 const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedTitle, onSelect }) => {
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [titles, setTitles] = useState<string[]>([])
   const [animatedTitles, setAnimatedTitles] = useState<string[]>([])
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
   const [showCustomField, setShowCustomField] = useState(false)
   const [customTitle, setCustomTitle] = useState("")
+  
+  // New states for prompt-first approach
+  const [titlePrompt, setTitlePrompt] = useState("")
+  const [promptEntered, setPromptEntered] = useState(false)
   
   // Use a ref to track if initial fetch has happened
   const initialFetchDone = useRef(false)
@@ -38,17 +42,15 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
   ];
 
   const fetchTitlesFromAPI = async (isInitialFetch = false) => {
-    // Don't fetch if we're deliberately selecting a title
-    if (!isInitialFetch && selectedTitle && !isLoading) return
-    
     setIsLoading(true)
     setError(null)
 
     try {
-      // Call the API to generate titles
+      // Call the API to generate titles with the user's prompt
       const response = await apiService.post("/onboard/generate-titles", {
         contentType: bookData.purpose,
         details: bookData.details,
+        prompt: titlePrompt, // Include the user's prompt
         count: 9 // Request 9 title suggestions (fits better in 3x3 grid)
       });
 
@@ -101,13 +103,13 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
     }
   };
 
-  // Fetch titles only on initial mount or when refresh is requested
-  useEffect(() => {
-    // Only fetch if we haven't done the initial fetch yet
-    if (!initialFetchDone.current) {
+  // Handle prompt submission
+  const handlePromptSubmit = () => {
+    if (titlePrompt.trim()) {
+      setPromptEntered(true);
       fetchTitlesFromAPI(true);
     }
-  }, []); // Empty dependency array - only run on mount
+  };
 
   // Handle title selection
   const handleTitleSelect = (title: string) => {
@@ -125,14 +127,81 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
     }
   };
 
-  // Handle enter key press in custom title input
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && customTitle.trim()) {
-      handleCustomTitleSubmit();
+  // Handle enter key press in inputs
+  const handleKeyPress = (e: React.KeyboardEvent, actionType: 'prompt' | 'custom') => {
+    if (e.key === 'Enter') {
+      if (actionType === 'prompt' && titlePrompt.trim()) {
+        handlePromptSubmit();
+      } else if (actionType === 'custom' && customTitle.trim()) {
+        handleCustomTitleSubmit();
+      }
     }
   };
 
-  if (isLoading && !initialFetchDone.current) {
+  // Reset to prompt input
+  const handleResetPrompt = () => {
+    setPromptEntered(false);
+    setTitles([]);
+    setAnimatedTitles([]);
+    initialFetchDone.current = false;
+  };
+
+  // Render prompt input screen
+  if (!promptEntered) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-2xl mx-auto px-4 animate-fadeIn">
+        <div className="w-full bg-white rounded-xl border border-purple-100 shadow-lg p-8 mb-4">
+          <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
+            What kind of title are you looking for?
+          </h2>
+          
+          {/* <p className="text-gray-600 mb-8 text-center">
+            Provide a brief description or keywords to help our AI generate title suggestions for your {bookData.purpose.toLowerCase()}.
+          </p> */}
+          
+          <div className="space-y-6">
+            <div className="relative">
+              <textarea
+                value={titlePrompt}
+                onChange={(e) => setTitlePrompt(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && e.ctrlKey && handleKeyPress(e, 'prompt')}
+                placeholder={`e.g., "A ${bookData.purpose.toLowerCase()} about space exploration for beginners" or "Something catchy with the keywords: investment, future, technology"`}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg
+                        focus:ring-2 focus:ring-purple-500 focus:border-purple-500 
+                        outline-none text-gray-900 bg-gray-50 hover:bg-white
+                        transition-all duration-200 h-32 resize-none"
+                autoFocus
+              />
+              <div className="absolute bottom-3 right-3 text-xs text-gray-400">
+                Ctrl+Enter to submit
+              </div>
+            </div>
+            
+            <button
+              onClick={handlePromptSubmit}
+              disabled={!titlePrompt.trim()}
+              className={`w-full flex items-center justify-center gap-2 py-4 rounded-lg transition-all duration-300 font-medium
+                        transform hover:shadow-lg ${
+                          titlePrompt.trim() 
+                            ? 'bg-purple-600 text-white hover:-translate-y-0.5 active:translate-y-0' 
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+            >
+              <Sparkles size={18} className={isLoading ? "animate-pulse" : ""} />
+              Generate Title Suggestions
+            </button>
+          </div>
+          
+          <div className="mt-6 text-sm text-gray-500 text-center">
+            <p>You'll be able to edit or create your own title after seeing suggestions.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
         <div className="relative">
@@ -142,7 +211,7 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
           </div>
         </div>
         <p className="text-gray-600 mt-6 text-center max-w-md">
-          Our AI is crafting the perfect titles based on your content's purpose and details...
+          Our AI is crafting titles based on your prompt: "{titlePrompt}"...
         </p>
       </div>
     );
@@ -151,8 +220,12 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
   return (
     <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
       <div className="flex justify-between items-center w-full mb-6 px-4">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-800 md:text-center">
-        </h2>
+        <button
+          onClick={handleResetPrompt}
+          className="text-purple-600 hover:text-purple-800 font-medium transition-all duration-200 flex items-center gap-1"
+        >
+          <span>« Change Prompt</span>
+        </button>
         
         {/* Regenerate button */}
         <button
@@ -172,6 +245,15 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
           <p className="text-sm mt-1">We've provided some fallback titles below. You can try regenerating or choose from these options.</p>
         </div>
       )}
+
+      {/* Current prompt display */}
+      <div className="w-full px-4 mb-6">
+        <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+          <p className="text-sm text-purple-700">
+            <span className="font-medium">Your prompt:</span> {titlePrompt}
+          </p>
+        </div>
+      </div>
 
       {/* Title cards grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 w-full px-4 py-6 animate-fadeIn">
@@ -282,7 +364,7 @@ const ContentTitleStep: React.FC<ContentTitleStepProps> = ({ bookData, selectedT
               type="text"
               value={customTitle}
               onChange={(e) => setCustomTitle(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyPress={(e) => handleKeyPress(e, 'custom')}
               placeholder={`Enter a title for your ${bookData.purpose.toLowerCase()}...`}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg 
                         focus:ring-2 focus:ring-purple-500 focus:border-purple-500 
