@@ -1,0 +1,88 @@
+import { useEffect, useState } from 'react';
+import { Navigate, useLocation, Outlet } from 'react-router';
+import { Loader2, AlertCircle, Lock } from 'lucide-react';
+import apiService from '../../utilities/service/api';
+import toast from 'react-hot-toast';
+
+const ProtectedRoute = () => {
+  const [authState, setAuthState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const token = localStorage.getItem('authToken');
+      
+      // If no token exists, redirect to login
+      if (!token) {
+        setAuthState('unauthenticated');
+        return;
+      }
+      
+      try {
+        // Verify token with backend
+        const response = await apiService.post('/auth/verify-access-token', {
+            token : localStorage.getItem('authToken')
+        });
+        
+        if (response.success) {
+          setAuthState('authenticated');
+        } else {
+          // Handle unsuccessful verification but valid response
+          localStorage.removeItem('authToken');
+          setAuthState('unauthenticated');
+          setErrorMessage(response.message || 'Your session has expired. Please login again.');
+        }
+      } catch (error: any) {
+        // Handle errors
+        localStorage.removeItem('authToken');
+        setAuthState('unauthenticated');
+        
+        if (error.response) {
+          // Handle specific HTTP error codes
+          if (error.response.status === 401) {
+            setErrorMessage('Your session has expired. Please login again.');
+          } else if (error.response.status === 403) {
+            setErrorMessage('You do not have permission to access this resource.');
+          } else {
+            setErrorMessage('Authentication error. Please login again.');
+          }
+        } else {
+          setErrorMessage('Network error. Please check your connection and try again.');
+        }
+      }
+    };
+    
+    verifyAuth();
+  }, []);
+
+  // Show loading state while checking authentication
+  if (authState === 'loading') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md w-full">
+          <div className="mx-auto w-16 h-16 flex items-center justify-center bg-purple-100 rounded-full mb-4">
+            <Loader2 className="h-8 w-8 text-purple-600 animate-spin" />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Verifying your session</h2>
+          <p className="text-gray-600">Please wait while we authenticate your access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If authenticated, render the child routes
+  if (authState === 'authenticated') {
+    return <Outlet />;
+  }
+
+  // If not authenticated with error, show error message and then redirect
+  if (errorMessage) {
+    toast.error(errorMessage);
+  }
+
+  // Redirect to login
+  return <Navigate to="/login" state={{ from: location, message: errorMessage }} replace />;
+};
+
+export default ProtectedRoute;

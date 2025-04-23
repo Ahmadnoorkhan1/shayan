@@ -30,6 +30,8 @@ import AudioCreator from './components/AudioCreator';
 import OnboardingFlow from './pages/onboardingFlow/OnboardingFlow';
 import ContentGenerationStepper from './pages/onboarding/ContentGenerationStepper';
 
+import ProtectedRoute from './components/auth/ProtectedRoute';
+
 function App() {
   const [token, setToken] = useState<string | null>(null);
   const [isProcessingToken, setIsProcessingToken] = useState<boolean>(false);
@@ -55,18 +57,6 @@ function App() {
         setToken(urlToken);
         setIsProcessingToken(true);
         
-        // Remove token from URL for security
-        // setTimeout(() => {
-        //   const cleanUrl = window.location.pathname + 
-        //     (queryParams.toString() ? '?' + 
-        //       Array.from(queryParams.entries())
-        //         .filter(([key]) => key !== 'token')
-        //         .map(([key, value]) => `${key}=${value}`)
-        //         .join('&') : '');
-                
-        //   window.history.replaceState({}, document.title, cleanUrl);
-        //   console.log('[App] URL cleaned, token removed from address bar');
-        // }, 300);
       }
     };
     
@@ -74,37 +64,51 @@ function App() {
   }, [location.search]); // Re-run when URL changes
 
   // Handle successful authentication
-  useEffect(() => {
-    if (userData) {
-      console.log('[App] User authenticated:', userData);
+ useEffect(() => {
+  if (userData) {
+    console.log('[App] User authenticated:', userData);
+    
+    // Store auth data if needed
+    if (userData.token) {
+      localStorage.setItem('authToken', userData.token);
       
-      // Store auth data if needed
-      if (userData.token) {
-        localStorage.setItem('authToken', userData.token);
+      // Fix: JSON stringify the object before storing
+      if (userData.userData) {
+        localStorage.setItem('userData', JSON.stringify(userData.userData));
+      } else {
+        // If the userData structure is different (flat structure)
+        const userDataToStore = {
+          id: userData.id || userData.userId,
+          email: userData.email
+        };
+        localStorage.setItem('userData', JSON.stringify(userDataToStore));
       }
       
-      // Store email for welcome banner
-      setWelcomeEmail(userData?.userData?.email || '');
-      
-      // Get the redirect URL from userData or use dashboard as default
-      const redirectPath = '/onboard';
-      console.log(`[App] Redirecting to: ${redirectPath}`);
-      
-      // Navigate to the specified path (using replace to avoid back button issues)
-      navigate(redirectPath, { replace: true });
-      
-      // Show welcome banner
-      setShowWelcomeBanner(true);
-      
-      // Auto-hide welcome banner after 5 seconds
-      setTimeout(() => {
-        setShowWelcomeBanner(false);
-      }, 8000);
-      
-      // Reset userData to prevent duplicate effects
-      setUserData(null);
+      // Also store the user ID directly for easier access
+      const userId = userData.userData?.id || userData.id || userData.userData?.user_id || userData.userId;
+      if (userId) {
+        localStorage.setItem('userId', userId.toString());
+      }
     }
-  }, [userData, navigate]);
+    
+    // Store email for welcome banner (adjust path according to your structure)
+    setWelcomeEmail(userData?.userData?.email || userData?.email || '');
+    
+    // Rest of your code remains the same
+    const redirectPath = '/onboard';
+    console.log(`[App] Redirecting to: ${redirectPath}`);
+    
+    navigate(redirectPath, { replace: true });
+    
+    setShowWelcomeBanner(true);
+    
+    setTimeout(() => {
+      setShowWelcomeBanner(false);
+    }, 8000);
+    
+    setUserData(null);
+  }
+}, [userData, navigate]);
 
   // Handle verification success
   const handleVerificationSuccess = (data: any) => {
@@ -236,25 +240,28 @@ function App() {
           </Route>
 
           {/* Dashboard Layout */}
-          <Route element={<DashboardLayout />}>
-            <Route path='/dashboard' element={<Dashboard />} />
-            <Route path='/dashboard/knowledgebase' element={<Knowledgebase />} />
-            <Route path='/dashboard/course-creator' element={<CoursecreatorPage />} />
-            <Route path='/dashboard/course-creator/edit/:id' element={<EditCoursePage />} />
-            <Route path='/dashboard/course-creator/add' element={<AddCourseCreator />} />
-            <Route path='/dashboard/book-creator' element={<BookcreatorPage />} />
-            <Route path='/dashboard/book-creator/edit/:id' element={<EditBookCreator />} />
-            <Route path='/dashboard/book-creator/add' element={<AddBookCreator />} />
-            <Route path='/dashboard/ai-coach' element={<AiCoachPage />} />
-            <Route path='/dashboard/easy-course-creator' element={<EasyCourseCreator />} />
-          </Route>
-
-          <Route path="/shared/:type/:id" element={<SharedContent />} />
-          <Route path="/create-audio/:contentType/:id" element={<AudioCreator />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<DashboardLayout />}>
+              <Route path='/dashboard' element={<Dashboard />} />
+              <Route path='/dashboard/knowledgebase' element={<Knowledgebase />} />
+              <Route path='/dashboard/course-creator' element={<CoursecreatorPage />} />
+              <Route path='/dashboard/course-creator/edit/:id' element={<EditCoursePage />} />
+              <Route path='/dashboard/course-creator/add' element={<AddCourseCreator />} />
+              <Route path='/dashboard/book-creator' element={<BookcreatorPage />} />
+              <Route path='/dashboard/book-creator/edit/:id' element={<EditBookCreator />} />
+              <Route path='/dashboard/book-creator/add' element={<AddBookCreator />} />
+              <Route path='/dashboard/ai-coach' element={<AiCoachPage />} />
+              <Route path='/dashboard/easy-course-creator' element={<EasyCourseCreator />} />
+              <Route path="/create-audio/:contentType/:id" element={<AudioCreator />} />
           <Route path="/onboard" element={<OnboardingFlow />} />
           <Route path="/create" element={<ContentGenerationStepper />} />
           <Route path="/create/:contentType" element={<ContentGenerationStepper />} />
+            </Route>
+          </Route>
 
+          {/* Other routes */}
+          <Route path="/shared/:type/:id" element={<SharedContent />} />
+         
         </Routes>
       )}
       

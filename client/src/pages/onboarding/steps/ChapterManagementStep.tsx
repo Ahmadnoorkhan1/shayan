@@ -126,7 +126,6 @@ const ChapterManagementStep: React.FC<ChapterManagementStepProps> = ({
     
     const newChapters = [...chapters];
 
-    localStorage.setItem("final_chapters" , newChapters)
     // Filter out empty key points
     const filteredKeyPoints = keyPointsValues.filter(kp => kp.trim() !== '');
     

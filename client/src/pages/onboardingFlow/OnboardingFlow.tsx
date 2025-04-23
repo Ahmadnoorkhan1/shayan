@@ -10,6 +10,8 @@ import ProgressBar from "./ProgressBar"
 import { useNavigate } from "react-router"
 import WelcomeAnimation from "../onboarding/WelcomeAnimation"
 import apiService from "../../utilities/service/api"
+import { getUserIdWithFallback } from "../../utilities/shared/userUtils";
+
 
 // Theme colors
 export const theme = {
@@ -89,8 +91,11 @@ const OnboardingFlow = () => {
       setIsSubmitting(true)
       setError(null)
       
-      const response = await apiService.post("/user-data",{ ...userData, userId: 1}) // Replace with actual user ID
-      if (response.success) {
+      const response = await apiService.post("/user-data", { 
+        ...userData, 
+        userId: getUserIdWithFallback() 
+      })
+            if (response.success) {
         // Redirect to dashboard after successful submission
         navigate("/dashboard")
       } else {

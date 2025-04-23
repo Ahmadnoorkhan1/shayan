@@ -204,50 +204,57 @@ const getCourseChapter = async (req, res) => {
 };
 
 const getCourses = async (req, res) => {
-    try {
-        const { type } = req.params;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const offset = (page - 1) * limit;
-        
-        let whereClause = {};
-        if (type === 'course' || type === 'book') {
-            whereClause = { type: type };
-        }
-        
-        // Get courses with pagination
-        const { count, rows: courses } = await Course.findAndCountAll({
-            where: whereClause,
-            order: [['createdAt', 'DESC']],
-            offset: offset,
-            limit: limit
-        });
-        
-        // Calculate pagination metadata
-        const totalPages = Math.ceil(count / limit);
-        const hasNextPage = page < totalPages;
-        const hasPrevPage = page > 1;
-        
-        return res.status(200).json({ 
-            success: true, 
-            message: 'Fetch Data Successfully', 
-            data: courses,
-            pagination: {
-                totalItems: count,
-                totalPages: totalPages,
-                currentPage: page,
-                itemsPerPage: limit,
-                hasNextPage: hasNextPage,
-                hasPrevPage: hasPrevPage
-            }
-        });
-    } catch (error) {
-        return res.status(500).json({ 
-            success: false, 
-            message: "Error occurred while fetching courses", 
-            error: error.message 
-        });
-    }
+  try {
+      const { type } = req.params;
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+      
+      // Get the user ID from the authentication middleware
+      const userId = req.user.userId;
+      
+      let whereClause = {
+          creator_id: userId // Add the creator_id condition
+      };
+      
+      // Add the type condition if provided
+      if (type === 'course' || type === 'book') {
+          whereClause.type = type;
+      }
+      
+      // Get courses with pagination
+      const { count, rows: courses } = await Course.findAndCountAll({
+          where: whereClause,
+          order: [['createdAt', 'DESC']],
+          offset: offset,
+          limit: limit
+      });
+      
+      // Calculate pagination metadata
+      const totalPages = Math.ceil(count / limit);
+      const hasNextPage = page < totalPages;
+      const hasPrevPage = page > 1;
+      
+      return res.status(200).json({ 
+          success: true, 
+          message: 'Fetch Data Successfully', 
+          data: courses,
+          pagination: {
+              totalItems: count,
+              totalPages: totalPages,
+              currentPage: page,
+              itemsPerPage: limit,
+              hasNextPage: hasNextPage,
+              hasPrevPage: hasPrevPage
+          }
+      });
+  } catch (error) {
+      return res.status(500).json({ 
+          success: false, 
+          message: "Error occurred while fetching courses", 
+          error: error.message 
+      });
+  }
 };
 
 

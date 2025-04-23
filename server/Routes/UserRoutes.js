@@ -1,6 +1,6 @@
 const express = require('express');
 const { registerUser, loginUser, getProfile } = require('../Controllers/UserController');
-const authenticateToken = require('../Middlewares/AuthMiddleware');
+const {authenticateToken} = require('../Middlewares/AuthMiddleware');
 const { verifyAccessToken, generateAccessToken } = require('../Controllers/authController'); // Import the verifyAccessToken function
 
 const router = express.Router();

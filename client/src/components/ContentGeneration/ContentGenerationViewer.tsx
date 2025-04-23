@@ -5,11 +5,19 @@ import MarkdownEditor from "../../components/ui/markdowneditor";
 import toast from 'react-hot-toast';
 import { useNavigate, useLocation } from 'react-router';
 import Modal from '../../components/ui/Modal';
+import { getUserIdWithFallback } from "../../utilities/shared/userUtils";
+
+// Add interface for Chapter structure
+interface Chapter {
+  chapterNo: number;
+  title: string;
+  keyPoints: string[];
+}
 
 interface ContentGenerationViewerProps {
   title: string;
   summary: string;
-  chapterTitles: string[];
+  chapterTitles: any[]; // Accept either string[] or Chapter[]
   contentType: string;
   contentCategory: string;
   contentDetails: Record<string, string>;
@@ -28,7 +36,7 @@ const LOCAL_STORAGE_KEYS = {
   GENERATION_ID: 'content_generation_id',
   GENERATION_ERROR: 'content_generation_error',
   GENERATING_CHAPTER_INDEX: 'content_generation_current_generating_index',
-  
+  FINAL_CHAPTERS:"final_chapters",
   // Keys from previous steps
   CONTENT_DATA: 'content_data',
   CONTENT_SUMMARY: 'content_summary',
@@ -44,9 +52,27 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
   contentDetails,
   onBack,
 }) => {
+  // Extract chapter titles from the input data structure
+  const [chapterTitlesArray, setChapterTitlesArray] = useState<string[]>([]);
+  
+  // Process chapter titles on mount - extract only the title strings
+  useEffect(() => {
+    if (Array.isArray(chapterTitles) && chapterTitles.length > 0) {
+      // Check if we have the new object structure or just strings
+      if (typeof chapterTitles[0] === 'string') {
+        setChapterTitlesArray(chapterTitles as string[]);
+      } else {
+        // Extract titles from chapter objects
+        const extractedTitles = chapterTitles.map((chapter: any) => chapter.title || `Chapter ${chapter.chapterNo}`);
+        setChapterTitlesArray(extractedTitles);
+      }
+    } else {
+      setChapterTitlesArray([]);
+    }
+  }, [chapterTitles]);
+
   // Reference to generation session for persistence
   const [generationId] = useState(() => {
-    // Try to recover existing generation ID or create new one
     const savedId = localStorage.getItem(LOCAL_STORAGE_KEYS.GENERATION_ID);
     return savedId || `gen_${Date.now()}`;
   });
@@ -67,20 +93,21 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
     localStorage.setItem('content_generation_props', JSON.stringify(contentData));
   }, [title, summary, chapterTitles, contentType, contentCategory, contentDetails]);
   
-  // Initialize chapters from localStorage or create empty array
+  // Initialize chapters array - content for each chapter
   const [chapters, setChapters] = useState<string[]>(() => {
     const savedChapters = localStorage.getItem(LOCAL_STORAGE_KEYS.CHAPTERS);
     if (savedChapters) {
       try {
         const parsedChapters = JSON.parse(savedChapters);
-        // Ensure array length matches chapter titles
-        if (Array.isArray(parsedChapters) && parsedChapters.length === chapterTitles.length) {
+        if (Array.isArray(parsedChapters)) {
           return parsedChapters;
         }
       } catch (e) {
         console.error("Failed to parse saved chapters:", e);
       }
     }
+    
+    // Initialize with empty strings for each chapter
     return new Array(chapterTitles.length).fill("");
   });
 
@@ -212,7 +239,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
       const chaptersPerSecond = completedChapters / elapsedSeconds;
       
       if (chaptersPerSecond > 0) {
-        const remainingChapters = chapterTitles.length - completedChapters;
+        const remainingChapters = chapterTitlesArray.length - completedChapters;
         const remainingSeconds = remainingChapters / chaptersPerSecond;
         
         // Format time
@@ -232,19 +259,22 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
     updateEstimatedTime(); // Initial calculation
     
     return () => clearInterval(interval);
-  }, [isGenerating, completedChapters, generationStartTime, chapterTitles.length]);
+  }, [isGenerating, completedChapters, generationStartTime, chapterTitlesArray.length]);
 
   // Start generating chapters on mount
   useEffect(() => {
+    // Wait until chapterTitlesArray is populated
+    if (chapterTitlesArray.length === 0) return;
+    
     // Check if we need to start fresh or continue where we left off
     if (completedChapters === 0 || 
-        completedChapters < chapterTitles.length && 
+        completedChapters < chapterTitlesArray.length && 
         localStorage.getItem(LOCAL_STORAGE_KEYS.STOPPED) !== 'true') {
       generateChapters();
     } else {
       setIsGenerating(false);
       setGenerationProgress(100);
-      setIsGenerationComplete(completedChapters === chapterTitles.length);
+      setIsGenerationComplete(completedChapters === chapterTitlesArray.length);
     }
     
     // Cleanup function to mark generation as stopped if component unmounts
@@ -253,7 +283,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
         localStorage.setItem(LOCAL_STORAGE_KEYS.STOPPED, 'true');
       }
     };
-  }, []);
+  }, [chapterTitlesArray]);
 
   // Save content to server and navigate to dashboard
   const handleSaveContent = async () => {
@@ -264,7 +294,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
       const url = `/onboard/addContent/${type}`;
       
       const payload = {
-        creator_id: 1,
+        creator_id: getUserIdWithFallback(),
         course_title: title,
         content: JSON.stringify(chapters),
         type: contentType,
@@ -305,14 +335,14 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
     
     // If we're starting fresh, reset chapters array
     if (startIndex === 0) {
-      const emptyChapters = new Array(chapterTitles.length).fill("");
+      const emptyChapters = new Array(chapterTitlesArray.length).fill("");
       setChapters(emptyChapters);
     }
     
     // Set the initial progress based on already completed chapters
-    setGenerationProgress(Math.round((startIndex / chapterTitles.length) * 100));
+    setGenerationProgress(Math.round((startIndex / chapterTitlesArray.length) * 100));
     
-    for (let index = startIndex; index < chapterTitles.length; index++) {
+    for (let index = startIndex; index < chapterTitlesArray.length; index++) {
       // Check if generation has been stopped
       if (localStorage.getItem(LOCAL_STORAGE_KEYS.STOPPED) === 'true') {
         setIsGenerating(false);
@@ -321,18 +351,29 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
       }
       
       setGeneratingChapterIndex(index);
-      const chapter = chapterTitles[index];
+      const chapterTitle = chapterTitlesArray[index];
+      
+      // Get keyPoints if available from the original chapterTitles (if it has that structure)
+      let keyPoints: string[] = [];
+      if (Array.isArray(chapterTitles) && typeof chapterTitles[0] === 'object') {
+        const chapterObj = chapterTitles[index] as Chapter;
+        if (chapterObj && Array.isArray(chapterObj.keyPoints)) {
+          keyPoints = chapterObj.keyPoints;
+        }
+      }
+      
       let attempts = 0;
       let success = false;
       
       // Update progress indicator
-      setGenerationProgress(Math.round(((index) / chapterTitles.length) * 100));
+      setGenerationProgress(Math.round(((index) / chapterTitlesArray.length) * 100));
       
       while (attempts < MAX_RETRIES && !success) {
         try {
           const chapterPayload = {
             chapterNo: index + 1,
-            chapter,
+            chapter: chapterTitle,
+            keyPoints: keyPoints,
             title: title,
             summary: summary,
             contentType: contentType,
@@ -341,10 +382,10 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
           };
           
           // Show toast when starting a new chapter
-          toast.loading(`Generating chapter ${index + 1}: ${chapter}`, {
-            id: `chapter-${index}`,
-            duration: 3000
-          });
+          // toast.loading(`Generating chapter ${index + 1}: ${chapterTitle}`, {
+          //   id: `chapter-${index}`,
+          //   duration: 3000
+          // });
           
           const endpoint = "/onboard/generate-chapter-content";
           
@@ -370,9 +411,9 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
             });
             
             // Show success toast
-            toast.success(`Chapter ${index + 1} generated!`, {
-              id: `chapter-${index}`,
-            });
+            // toast.success(`Chapter ${index + 1} generated!`, {
+            //   id: `chapter-${index}`,
+            // });
             
             // Auto-navigate to newly generated chapter if user is viewing the previous one
             if (currentChapterIndex === index - 1) {
@@ -410,7 +451,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
     
     // Check if all chapters were generated successfully
     const finalCompletedChapters = chapters.filter(chapter => chapter && chapter.length > 0).length;
-    if (finalCompletedChapters === chapterTitles.length) {
+    if (finalCompletedChapters === chapterTitlesArray.length) {
       setIsGenerationComplete(true);
       toast.success('All chapters generated successfully!');
     }
@@ -426,10 +467,10 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
   
   // Navigation handler with checks
   const navigateToChapter = useCallback((index: number) => {
-    if (index >= 0 && index < chapterTitles.length && chapters[index]) {
+    if (index >= 0 && index < chapterTitlesArray.length && chapters[index]) {
       setCurrentChapterIndex(index);
     }
-  }, [chapterTitles.length, chapters]);
+  }, [chapterTitlesArray.length, chapters]);
 
   // Handle back request from button or browser
   const handleBackRequest = useCallback(() => {
@@ -495,15 +536,15 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
       </div>
       
       {/* Progress bar */}
-      <div className={`px-4 py-2 ${isGenerating ? 'bg-purple-50' : completedChapters === chapterTitles.length ? 'bg-green-50' : 'bg-amber-50'}`}>
+      <div className={`px-4 py-2 ${isGenerating ? 'bg-purple-50' : completedChapters === chapterTitlesArray.length ? 'bg-green-50' : 'bg-amber-50'}`}>
         <div className="flex flex-wrap items-center justify-between mb-1 gap-2">
-          <div className={`text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitles.length ? 'text-green-700' : 'text-amber-700'}`}>
+          <div className={`text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitlesArray.length ? 'text-green-700' : 'text-amber-700'}`}>
             {isGenerating ? (
               <div className="flex items-center">
                 <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                <span>Generating chapter {generatingChapterIndex + 1}: {chapterTitles[generatingChapterIndex]}</span>
+                <span>Generating chapter {generatingChapterIndex + 1}: {chapterTitlesArray[generatingChapterIndex]}</span>
               </div>
-            ) : completedChapters === chapterTitles.length ? (
+            ) : completedChapters === chapterTitlesArray.length ? (
               <div className="flex items-center">
                 <Check className="h-3 w-3 mr-2" />
                 <span>All chapters generated successfully!</span>
@@ -511,7 +552,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
             ) : (
               <div className="flex items-center">
                 <AlertTriangle className="h-3 w-3 mr-2" />
-                <span>Generation incomplete: {completedChapters} of {chapterTitles.length} chapters</span>
+                <span>Generation incomplete: {completedChapters} of {chapterTitlesArray.length} chapters</span>
               </div>
             )}
           </div>
@@ -523,7 +564,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
                 <span>Est. time remaining: {estimatedTimeRemaining}</span>
               </div>
             )}
-            <div className={`text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitles.length ? 'text-green-700' : 'text-amber-700'}`}>
+            <div className={`text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitlesArray.length ? 'text-green-700' : 'text-amber-700'}`}>
               {generationProgress}%
             </div>
           </div>
@@ -533,7 +574,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
           <div 
             className={`${
               isGenerating ? 'bg-purple-600' : 
-              completedChapters === chapterTitles.length ? 'bg-green-600' : 'bg-amber-500'
+              completedChapters === chapterTitlesArray.length ? 'bg-green-600' : 'bg-amber-500'
             } h-2.5 rounded-full transition-all duration-500`}
             style={{ width: `${generationProgress}%` }}
           ></div>
@@ -549,7 +590,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
               <p className="text-sm text-red-700 font-medium">Generation Error</p>
               <p className="text-sm text-red-600">{errorMessage}</p>
               <div className="mt-2 flex gap-2">
-                {!isGenerating && completedChapters < chapterTitles.length && (
+                {!isGenerating && completedChapters < chapterTitlesArray.length && (
                   <button 
                     onClick={generateChapters}
                     className="text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 px-3 py-1 rounded flex items-center"
@@ -578,7 +619,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
             <h3 className="font-medium text-gray-900">Table of Contents</h3>
           </div>
           <div className="py-2">
-            {chapterTitles.map((chapterTitle, index) => {
+            {chapterTitlesArray.map((chapterTitle, index) => {
               const isChapterReady = chapters[index] && chapters[index].length > 0;
               const isCurrentlyGenerating = isGenerating && generatingChapterIndex === index;
               
@@ -626,7 +667,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
         <div className="flex-1 overflow-y-auto">
           {chapters[currentChapterIndex] ? (
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">{chapterTitles[currentChapterIndex]}</h2>
+              <h2 className="text-2xl font-bold mb-6 text-gray-800">{chapterTitlesArray[currentChapterIndex]}</h2>
               <div className="prose max-w-none">
                 <MarkdownEditor data={chapters[currentChapterIndex]} />
               </div>
@@ -643,7 +684,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
                   </div>
                   <h3 className="text-xl font-medium text-gray-700 mb-2">Generating Chapter {currentChapterIndex + 1}</h3>
                   <p className="text-center max-w-md">
-                    We're creating high-quality content for "{chapterTitles[currentChapterIndex]}". This typically takes 1-2 minutes per chapter.
+                    We're creating high-quality content for "{chapterTitlesArray[currentChapterIndex]}". This typically takes 1-2 minutes per chapter.
                   </p>
                 </>
               ) : isGenerating ? (
@@ -694,14 +735,14 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
         </button>
         
         <div className="text-sm text-gray-500 font-medium">
-          Chapter {currentChapterIndex + 1} of {chapterTitles.length}
+          Chapter {currentChapterIndex + 1} of {chapterTitlesArray.length}
         </div>
         
         <button
           onClick={() => navigateToChapter(currentChapterIndex + 1)}
-          disabled={currentChapterIndex === chapterTitles.length - 1 || !chapters[currentChapterIndex + 1]}
+          disabled={currentChapterIndex === chapterTitlesArray.length - 1 || !chapters[currentChapterIndex + 1]}
           className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium
-            ${currentChapterIndex === chapterTitles.length - 1 || !chapters[currentChapterIndex + 1]
+            ${currentChapterIndex === chapterTitlesArray.length - 1 || !chapters[currentChapterIndex + 1]
               ? 'text-gray-300 cursor-not-allowed'
               : 'text-purple-600 hover:bg-purple-50 active:bg-purple-100'
             }
@@ -755,12 +796,12 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
             <ArrowLeft className="h-8 w-8 text-purple-600" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {completedChapters === chapterTitles.length ? 
+            {completedChapters === chapterTitlesArray.length ? 
               "All chapters are generated" : 
               "Some chapters are not complete"}
           </h3>
           <p className="text-gray-600 mb-6 text-center">
-            {completedChapters === chapterTitles.length ?
+            {completedChapters === chapterTitlesArray.length ?
               "Your content is ready. If you go back, you can edit the summary but will need to regenerate chapters." :
               "If you go back, your progress will be saved, but you'll need to return to this page to continue generation."
             }
@@ -776,7 +817,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
               onClick={confirmLeave} 
               className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
             >
-              Return to Summary
+              Return 
             </button>
           </div>
         </div>

@@ -20,7 +20,7 @@ exports.generateAccessToken = async (req, res) => {
     };
     
     // Generate token with expiration (e.g., 15 minutes)
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '15m' });
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
     
     // Return token in response
     return res.status(200).json({
@@ -53,13 +53,14 @@ exports.verifyAccessToken = async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
     
-    // Return user data without sensitive information
+    // Return user data AND token for client-side storage
     return res.status(200).json({
       success: true,
       userData: {
-        id: user._id,
+        id: user.user_id,
         email: user.email,
-      }
+      },
+      token: token // Return the token back to the client
     });
   } catch (error) {
     // Handle expired or invalid tokens

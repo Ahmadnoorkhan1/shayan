@@ -1,4 +1,5 @@
 // const { default: OpenAI } = require('openai');
+const Course = require('../Models/CourseModel');
 const letsAi = require('../Utils/gpt');
 const { generateTitles } = require('../Utils/titleGenerator');
 const OpenAI = require('openai')
@@ -590,8 +591,49 @@ const generateChapterContentHandler = async (req, res) => {
     }
 };
 
+
+const addContentHandler = async (req, res) => {
+    try {
+        const { contentType } = req.params;
+        const {  course_title, content, type = contentType } = req.body;
+
+        const creator_id = req.user.userId
+        
+        // Validate required fields
+        if ( !course_title || !content) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields: creator_id, course_title, or content"
+            });
+        }
+        
+        // Create a new course/book entry
+        const newContent = await Course.create({
+            creator_id,
+            course_title,
+            content,
+            // Use the contentType from URL parameter if type is not provided in request body
+            type: contentType || type
+        });
+        
+        return res.status(201).json({
+            success: true,
+            message: `${contentType} content added successfully`,
+            data: newContent
+        });
+    } catch (error) {
+        console.error("Error adding content:", error.message);
+        return res.status(500).json({
+            success: false,
+            message: "Error occurred while adding content",
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     generateTitlesHandler,
     generateSummaryHandler,
-    generateChapterContentHandler
+    generateChapterContentHandler,
+    addContentHandler
 };
