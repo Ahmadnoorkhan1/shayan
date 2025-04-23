@@ -52,7 +52,6 @@ const cleanHtmlContent = (htmlContent: string): string => {
   // Remove any remaining backslashes
   cleanedContent = cleanedContent.replace(/\\/g, '');
 
-  console.log(cleanedContent, 'cleanedContent')
   
   return cleanedContent;
 };

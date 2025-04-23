@@ -29,6 +29,9 @@ interface Operation {
 export const extractQuizContent = (html: string): QuizContent | null => {
   const editorQuizRegex = /<h2>Exercises<\/h2>([\s\S]*?)(?=<!-- SHARED_QUIZ_START -->|$)/;
   const sharedQuizRegex = /<!-- SHARED_QUIZ_START -->([\s\S]*?)<!-- SHARED_QUIZ_END -->/;
+
+console.log(html, "====================html")
+
   if (!html || typeof html !== 'string') {
     return null;
   }

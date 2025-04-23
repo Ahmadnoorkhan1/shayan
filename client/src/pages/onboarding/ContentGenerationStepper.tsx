@@ -124,7 +124,7 @@ const ContentGenerationStepper = () => {
     localStorage.setItem("content_summary", updatedSummary)
   }
 
-  const handleChapterTitlesUpdate = (updatedTitles: string[]) => {
+  const handleChapterTitlesUpdate = (updatedTitles: any) => {
     setContentData((prev) => ({
       ...prev,
       chapter_titles: updatedTitles,

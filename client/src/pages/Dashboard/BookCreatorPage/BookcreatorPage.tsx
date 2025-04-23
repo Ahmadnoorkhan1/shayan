@@ -271,18 +271,19 @@ const BookcreatorPage = () => {
           <p className="ml-4">Loading...</p>
         </div>
       ) : (
-        <Table
-        data={books}
-        headers={["ID", "Course Name", "Created", "Updated", "Type"]} // Add Type to headers
-        isAdd={true}
-        addItem={addItem}
-        deleteItem={deleteItem}
-        downloadItem={(row: any) => downloadItem(row, setLoading)}
-        editItem={editItem}
-        highlightedId={highlightedId}
-        setData={handleBooks}
-        pre={""}
-      />
+      //   <Table
+      //   data={books}
+      //   headers={["ID", "Course Name", "Created", "Updated", "Type"]} // Add Type to headers
+      //   isAdd={true}
+      //   addItem={addItem}
+      //   deleteItem={deleteItem}
+      //   downloadItem={(row: any) => downloadItem(row, setLoading)}
+      //   editItem={editItem}
+      //   highlightedId={highlightedId}
+      //   setData={handleBooks}
+      //   pre={""}
+      // />
+      null
       )}
        
       </div>

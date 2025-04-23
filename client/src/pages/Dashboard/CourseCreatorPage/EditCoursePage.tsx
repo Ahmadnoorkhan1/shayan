@@ -24,6 +24,8 @@ import AlertDialog from "../../../components/AlertDialog";
 import { GenerateQuiz } from "../../../components/GenerateQuiz";
 import { useNavigate, useLocation } from "react-router";
 import { Music } from "lucide-react";
+import ChapterQuizDisplay from "../../../components/ChapterQuizDisplay";
+
 
 import {
   processChapterSelection,
@@ -96,6 +98,7 @@ const EditCoursePage = () => {
   const [quizUrl, setQuizUrl] = useState<string>("");
   const [isRefreshingCourse, setIsRefreshingCourse] = useState(false);
   const [hasQuizBeenImported, setHasQuizBeenImported] = useState(false);
+  const [ chapterQuiz, setChapterQuiz] = useState("")
 
   const toggleQuizModal = () => setOpenQuizModal(!OpenQuizModal);
 
@@ -226,8 +229,7 @@ const EditCoursePage = () => {
       }
     };
 
-    console.log(courseData, "======================>");
-    console.log(chapters, "======================>");
+   
     if (id && !isRefreshingCourse) {
       fetchCourse();
     }
@@ -248,9 +250,13 @@ const EditCoursePage = () => {
   const handleChapterSelect = (chapterContent: any, index: number) => {
     setSelectedChapterTitle(chapterContent.title);
     setSelectedChapter(chapterContent.content);
+    setChapterQuiz(chapterContent.quiz)
     setSelectedChapterIndex(index);
     // setCurrentQuizContent(quizContent);
   };
+
+console.log(chapterQuiz, "============> see")
+
 
   const handleSave = async () => {
     try {
@@ -993,6 +999,18 @@ const EditCoursePage = () => {
                 onImageClick={handleImageClick}
               />
             </div>
+
+            {/* Add the ChapterQuizDisplay component here */}
+  {chapterQuiz && chapterQuiz.length > 0 && (
+    <div className="mt-6 pt-6 border-t border-gray-200">
+      <ChapterQuizDisplay 
+        quizContent={chapterQuiz}
+        onDeleteQuiz={handleDeleteQuiz}
+        onRegenerateQuestion={handleRegenerateQuestion}
+        regeneratingQuestionIndex={regeneratingQuestionIndex}
+      />
+    </div>
+  )}
 
             {/* Quiz display area - conditionally shown */}
             {currentQuizContent && (

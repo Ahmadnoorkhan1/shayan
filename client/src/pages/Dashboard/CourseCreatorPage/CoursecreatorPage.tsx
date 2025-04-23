@@ -99,7 +99,7 @@ const CoursecreatorPage = () => {
         </div>
       ) : (
         <div className="flex items-center py-8 w-full">
-        <Table
+        {/* <Table
           data={courses}
           headers={["ID", "Course Name", "Created", "Updated","type"]}
           isAdd={true}
@@ -110,7 +110,7 @@ const CoursecreatorPage = () => {
           setData={handleCourses}
           highlightedId={highlightedId}
           pre={""}
-        />
+        /> */}
       </div>
       )}
 
