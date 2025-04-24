@@ -495,360 +495,361 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
   }, [navigate, savedContentId]);
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-gray-200 p-4 flex items-center">
-        <button 
-          onClick={handleBackRequest}
-          disabled={isGenerating}
-          className={`mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
-          title={isGenerating ? "Cannot go back while generating" : "Go back to summary"}
-        >
-          <ArrowLeft className="h-5 w-5 text-gray-600" />
-        </button>
-        
-        <h2 className="text-lg font-medium text-center flex-1">{title}</h2>
+    <div className="flex flex-col h-[1000px]">
+
+    {/* Header */}
+    <div className="border-b border-gray-200 px-4 py-3 sm:p-4 flex items-center">
+      <button 
+        onClick={handleBackRequest}
+        disabled={isGenerating}
+        className={`mr-2 sm:mr-4 p-2 rounded-full hover:bg-gray-100 transition-colors ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+        title={isGenerating ? "Cannot go back while generating" : "Go back to summary"}
+      >
+        <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
+      </button>
+      
+      <h2 className="text-sm md:text-lg font-medium text-center flex-1">{title}</h2>
+      
+      <div className="flex items-center gap-2">
+        {isGenerating ? (
+          <button 
+            onClick={handleStopGeneration} 
+            className="flex items-center text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 sm:px-3 sm:py-1.5 rounded-md transition-colors text-sm sm:text-base"
+          >
+            <X className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Stop Generation
+          </button>
+        ) : (
+          <button 
+            onClick={handleSaveContent} 
+            disabled={isSaving || completedChapters === 0} 
+            className={`flex items-center justify-center  px-3 py-1  sm:py-2 rounded-md transition-colors duration-150 text-sm sm:text-base ${
+              isSaving || completedChapters === 0 
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+              : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+          >
+           {isSaving ? <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-2 animate-spin" /> : <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />}
+           <span className="sm:flex hidden "> {isSaving ? 'Saving...' : 'Save & Exit'} </span>
+          </button>
+        )}
+      </div>
+    </div>
+    
+    {/* Progress bar */}
+    <div className={`px-3 py-2 sm:px-4 sm:py-2 ${isGenerating ? 'bg-purple-50' : completedChapters === chapterTitlesArray.length ? 'bg-green-50' : 'bg-amber-50'}`}>
+      <div className="flex flex-wrap items-center justify-between mb-1 gap-2">
+        <div className={`text-xs sm:text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitlesArray.length ? 'text-green-700' : 'text-amber-700'}`}>
+          {isGenerating ? (
+            <div className="flex items-center">
+              <Loader2 className="h-3 w-3 animate-spin mr-2" />
+              <span>Generating chapter {generatingChapterIndex + 1}: {chapterTitlesArray[generatingChapterIndex]}</span>
+            </div>
+          ) : completedChapters === chapterTitlesArray.length ? (
+            <div className="flex items-center">
+              <Check className="h-3 w-3 mr-2" />
+              <span>All chapters generated successfully!</span>
+            </div>
+          ) : (
+            <div className="flex items-center">
+              <AlertTriangle className="h-3 w-3 mr-2" />
+              <span>Generation incomplete: {completedChapters} of {chapterTitlesArray.length} chapters</span>
+            </div>
+          )}
+        </div>
         
         <div className="flex items-center gap-2">
-          {isGenerating ? (
-            <button 
-              onClick={handleStopGeneration} 
-              className="flex items-center text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md transition-colors"
-            >
-              <X className="h-4 w-4 mr-1" />
-              Stop Generation
-            </button>
-          ) : (
-            <button 
-              onClick={handleSaveContent} 
-              disabled={isSaving || completedChapters === 0} 
-              className={`flex items-center px-4 py-2 rounded-md transition-colors duration-150 ${
-                isSaving || completedChapters === 0 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-purple-600 text-white hover:bg-purple-700'
-              }`}
-            >
-              {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-              {isSaving ? 'Saving...' : 'Save & Exit'}
-            </button>
+          {isGenerating && (
+            <div className="flex items-center text-xs text-purple-600">
+              <Clock className="h-3 w-3 mr-1" />
+              <span>Est. time remaining: {estimatedTimeRemaining}</span>
+            </div>
           )}
+          <div className={`text-xs sm:text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitlesArray.length ? 'text-green-700' : 'text-amber-700'}`}>
+            {generationProgress}%
+          </div>
         </div>
       </div>
       
-      {/* Progress bar */}
-      <div className={`px-4 py-2 ${isGenerating ? 'bg-purple-50' : completedChapters === chapterTitlesArray.length ? 'bg-green-50' : 'bg-amber-50'}`}>
-        <div className="flex flex-wrap items-center justify-between mb-1 gap-2">
-          <div className={`text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitlesArray.length ? 'text-green-700' : 'text-amber-700'}`}>
-            {isGenerating ? (
-              <div className="flex items-center">
-                <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                <span>Generating chapter {generatingChapterIndex + 1}: {chapterTitlesArray[generatingChapterIndex]}</span>
-              </div>
-            ) : completedChapters === chapterTitlesArray.length ? (
-              <div className="flex items-center">
-                <Check className="h-3 w-3 mr-2" />
-                <span>All chapters generated successfully!</span>
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <AlertTriangle className="h-3 w-3 mr-2" />
-                <span>Generation incomplete: {completedChapters} of {chapterTitlesArray.length} chapters</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {isGenerating && (
-              <div className="flex items-center text-xs text-purple-600">
-                <Clock className="h-3 w-3 mr-1" />
-                <span>Est. time remaining: {estimatedTimeRemaining}</span>
-              </div>
-            )}
-            <div className={`text-sm font-medium ${isGenerating ? 'text-purple-700' : completedChapters === chapterTitlesArray.length ? 'text-green-700' : 'text-amber-700'}`}>
-              {generationProgress}%
-            </div>
-          </div>
-        </div>
-        
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div 
-            className={`${
-              isGenerating ? 'bg-purple-600' : 
-              completedChapters === chapterTitlesArray.length ? 'bg-green-600' : 'bg-amber-500'
-            } h-2.5 rounded-full transition-all duration-500`}
-            style={{ width: `${generationProgress}%` }}
-          ></div>
-        </div>
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div 
+          className={`${
+            isGenerating ? 'bg-purple-600' : 
+            completedChapters === chapterTitlesArray.length ? 'bg-green-600' : 'bg-amber-500'
+          } h-2 rounded-full transition-all duration-500`}
+          style={{ width: `${generationProgress}%` }}
+        ></div>
       </div>
-      
-      {/* Error message */}
-      {errorMessage && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 m-4">
-          <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0" />
-            <div>
-              <p className="text-sm text-red-700 font-medium">Generation Error</p>
-              <p className="text-sm text-red-600">{errorMessage}</p>
-              <div className="mt-2 flex gap-2">
-                {!isGenerating && completedChapters < chapterTitlesArray.length && (
-                  <button 
-                    onClick={generateChapters}
-                    className="text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 px-3 py-1 rounded flex items-center"
-                  >
-                    <RefreshCw className="h-3 w-3 mr-1" />
-                    Resume Generation
-                  </button>
-                )}
+    </div>
+    
+    {/* Error message */}
+    {errorMessage && (
+      <div className="bg-red-50 border-l-4 border-red-500 p-3 m-3 sm:p-4 sm:m-4">
+        <div className="flex items-start">
+          <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500 mr-2 flex-shrink-0" />
+          <div>
+            <p className="text-xs sm:text-sm text-red-700 font-medium">Generation Error</p>
+            <p className="text-xs sm:text-sm text-red-600">{errorMessage}</p>
+            <div className="mt-2 flex flex-col sm:flex-row gap-2">
+              {!isGenerating && completedChapters < chapterTitlesArray.length && (
                 <button 
-                  onClick={() => setErrorMessage(null)}
-                  className="text-sm bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded"
+                  onClick={generateChapters}
+                  className="text-xs sm:text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 px-2 py-1 sm:px-3 sm:py-1 rounded flex items-center"
                 >
-                  Dismiss
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Resume Generation
                 </button>
-              </div>
+              )}
+              <button 
+                onClick={() => setErrorMessage(null)}
+                className="text-xs sm:text-sm bg-red-100 hover:bg-red-200 text-red-800 px-2 py-1 sm:px-3 sm:py-1 rounded"
+              >
+                Dismiss
+              </button>
             </div>
           </div>
         </div>
-      )}
-      
-      {/* Main content area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Chapter navigation sidebar */}
-        <div className="w-64 border-r border-gray-200 overflow-y-auto bg-gray-50">
-          <div className="p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-            <h3 className="font-medium text-gray-900">Table of Contents</h3>
-          </div>
-          <div className="py-2">
-            {chapterTitlesArray.map((chapterTitle, index) => {
-              const isChapterReady = chapters[index] && chapters[index].length > 0;
-              const isCurrentlyGenerating = isGenerating && generatingChapterIndex === index;
-              
-              return (
-                <button
-                  key={index}
-                  onClick={() => isChapterReady && navigateToChapter(index)}
-                  className={`w-full text-left px-4 py-2 text-sm transition-colors duration-150 focus:outline-none
-                    ${index === currentChapterIndex ? 'bg-purple-50 text-purple-700 border-l-4 border-purple-500' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent'}
-                    ${!isChapterReady ? 'cursor-not-allowed opacity-60' : ''}
-                    relative
-                  `}
-                >
-                  <div className="flex items-center">
-                    <span className={`mr-2 w-5 h-5 flex items-center justify-center rounded-full 
-                      ${isChapterReady ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'} 
-                      text-xs font-medium`}>
-                      {index + 1}
-                    </span>
-                    <span className="truncate">{chapterTitle}</span>
-                    
-                    {isCurrentlyGenerating && (
-                      <div className="ml-auto">
-                        <Loader2 className="h-3 w-3 text-purple-500 animate-spin" />
-                      </div>
-                    )}
-                    
-                    {isChapterReady && !isCurrentlyGenerating && (
-                      <div className="ml-auto w-2 h-2 bg-green-500 rounded-full"></div>
-                    )}
-                  </div>
+      </div>
+    )}
+    
+    {/* Main content area */}
+    <div className="flex flex-1 overflow-hidden flex-col sm:flex-row">
+      {/* Chapter navigation sidebar */}
+      <div className="w-full sm:w-56 lg:w-64 border-r border-gray-200 overflow-y-auto bg-gray-50 sm:flex-shrink-0">
+        <div className="p-3 sm:p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <h3 className="text-sm sm:text-md font-medium text-gray-900">Table of Contents</h3>
+        </div>
+        <div className="py-2">
+          {chapterTitlesArray.map((chapterTitle, index) => {
+            const isChapterReady = chapters[index] && chapters[index].length > 0;
+            const isCurrentlyGenerating = isGenerating && generatingChapterIndex === index;
+            
+            return (
+              <button
+                key={index}
+                onClick={() => isChapterReady && navigateToChapter(index)}
+                className={`w-full text-left px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm transition-colors duration-150 focus:outline-none
+                  ${index === currentChapterIndex ? 'bg-purple-50 text-purple-700 border-l-4 border-purple-500' : 'text-gray-700 hover:bg-gray-100 border-l-4 border-transparent'}
+                  ${!isChapterReady ? 'cursor-not-allowed opacity-60' : ''}
+                  relative
+                `}
+              >
+                <div className="flex items-center">
+                  <span className={`mr-2 w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center rounded-full 
+                    ${isChapterReady ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'} 
+                    text-xs font-medium`}>
+                    {index + 1}
+                  </span>
+                  <span className="truncate">{chapterTitle}</span>
                   
                   {isCurrentlyGenerating && (
-                    <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple-300">
-                      <div className="h-full bg-purple-600 animate-pulse" style={{width: '60%'}}></div>
+                    <div className="ml-auto">
+                      <Loader2 className="h-3 w-3 text-purple-500 animate-spin" />
                     </div>
                   )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        
-        {/* Chapter content */}
-        <div className="flex-1 overflow-y-auto">
-          {chapters[currentChapterIndex] ? (
-            <div className="p-6">
-              <h2 className="text-2xl font-bold mb-6 text-gray-800">{chapterTitlesArray[currentChapterIndex]}</h2>
-              <div className="prose max-w-none">
-                <MarkdownEditor data={chapters[currentChapterIndex]} />
-              </div>
-            </div>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-gray-500 p-4">
-              {isGenerating && generatingChapterIndex === currentChapterIndex ? (
-                <>
-                  <div className="w-16 h-16 relative mb-6">
-                    <div className="absolute inset-0 bg-purple-100 rounded-full animate-ping opacity-50"></div>
-                    <div className="relative w-full h-full bg-purple-50 rounded-full flex items-center justify-center">
-                      <Loader2 className="h-8 w-8 text-purple-500 animate-spin" />
-                    </div>
+                  
+                  {isChapterReady && !isCurrentlyGenerating && (
+                    <div className="ml-auto w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-500 rounded-full"></div>
+                  )}
+                </div>
+                
+                {isCurrentlyGenerating && (
+                  <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-purple-300">
+                    <div className="h-full bg-purple-600 animate-pulse" style={{width: '60%'}}></div>
                   </div>
-                  <h3 className="text-xl font-medium text-gray-700 mb-2">Generating Chapter {currentChapterIndex + 1}</h3>
-                  <p className="text-center max-w-md">
-                    We're creating high-quality content for "{chapterTitlesArray[currentChapterIndex]}". This typically takes 1-2 minutes per chapter.
-                  </p>
-                </>
-              ) : isGenerating ? (
-                <>
-                  <BookOpen className="h-12 w-12 mb-4 text-gray-400" />
-                  <h3 className="text-xl font-medium text-gray-700 mb-2">Chapter Not Generated Yet</h3>
-                  <p>This chapter is in the queue for generation.</p>
-                  <button 
-                    onClick={() => navigateToChapter(generatingChapterIndex)}
-                    className="mt-6 px-4 py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
-                  >
-                    View Current Generation
-                  </button>
-                </>
-              ) : (
-                <>
-                  <AlertTriangle className="h-12 w-12 mb-4 text-amber-500" />
-                  <h3 className="text-xl font-medium text-gray-700 mb-2">Chapter Content Missing</h3>
-                  <p className="mb-6">This chapter wasn't generated successfully.</p>
-                  <button 
-                    onClick={generateChapters}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Resume Generation
-                  </button>
-                </>
-              )}
-            </div>
-          )}
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
       
-      {/* Navigation footer */}
-      <div className="border-t border-gray-200 p-4 flex justify-between items-center bg-white">
-        <button
-          onClick={() => navigateToChapter(currentChapterIndex - 1)}
-          disabled={currentChapterIndex === 0 || !chapters[currentChapterIndex - 1]}
-          className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium
-            ${currentChapterIndex === 0 || !chapters[currentChapterIndex - 1]
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-purple-600 hover:bg-purple-50 active:bg-purple-100'
-            }
-          `}
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" />
-          Previous Chapter
-        </button>
-        
-        <div className="text-sm text-gray-500 font-medium">
-          Chapter {currentChapterIndex + 1} of {chapterTitlesArray.length}
-        </div>
-        
-        <button
-          onClick={() => navigateToChapter(currentChapterIndex + 1)}
-          disabled={currentChapterIndex === chapterTitlesArray.length - 1 || !chapters[currentChapterIndex + 1]}
-          className={`flex items-center px-3 py-1.5 rounded-md text-sm font-medium
-            ${currentChapterIndex === chapterTitlesArray.length - 1 || !chapters[currentChapterIndex + 1]
-              ? 'text-gray-300 cursor-not-allowed'
-              : 'text-purple-600 hover:bg-purple-50 active:bg-purple-100'
-            }
-          `}
-        >
-          Next Chapter
-          <ChevronRight className="h-4 w-4 ml-1" />
-        </button>
+      {/* Chapter content */}
+      <div className="flex-1 lg:h-[100vh] min-h-[70vh] overflow-y-auto">
+        {chapters[currentChapterIndex] ? (
+          <div className="p-4 sm:p-6">
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800">{chapterTitlesArray[currentChapterIndex]}</h2>
+            <div className="prose max-w-none text-sm sm:text-base">
+              <MarkdownEditor data={chapters[currentChapterIndex]} />
+            </div>
+          </div>
+        ) : (
+          <div className="h-full flex flex-col items-center justify-center text-gray-500 p-4">
+            {isGenerating && generatingChapterIndex === currentChapterIndex ? (
+              <>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 relative mb-4 sm:mb-6">
+                  <div className="absolute inset-0 bg-purple-100 rounded-full animate-ping opacity-50"></div>
+                  <div className="relative w-full h-full bg-purple-50 rounded-full flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 text-purple-500 animate-spin" />
+                  </div>
+                </div>
+                <h3 className="text-lg sm:text-xl font-medium text-gray-700 mb-2">Generating Chapter {currentChapterIndex + 1}</h3>
+                <p className="text-center max-w-md text-sm sm:text-base">
+                  We're creating high-quality content for "{chapterTitlesArray[currentChapterIndex]}". This typically takes 1-2 minutes per chapter.
+                </p>
+              </>
+            ) : isGenerating ? (
+              <>
+                <BookOpen className="h-10 w-10 sm:h-12 sm:w-12 mb-4 text-gray-400" />
+                <h3 className="text-lg sm:text-xl font-medium text-gray-700 mb-2">Chapter Not Generated Yet</h3>
+                <p className="text-sm sm:text-base">This chapter is in the queue for generation.</p>
+                <button 
+                  onClick={() => navigateToChapter(generatingChapterIndex)}
+                  className="mt-4 sm:mt-6 px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors text-sm sm:text-base"
+                >
+                  View Current Generation
+                </button>
+              </>
+            ) : (
+              <>
+                <AlertTriangle className="h-10 w-10 sm:h-12 sm:w-12 mb-4 text-amber-500" />
+                <h3 className="text-lg sm:text-xl font-medium text-gray-700 mb-2">Chapter Content Missing</h3>
+                <p className="mb-4 sm:mb-6 text-sm sm:text-base">This chapter wasn't generated successfully.</p>
+                <button 
+                  onClick={generateChapters}
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center text-sm sm:text-base"
+                >
+                  <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+                  Resume Generation
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
-
-      {/* Leave confirmation modal */}
-      <Modal
-        isOpen={showLeaveWarning}
-        onClose={() => setShowLeaveWarning(false)}
-        title="Stop Generation and Go Back?"
+    </div>
+    
+    {/* Navigation footer */}
+    <div className="border-t  border-gray-200 px-3 py-3 sm:p-4 flex justify-between items-center bg-white  gap-2">
+      <button
+        onClick={() => navigateToChapter(currentChapterIndex - 1)}
+        disabled={currentChapterIndex === 0 || !chapters[currentChapterIndex - 1]}
+        className={`flex items-center px-2 py-1  sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium
+          ${currentChapterIndex === 0 || !chapters[currentChapterIndex - 1]
+            ? 'text-gray-300 cursor-not-allowed'
+            : 'text-purple-600 hover:bg-purple-50 active:bg-purple-100'
+          }
+        `}
       >
-        <div className="p-4 flex flex-col items-center">
-          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="h-8 w-8 text-amber-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Content generation is in progress</h3>
-          <p className="text-gray-600 mb-6 text-center">
-            If you leave now, your progress will be saved, but generation will stop. 
-            You'll need to resume generation when you return.
-          </p>
-          <div className="flex gap-3 w-full">
-            <button 
-              onClick={() => setShowLeaveWarning(false)} 
-              className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
-            >
-              Continue Generation
-            </button>
-            <button 
-              onClick={confirmLeave} 
-              className="flex-1 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors"
-            >
-              Stop & Go Back
-            </button>
-          </div>
+        <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+       <span className="sm:flex hidden"> Previous Chapter </span>
+      </button>
+      
+      <div className="text-xs sm:text-sm text-gray-500 font-medium">
+        Chapter {currentChapterIndex + 1} of {chapterTitlesArray.length}
+      </div>
+      
+      <button
+        onClick={() => navigateToChapter(currentChapterIndex + 1)}
+        disabled={currentChapterIndex === chapterTitlesArray.length - 1 || !chapters[currentChapterIndex + 1]}
+        className={`flex items-center px-2 py-1 sm:px-3 sm:py-1.5 rounded-md text-xs sm:text-sm font-medium
+          ${currentChapterIndex === chapterTitlesArray.length - 1 || !chapters[currentChapterIndex + 1]
+            ? 'text-gray-300 cursor-not-allowed'
+            : 'text-purple-600 hover:bg-purple-50 active:bg-purple-100'
+          }
+        `}
+      >
+       <span className="sm:flex hidden"> Next Chapter </span>
+       <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+      </button>
+    </div>
+  
+    {/* Leave confirmation modal */}
+    <Modal
+      isOpen={showLeaveWarning}
+      onClose={() => setShowLeaveWarning(false)}
+      title="Stop Generation and Go Back?"
+    >
+      <div className="p-3 sm:p-4 flex flex-col items-center">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-amber-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+          <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-amber-600" />
         </div>
-      </Modal>
-
-      {/* Back navigation confirmation */}
-      <Modal
-        isOpen={showBackConfirmation && !isGenerating}
-        onClose={() => setShowBackConfirmation(false)}
-        title="Return to Previous Step?"
-      >
-        <div className="p-4 flex flex-col items-center">
-          <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mb-4">
-            <ArrowLeft className="h-8 w-8 text-purple-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {completedChapters === chapterTitlesArray.length ? 
-              "All chapters are generated" : 
-              "Some chapters are not complete"}
-          </h3>
-          <p className="text-gray-600 mb-6 text-center">
-            {completedChapters === chapterTitlesArray.length ?
-              "Your content is ready. If you go back, you can edit the summary but will need to regenerate chapters." :
-              "If you go back, your progress will be saved, but you'll need to return to this page to continue generation."
-            }
-          </p>
-          <div className="flex gap-3 w-full">
-            <button 
-              onClick={() => setShowBackConfirmation(false)} 
-              className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
-            >
-              Stay on This Page
-            </button>
-            <button 
-              onClick={confirmLeave} 
-              className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
-            >
-              Return 
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Save success modal */}
-      <Modal
-        isOpen={showSaveSuccessModal}
-        onClose={goToDashboard}
-        title="Content Saved Successfully!"
-      >
-        <div className="p-4 flex flex-col items-center">
-          <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mb-4">
-            <Check className="h-8 w-8 text-green-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Your {contentCategory === 'book' ? 'book' : 'course'} has been saved!
-          </h3>
-          <p className="text-gray-600 mb-6 text-center">
-            "{title}" is now available in your dashboard where you can further edit, publish, or share it.
-          </p>
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Content generation is in progress</h3>
+        <p className="text-gray-600 mb-4 sm:mb-6 text-center text-sm sm:text-base">
+          If you leave now, your progress will be saved, but generation will stop. 
+          You'll need to resume generation when you return.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
           <button 
-            onClick={goToDashboard}
-            className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center"
+            onClick={() => setShowLeaveWarning(false)} 
+            className="flex-1 px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors text-sm sm:text-base"
           >
-            <FileText className="h-5 w-5 mr-2" />
-            Go to My Dashboard
+            Continue Generation
+          </button>
+          <button 
+            onClick={confirmLeave} 
+            className="flex-1 px-3 py-1.5 sm:px-4 sm:py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors text-sm sm:text-base"
+          >
+            Stop & Go Back
           </button>
         </div>
-      </Modal>
-    </div>
+      </div>
+    </Modal>
+  
+    {/* Back navigation confirmation */}
+    <Modal
+      isOpen={showBackConfirmation && !isGenerating}
+      onClose={() => setShowBackConfirmation(false)}
+      title="Return to Previous Step?"
+    >
+      <div className="p-3 sm:p-4 flex flex-col items-center">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-purple-50 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+          <ArrowLeft className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
+        </div>
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
+          {completedChapters === chapterTitlesArray.length ? 
+            "All chapters are generated" : 
+            "Some chapters are not complete"}
+        </h3>
+        <p className="text-gray-600 mb-4 sm:mb-6 text-center text-sm sm:text-base">
+          {completedChapters === chapterTitlesArray.length ?
+            "Your content is ready. If you go back, you can edit the summary but will need to regenerate chapters." :
+            "If you go back, your progress will be saved, but you'll need to return to this page to continue generation."
+          }
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full">
+          <button 
+            onClick={() => setShowBackConfirmation(false)} 
+            className="flex-1 px-3 py-1.5 sm:px-4 sm:py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors text-sm sm:text-base"
+          >
+            Stay on This Page
+          </button>
+          <button 
+            onClick={confirmLeave} 
+            className="flex-1 px-3 py-1.5 sm:px-4 sm:py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors text-sm sm:text-base"
+          >
+            Return 
+          </button>
+        </div>
+      </div>
+    </Modal>
+  
+    {/* Save success modal */}
+    <Modal
+      isOpen={showSaveSuccessModal}
+      onClose={goToDashboard}
+      title="Content Saved Successfully!"
+    >
+      <div className="p-3 sm:p-4 flex flex-col items-center">
+        <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-50 rounded-full flex items-center justify-center mb-3 sm:mb-4">
+          <Check className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
+        </div>
+        <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">
+          Your {contentCategory === 'book' ? 'book' : 'course'} has been saved!
+        </h3>
+        <p className="text-gray-600 mb-4 sm:mb-6 text-center text-sm sm:text-base">
+          "{title}" is now available in your dashboard where you can further edit, publish, or share it.
+        </p>
+        <button 
+          onClick={goToDashboard}
+          className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center text-sm sm:text-base"
+        >
+          <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+          Go to My Dashboard
+        </button>
+      </div>
+    </Modal>
+  </div>
   );
 };
 

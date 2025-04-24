@@ -9,16 +9,14 @@ interface QuizQuestion {
 
 interface ChapterQuizDisplayProps {
   quizContent: string;
-  onDeleteQuiz?: () => void;
-  onRegenerateQuestion?: (questionIndex: number) => Promise<void>;
-  regeneratingQuestionIndex?: number;
+  quizMessage?:any
+
 }
 
 const ChapterQuizDisplay: React.FC<ChapterQuizDisplayProps> = ({
   quizContent,
-  onDeleteQuiz,
-  onRegenerateQuestion,
-  regeneratingQuestionIndex = -1
+  quizMessage
+ 
 }) => {
   // Parse quiz content into structured format
   const questions = useMemo(() => {
@@ -43,17 +41,10 @@ const ChapterQuizDisplay: React.FC<ChapterQuizDisplayProps> = ({
     <div className="chapter-quiz-display">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold text-gray-800">Chapter Quiz</h2>
+
+        {/* <span> {quizMessage} </span> */}
         
-        {onDeleteQuiz && (
-          <button
-            onClick={onDeleteQuiz}
-            className="text-red-500 hover:text-red-700 flex items-center text-sm"
-            title="Delete this quiz"
-          >
-            <Trash2 className="w-4 h-4 mr-1" />
-            Remove Quiz
-          </button>
-        )}
+       
       </div>
 
       <div className="space-y-4">
@@ -61,8 +52,6 @@ const ChapterQuizDisplay: React.FC<ChapterQuizDisplayProps> = ({
           <QuizQuestionCard 
             key={index}
             question={q}
-            isRegenerating={regeneratingQuestionIndex === index}
-            onRegenerate={onRegenerateQuestion ? () => onRegenerateQuestion(index) : undefined}
           />
         ))}
       </div>
@@ -84,44 +73,35 @@ const QuizQuestionCard: React.FC<QuizQuestionCardProps> = ({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="border border-gray-200 rounded-md shadow-sm bg-white">
+    <div className="border border-gray-200 rounded-lg shadow-sm bg-white transition-all duration-200 hover:border-gray-300">
       <div 
-        className="p-4 cursor-pointer hover:bg-gray-50 flex justify-between items-start"
+        className="p-3.5 cursor-pointer flex justify-between items-center gap-3"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center justify-center bg-purple-100 text-purple-800 rounded-full w-6 h-6 text-sm font-medium flex-shrink-0">
-              {question.number}
-            </span>
-            <h3 className="text-md font-medium text-gray-800">{question.question}</h3>
-          </div>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <span className="flex-shrink-0 w-5 h-5 bg-purple-50 text-purple-700 text-lg font-large rounded flex items-center justify-center">
+            {question.number}
+          </span>
+          
+          <h3 className="text-lg text-gray-700 font-medium leading-5 line-clamp-2  pr-2">
+            {question.question}
+          </h3>
         </div>
-        <div className="flex items-center">
-          {onRegenerate && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRegenerate();
-              }}
-              className={`mr-3 text-purple-500 hover:text-purple-700 ${isRegenerating ? 'opacity-50 pointer-events-none' : ''}`}
-              disabled={isRegenerating}
-              title="Regenerate this question"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`} />
-            </button>
-          )}
+        
+        <div className="flex-shrink-0">
           {expanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-500" />
+            <ChevronUp className="w-4 h-4 text-gray-400" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-500" />
+            <ChevronDown className="w-4 h-4 text-gray-400" />
           )}
         </div>
       </div>
       
       {expanded && (
-        <div className="p-4 pt-0 border-t border-gray-100 mt-2">
-          <p className="text-sm text-gray-700">{question.answer}</p>
+        <div className="px-3.5 pb-3.5 pt-0 border-t border-gray-100">
+          <div className="mt-2 bg-gray-50 rounded p-3 text-md leading-relaxed text-gray-600">
+            {question.answer}
+          </div>
         </div>
       )}
     </div>

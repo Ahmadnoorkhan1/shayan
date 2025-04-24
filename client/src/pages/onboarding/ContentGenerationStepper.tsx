@@ -269,7 +269,7 @@ const ContentGenerationStepper = () => {
             <div className="relative">
               <div className="absolute inset-0 rounded-full bg-purple-600 blur-lg opacity-30 animate-pulse"></div>
               <div className="relative w-24 h-24 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center">
-                <Sparkles className="w-12 h-12 text-white" />
+                <Sparkles className="w-8 h-8 text-white" />
               </div>
             </div>
           </div>
@@ -374,23 +374,25 @@ const ContentGenerationStepper = () => {
       >
         {currentStep < 4 ? (
           <>
-            <div className="border-b border-gray-100">
-              <div className="px-6 py-5">
-                <h2 className="text-2xl font-bold text-gray-800 mb-1">{steps[currentStep].name}</h2>
-                <p className="text-gray-500">
-                  {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
-                  {currentStep === 1 && "Provide details about your content to customize its structure and style."}
-                  {currentStep === 2 && "Choose a title for your creation from our suggestions."}
-                  {currentStep === 3 && "Review and edit the generated summary for your content."}
-                  {currentStep === 4 && isBookContent && "Organize and edit your book chapters before content generation."}
-                </p>
-              </div>
-            </div>
+           <div className="border-b border-gray-100">
+  <div className="px-4 py-4 sm:px-6 sm:py-5">
+    <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">{steps[currentStep].name}</h2>
+    <p className="text-sm sm:text-base text-gray-500">
+      {currentStep === 0 && "Select the purpose of your content to help us understand your goals."}
+      {currentStep === 1 && "Provide details about your content to customize its structure and style."}
+      {currentStep === 2 && "Choose a title for your creation from our suggestions."}
+      {currentStep === 3 && "Review and edit the generated summary for your content."}
+      {currentStep === 4 && isBookContent && "Organize and edit your book chapters before content generation."}
+    </p>
+  </div>
+</div>
 
-            <div className="p-6 min-h-[450px]">{renderStep()}</div>
+            <div className="p-6 ">{renderStep()}</div>
           </>
         ) : (
-          <div className="min-h-[650px]">{renderStep()}</div>
+          <>
+          {renderStep()}
+          </>
         )}
 
         <div className="bg-gray-50 px-6 py-4 flex justify-between items-center border-t border-gray-100">

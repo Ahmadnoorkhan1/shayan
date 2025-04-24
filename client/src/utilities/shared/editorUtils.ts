@@ -60,9 +60,9 @@ export const processChapterSelection = (
   
   // Special handling for cover pages
 // Check if this is a cover chapter
-const isCover = typeof html === 'string' && (
-  html.includes('data-cover="true"') || 
-  html.includes('book-cover-image')
+const isCover = typeof chapterContent as any === 'string' && (
+  chapterContent.includes('data-cover="true"') || 
+  chapterContent.includes('book-cover-image')
 );
   
   if (isCover) {

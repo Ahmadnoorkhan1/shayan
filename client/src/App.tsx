@@ -37,7 +37,6 @@ function App() {
   const [isProcessingToken, setIsProcessingToken] = useState<boolean>(false);
   const [userData, setUserData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
   const [welcomeEmail, setWelcomeEmail] = useState('');
   
   const navigate = useNavigate();
@@ -100,11 +99,7 @@ function App() {
     
     navigate(redirectPath, { replace: true });
     
-    setShowWelcomeBanner(true);
     
-    setTimeout(() => {
-      setShowWelcomeBanner(false);
-    }, 8000);
     
     setUserData(null);
   }
@@ -129,91 +124,7 @@ function App() {
       <Toaster position="bottom-center" reverseOrder={false} />
       <GlobalLoader />
 
-      {/* Welcome Banner */}
-      {/* Welcome Modal */}
-{showWelcomeBanner && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/70 backdrop-blur-sm animate-fadeIn">
-    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all animate-scaleIn">
-      {/* Header with gradient */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-800 p-6 text-white">
-        <div className="flex items-center space-x-4">
-          <div className="bg-white rounded-full p-3 text-purple-600 shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" />
-              <path d="M2 17l10 5 10-5" />
-              <path d="M2 12l10 5 10-5" />
-            </svg>
-          </div>
-          <div>
-            <h2 className="text-2xl text-white font-bold">Welcome to Mini Lessons Accademy!</h2>
-            {welcomeEmail && (
-              <p className="text-purple-100 mt-1">
-                You're signed in as <span className="font-medium">{welcomeEmail}</span>
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
       
-      {/* Content */}
-      <div className="p-6">
-        <h3 className="text-xl font-semibold text-gray-800 mb-3">
-          Your Creative Journey Starts Here
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Transform your ideas into engaging educational content with our powerful AI-powered tools.
-        </p>
-        
-        {/* Features */}
-        <div className="space-y-4 mb-6">
-          <div className="flex items-start space-x-3">
-            <div className="bg-purple-100 text-purple-600 p-2 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800">Book Creator</h4>
-              <p className="text-sm text-gray-600">Create professional educational books with AI assistance</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <div className="bg-purple-100 text-purple-600 p-2 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-                <line x1="8" y1="21" x2="16" y2="21" />
-                <line x1="12" y1="17" x2="12" y2="21" />
-              </svg>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800">Course Creator</h4>
-              <p className="text-sm text-gray-600">Design structured courses with interactive content</p>
-            </div>
-          </div>
-          
-          <div className="flex items-start space-x-3">
-            <div className="bg-purple-100 text-purple-600 p-2 rounded-full">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </div>
-            <div>
-              <h4 className="font-medium text-gray-800">Easy Course Creator</h4>
-              <p className="text-sm text-gray-600">Generate complete courses in just one click</p>
-            </div>
-          </div>
-        </div>
-        
-      
-      </div>
-      
-     
-    </div>
-  </div>
-)}
 
       {/* Token verification process */}
       {isProcessingToken && (

@@ -421,6 +421,8 @@ const convertExternalQuiz = async (req, res) => {
     const { quizUrl } = req.body;
     const courseId = quizUrl.match(/\/quiz\/(\d+)\//)?.[1];
 
+
+
     // Fetch the quiz data from the external URL
     const response = await axios.get(quizUrl);
     const courseData = response.data;
@@ -452,22 +454,18 @@ const convertExternalQuiz = async (req, res) => {
       });
     }
 
-    // Process each chapter that has a quiz
-    // Object.entries(courseData.courseChapters).forEach(([chapterKey, chapterData]) => {
-    //     chapterData.map((item)=>{
-    //         console.log(item.quizContents, ' <<<< ')
-    //     })
-    // });
+   
     const chaptersArray = Object.entries(courseData.courseChapters).map(([key, value]) => ({
         id: key, // you can name it `id`, `slug`, etc.
         ...value,
       }));
     chaptersArray.map((item,index)=>{
-        if(item.quiz){
+        // if(item.quiz){
             courseContent[index].quiz = item.quizContents   
-        }
+        // }
     })
-
+ 
+ 
     // Update the course with the new content
     const updatedCourse = await Course.update(
       {

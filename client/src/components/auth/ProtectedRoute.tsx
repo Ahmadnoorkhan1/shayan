@@ -4,6 +4,10 @@ import { Loader2, AlertCircle, Lock } from 'lucide-react';
 import apiService from '../../utilities/service/api';
 import toast from 'react-hot-toast';
 
+// Session cache constants
+const SESSION_CACHE_KEY = 'auth_session_verified';
+const SESSION_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+
 const ProtectedRoute = () => {
   const [authState, setAuthState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -18,24 +22,50 @@ const ProtectedRoute = () => {
         setAuthState('unauthenticated');
         return;
       }
+
+      // Check if we have a valid session cache
+      const sessionCache = JSON.parse(localStorage.getItem(SESSION_CACHE_KEY) || '{}');
+      const now = Date.now();
+      
+      // If we have a recent valid session verification, skip verification
+      if (
+        sessionCache.token === token && 
+        sessionCache.timestamp && 
+        now - sessionCache.timestamp < SESSION_CACHE_DURATION
+      ) {
+        console.log('Using cached session verification');
+        setAuthState('authenticated');
+        return;
+      }
       
       try {
         // Verify token with backend
         const response = await apiService.post('/auth/verify-access-token', {
-            token : localStorage.getItem('authToken')
+          token
         });
         
         if (response.success) {
+          // Cache the successful verification
+          localStorage.setItem(
+            SESSION_CACHE_KEY, 
+            JSON.stringify({ 
+              token, 
+              timestamp: now 
+            })
+          );
+          
           setAuthState('authenticated');
         } else {
           // Handle unsuccessful verification but valid response
           localStorage.removeItem('authToken');
+          localStorage.removeItem(SESSION_CACHE_KEY);
           setAuthState('unauthenticated');
           setErrorMessage(response.message || 'Your session has expired. Please login again.');
         }
       } catch (error: any) {
         // Handle errors
         localStorage.removeItem('authToken');
+        localStorage.removeItem(SESSION_CACHE_KEY);
         setAuthState('unauthenticated');
         
         if (error.response) {
@@ -83,6 +113,11 @@ const ProtectedRoute = () => {
 
   // Redirect to login
   return <Navigate to="/login" state={{ from: location, message: errorMessage }} replace />;
+};
+
+// Export a function to clear the session cache (useful for logout)
+export const clearAuthSessionCache = () => {
+  localStorage.removeItem(SESSION_CACHE_KEY);
 };
 
 export default ProtectedRoute;

@@ -6,7 +6,7 @@ import Tooltip from "../../../components/ui/tooltip";
 interface ChapterGalleryProps {
   chapters: string[];
   onSelectChapter: (chapter: string, index: number) => void;
-  onDeleteChapter?: (index: number) => void; // Add this new prop
+  onDeleteChapter?: (index: number) => void;
 }
 
 const ChapterGallery: React.FC<ChapterGalleryProps> = ({ 
@@ -14,8 +14,6 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
   onSelectChapter,
   onDeleteChapter 
 }) => {
-
-
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
   const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
@@ -26,16 +24,37 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
     const doc = parser.parseFromString(html, 'text/html');
     
     // Check if this is a cover chapter
-    // Check if this is a cover chapter
-const isCover = typeof html === 'string' && (
-  html.includes('data-cover="true"') || 
-  html.includes('book-cover-image')
-);
+    const isCover = typeof html === 'string' && (
+      html.includes('data-cover="true"') || 
+      html.includes('book-cover-image')
+    );
     
-    // Get chapter title (h1)
-    // const titleElement = doc.querySelector('chapter-title');
-    const title = isCover ? 'Course Cover' : 
-                  (html.title);
+    // Extract chapter title properly
+    let title = 'Untitled Chapter';
+    
+    if (isCover) {
+      title = 'Course Cover';
+    } else {
+      // Try to find title from h1 element first
+      const h1Element = doc.querySelector('h1');
+      if (h1Element && h1Element.textContent) {
+        title = h1Element.textContent.trim();
+      } 
+      // If no h1 found, try to get title from object property if available
+      else if (typeof html === 'object' && html !== null && html.title) {
+        title = html.title;
+      }
+      // Last resort: Try to extract title from first few characters
+      else if (typeof html === 'string' && html.length > 0) {
+        // Look for a title pattern in the HTML string
+        const titleMatch = html.match(/<h1[^>]*>(.*?)<\/h1>/i);
+        if (titleMatch && titleMatch[1]) {
+          // Clean up any HTML tags inside the h1
+          title = titleMatch[1].replace(/<\/?[^>]+(>|$)/g, '').trim();
+        }
+      }
+    }
+    
     // Get sections (h2)
     const sectionElements = doc.querySelectorAll('h2');
     const sections = Array.from(sectionElements).map(section => {
@@ -104,17 +123,31 @@ const isCover = typeof html === 'string' && (
 
 
   return (
-<div 
-  style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} 
-  className="sticky top-0 w-full sm:w-[40%] lg:w-full h-[90vh] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden"
->      <div className=" top-0 bg-white z-20 px-4 py-3 border-b border-purple-100">
+    <div 
+      style={{ 
+        scrollbarWidth: "none", 
+        msOverflowStyle: "none",
+        position: "fixed",
+        top: "24px", // Add some padding from top of viewport
+      }} 
+      className="w-full sm:w-[40%] lg:w-[30%] h-[calc(100vh-48px)] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden"
+    >
+      <div className="bg-white z-20 px-4 py-3 border-b border-purple-100">
         <h3 className="text-lg font-semibold text-primary flex items-center">
           <Book className="w-5 h-5 mr-2 text-primary" />
           Course Chapters
         </h3>
       </div>
 
-      <div style={{ scrollbarWidth: "none", msOverflowStyle: "none"}} className="flex-1 overflow-y-auto chapter-scroll-container p-4 space-y-3">
+      <div 
+        style={{ 
+          scrollbarWidth: "none", 
+          msOverflowStyle: "none",
+          overflowY: "auto",
+          maxHeight: "calc(100vh - 100px)" // Ensure it doesn't overflow viewport
+        }} 
+        className="flex-1 chapter-scroll-container p-4 space-y-3"
+      >
         {chapters?.length > 0 ? (
           <div className="space-y-4">
             { chapters?.map((chapter, index) => {

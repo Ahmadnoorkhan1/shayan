@@ -3,14 +3,12 @@ import apiService from '../../utilities/service/api';
 import { Loader2 } from 'lucide-react';
 
 interface AccessTokenRedirectProps {
-  userId: string | number;
   buttonText?: string;
   className?: string;
   destinationPath?: string;
 }
 
 const AccessTokenRedirect: React.FC<AccessTokenRedirectProps> = ({ 
-  userId, 
   buttonText = 'Access External App', 
   className = '',
   destinationPath = '/'
@@ -18,6 +16,7 @@ const AccessTokenRedirect: React.FC<AccessTokenRedirectProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('');
+
 
   const handleRedirect = async () => {
     setIsLoading(true);
@@ -31,7 +30,7 @@ const AccessTokenRedirect: React.FC<AccessTokenRedirectProps> = ({
       
       // Step 2: Sending request to server
       setStatus('Generating secure access token...');
-      const userId =1
+      const userId = 2524
       const response = await apiService.post('/auth/generate-access-token', { 
         userId,
         destinationPath

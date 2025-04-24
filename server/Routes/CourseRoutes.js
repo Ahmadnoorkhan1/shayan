@@ -1,7 +1,10 @@
 const express = require('express');
 const { createCourseTitle, createCourseSummary, createCompleteCourse, getCourseChapter, addCourse, getCourses, getCourseById, updateCourse, deleteCourse, convertBlobToChapters, convertExternalQuiz } = require('../Controllers/CourseController');
 const { authenticateToken } = require('../Middlewares/AuthMiddleware');
+// const {  getChaptersWithAudioUrls } = require('../Controllers/AudioController');
+const { getChaptersWithAudioUrls } = require('../Controllers/AudioController');
 const router = express.Router();
+router.post('/audio/:courseId', getChaptersWithAudioUrls);
 
 router.post('/step-1', createCourseTitle);
 router.post('/step-3', createCourseSummary);

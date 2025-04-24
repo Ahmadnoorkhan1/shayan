@@ -13,6 +13,7 @@ const audioRoutes = require('./Routes/AudioRoutes');
 const userDataRoutes = require('./Routes/UserDataRoutes');
 const cors = require("cors");
 const path = require('path');
+const { sequelize } = require('./Config/db');
 
 
 dotenv.config();
@@ -46,3 +47,25 @@ app.use('/api/user-data', userDataRoutes); // Add this line
 
 const PORT = process.env.PORT || 5002;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Add this to your server.js or a database migration file
+// async function fixDatabaseSchema() {
+//   try {
+//     // Drop the incorrect foreign key constraint
+//     await sequelize.query('ALTER TABLE courses DROP FOREIGN KEY courses_ibfk_1');
+    
+//     // Add new constraint pointing to your real users table
+//     await sequelize.query(`
+//       ALTER TABLE courses ADD CONSTRAINT courses_creator_fk
+//       FOREIGN KEY (creator_id) REFERENCES users(user_id)
+//       ON DELETE CASCADE ON UPDATE CASCADE
+//     `);
+    
+//     console.log('Database schema fixed successfully');
+//   } catch (error) {
+//     console.error('Error fixing database schema:', error);
+//   }
+// }
+
+// Call this function when your server starts
+// fixDatabaseSchema();

@@ -595,24 +595,24 @@ const generateChapterContentHandler = async (req, res) => {
 const addContentHandler = async (req, res) => {
     try {
         const { contentType } = req.params;
-        const {  course_title, content, type = contentType } = req.body;
-
-        const creator_id = req.user.userId
+        const { course_title, content, type = contentType } = req.body;
+        
+        // Get user ID from authentication middleware
+        const userId = req.user.userId;
         
         // Validate required fields
-        if ( !course_title || !content) {
+        if (!course_title || !content) {
             return res.status(400).json({
                 success: false,
-                message: "Missing required fields: creator_id, course_title, or content"
+                message: "Missing required fields: course_title or content"
             });
         }
         
-        // Create a new course/book entry
+        // Create the course directly with the user ID
         const newContent = await Course.create({
-            creator_id,
+            creator_id: userId,
             course_title,
             content,
-            // Use the contentType from URL parameter if type is not provided in request body
             type: contentType || type
         });
         

@@ -99,6 +99,7 @@ const EditCoursePage = () => {
   const [isRefreshingCourse, setIsRefreshingCourse] = useState(false);
   const [hasQuizBeenImported, setHasQuizBeenImported] = useState(false);
   const [ chapterQuiz, setChapterQuiz] = useState("")
+  const [quizMessage, setQuizMessage] = useState("")
 
   const toggleQuizModal = () => setOpenQuizModal(!OpenQuizModal);
 
@@ -185,11 +186,14 @@ const EditCoursePage = () => {
 
         // Check for quiz_location and convert external quiz if it exists
         if (response.data?.quiz_location && !hasQuizBeenImported) {
-          try {
+
+          const quizFinalUrl = response?.data?.quiz_location.includes('minilessonsacademy') ? response?.data?.quiz_location : `https://minilessonsacademy.com/${response?.data?.quiz_location}`
+          try { 
             const quizResponse = await apiService.post(
               "/course-creator/convert-external-quiz",
               {
-                quizUrl: `https://minilessonsacademy.com/${response.data.quiz_location}`,
+                // quizUrl: `https://minilessonsacademy.com${response.data.quiz_location}`,
+                quizUrl:quizFinalUrl,
               }
             );
 
@@ -248,14 +252,35 @@ const EditCoursePage = () => {
   };
 
   const handleChapterSelect = (chapterContent: any, index: number) => {
-    setSelectedChapterTitle(chapterContent.title);
+   
+    if(chapterContent.title && chapterContent.content){
+
+      console.log(chapterContent, "quiz coming here ====>")
+ setSelectedChapterTitle(chapterContent.title);
     setSelectedChapter(chapterContent.content);
     setChapterQuiz(chapterContent.quiz)
     setSelectedChapterIndex(index);
+    setQuizMessage("This quiz is generated using legacy application, for new quizes you have to delete the old ones")
+    } else {
+
+      const {
+        isCover,
+        content,
+        title,
+        quizContent,
+        index: selectedIndex
+      } = processChapterSelection(chapterContent, index);
+
+      console.log(quizContent);
+      setSelectedChapterTitle(title);
+      setSelectedChapter(content);
+      setSelectedChapterIndex(selectedIndex);
+      setCurrentQuizContent(quizContent)
+      
+    }
     // setCurrentQuizContent(quizContent);
   };
 
-console.log(chapterQuiz, "============> see")
 
 
   const handleSave = async () => {
@@ -971,8 +996,18 @@ console.log(chapterQuiz, "============> see")
               <ExternalLink className="w-4 h-4 text-primary" />
               <span className="text-xs whitespace-nowrap">share preview</span>
             </Button>
+            <Button
+              variant="soft"
+              size="sm"
+              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+              onClick={handleSave}
+              title="View live published version in new tab"
+            >
+              <Save className="w-4 h-4 text-primary" />
+              <span className="text-xs whitespace-nowrap">Save Content</span>
+            </Button>
           </div>
-          <div className="flex justify-end mb-4">
+          {/* <div className="flex justify-center mb-4">
             <button
               onClick={handleSave}
               className="flex items-center justify-center text-white bg-gradient-to-tl font-medium rounded-md text-sm px-4 py-2 transition-all duration-200 shadow-sm"
@@ -980,7 +1015,7 @@ console.log(chapterQuiz, "============> see")
               <Save className="w-4 h-4" />
               <span>Save Content</span>
             </button>
-          </div>
+          </div> */}
         </div>
         {/* Main editor area and sidebar container for lg+ screens */}
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
@@ -1005,9 +1040,10 @@ console.log(chapterQuiz, "============> see")
     <div className="mt-6 pt-6 border-t border-gray-200">
       <ChapterQuizDisplay 
         quizContent={chapterQuiz}
-        onDeleteQuiz={handleDeleteQuiz}
-        onRegenerateQuestion={handleRegenerateQuestion}
-        regeneratingQuestionIndex={regeneratingQuestionIndex}
+        quizMessage={quizMessage}
+        // onDeleteQuiz={handleDeleteQuiz}
+        // onRegenerateQuestion={handleRegenerateQuestion}
+        // regeneratingQuestionIndex={regeneratingQuestionIndex}
       />
     </div>
   )}
