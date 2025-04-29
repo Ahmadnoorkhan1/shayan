@@ -74,6 +74,8 @@ const EditCoursePage = () => {
   const [currentEditingImage, setCurrentEditingImage] = useState<string | null>(
     null
   );
+  const [isGalleryVisible, setIsGalleryVisible] = useState(true);
+
   const quillRef = useRef<ReactQuill>(null);
   const [showEditConfirmation, setShowEditConfirmation] =
     useState<boolean>(false);
@@ -122,6 +124,9 @@ const EditCoursePage = () => {
     setPendingImageUrl(null);
     setShowEditConfirmation(false);
   };
+
+  const toggleGallery = () => setIsGalleryVisible(!isGalleryVisible);
+
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -255,10 +260,15 @@ const EditCoursePage = () => {
    
     if(chapterContent.title && chapterContent.content){
 
-      console.log(chapterContent, "quiz coming here ====>")
+      console.log(chapterContent.quiz, "quiz coming here ====>")
  setSelectedChapterTitle(chapterContent.title);
     setSelectedChapter(chapterContent.content);
-    setChapterQuiz(chapterContent.quiz)
+    if(chapterContent.quiz){
+      setChapterQuiz(chapterContent.quiz)
+    }
+    if(chapterContent?.quiz && chapterContent?.quiz?.editorContent && chapterContent.quiz.sharedContent){
+      setCurrentQuizContent(chapterContent.quiz)
+    }
     setSelectedChapterIndex(index);
     setQuizMessage("This quiz is generated using legacy application, for new quizes you have to delete the old ones")
     } else {
@@ -270,6 +280,8 @@ const EditCoursePage = () => {
         quizContent,
         index: selectedIndex
       } = processChapterSelection(chapterContent, index);
+
+
 
       console.log(quizContent);
       setSelectedChapterTitle(title);
@@ -283,19 +295,39 @@ const EditCoursePage = () => {
 
 
 
-  const handleSave = async () => {
+  const handleSave = async (deleteQuiz:any) => {
+    console.log("++++++++++++>", deleteQuiz)
     try {
+      console.log("before")
       if (selectedChapterIndex === -1) return;
+
+      console.log("after")
+
 
       const updatedChapters = [...chapters];
       const updatedContent = handleContentUpdate(
         selectedChapter,
         selectedChapterTitle,
         Boolean(currentQuizContent),
-        chapters[selectedChapterIndex] // Pass existing content
-      );
+        chapters[selectedChapterIndex],
+        currentQuizContent
+      ) as any;
+
+      console.log("before quiz")
+
+      if(deleteQuiz){
+        updatedContent.quiz = null
+        setCurrentQuizContent(null)
+        setChapterQuiz("")
+}
+
+console.log("after quiz")
+
 
       updatedChapters[selectedChapterIndex] = updatedContent;
+
+      console.log(updatedContent, "see updated content")
+       
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/course`,
         {
@@ -337,7 +369,7 @@ const EditCoursePage = () => {
     if (range) editor.setSelection(range.index, range.length);
 
     handleContentChange(editor.root.innerHTML);
-    handleSave();
+    handleSave(false);
 
     setOpenEditor(false);
     setCurrentEditingImage(null);
@@ -644,107 +676,10 @@ const EditCoursePage = () => {
       return;
     }
 
-    try {
-      // Get the current chapter HTML
-      const originalChapter = chapters[selectedChapterIndex];
 
-      // STEP 1: Remove visible quiz content from the editor view
-      // Parse the HTML to properly manipulate the DOM
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(selectedChapter, "text/html");
-
-      // Find and remove only quiz sections from the editor content
-      const quizSections = doc.querySelectorAll("h2");
-      let quizFound = false;
-
-      quizSections.forEach((section) => {
-        if (section.textContent?.trim().toLowerCase() === "exercises") {
-          quizFound = true;
-          let currentNode = section as any;
-          const nodesToRemove = [];
-          nodesToRemove.push(currentNode);
-
-          // Mark subsequent nodes for removal until the next h2 or end
-          while (currentNode.nextElementSibling) {
-            currentNode = currentNode.nextElementSibling;
-            nodesToRemove.push(currentNode);
-            if (currentNode.tagName === "H2") break;
-          }
-
-          // Remove the marked nodes
-          nodesToRemove.forEach((node) => {
-            if (node.parentNode) node.parentNode.removeChild(node);
-          });
-        }
-      });
-
-      // Get the clean content for the editor view
-      const cleanEditorContent = doc.body.innerHTML;
-
-      // STEP 2: Remove ALL quiz data from the chapter content
-      let cleanChapterContent = originalChapter
-        // Remove the editor quiz section (<h2>Exercises</h2> and everything after it until the next heading)
-        .replace(
-          /<h2>Exercises<\/h2>[\s\S]*?(?=<h2>|<!-- SHARED_QUIZ_START -->|$)/,
-          ""
-        )
-        // Remove the shared quiz section with markers
-        .replace(
-          /<!-- SHARED_QUIZ_START -->[\s\S]*?<!-- SHARED_QUIZ_END -->/,
-          ""
-        )
-        // Remove any quiz data comments
-        .replace(/<!-- quiz data:[\s\S]*?-->/, "")
-        // Clean up any double spaces or line breaks that might be left
-        .replace(/\s+/g, " ")
-        .trim();
-
-      // Verify the content is actually cleaned
-      const hasQuizContent =
-        cleanChapterContent.includes("<h2>Exercises</h2>") ||
-        cleanChapterContent.includes("<!-- SHARED_QUIZ_START -->") ||
-        cleanChapterContent.includes("quiz data:");
-
-      if (hasQuizContent) {
-        console.warn(
-          "Quiz content still detected after cleaning, applying stronger cleaning methods"
-        );
-
-        // More aggressive cleaning if needed
-        cleanChapterContent = cleanChapterContent
-          .replace(/<h2>Exercises<\/h2>[\s\S]*/, "")
-          .replace(/<!-- SHARED_QUIZ_START -->[\s\S]*/, "")
-          .replace(/<!--[\s\S]*?quiz[\s\S]*?-->/, "");
-      }
-
-      // STEP 3: Update the chapter with clean content
-      const updatedChapters = [...chapters];
-      updatedChapters[selectedChapterIndex] = cleanChapterContent;
-
-      const response = await apiService.post(
-        `/course-creator/updateCourse/${id}/course`,
-        {
-          content: JSON.stringify(updatedChapters),
-        }
-      );
-
-      if (response.success) {
-        // Update local state
-        setChapters(updatedChapters);
-        setCurrentQuizContent(null);
-
-        // Update the editor with the clean content
-        setSelectedChapter(cleanEditorContent);
-
-        console.log("Quiz successfully deleted, chapter content cleaned");
-        // toast.success('Quiz deleted successfully');
-      } else {
-        toast.error("Failed to delete quiz");
-      }
-    } catch (error) {
-      console.error("Error deleting quiz:", error);
-      toast.error("Error deleting quiz");
-    }
+setCurrentQuizContent(null)
+setChapterQuiz("")
+handleSave(true)
   };
 
   const handleCreateAudio = async () => {
@@ -808,7 +743,7 @@ const EditCoursePage = () => {
 
   const handleConfirmLeave = async () => {
     // Save content before leaving
-    await handleSave();
+    await handleSave(false);
     setShowLeaveConfirmation(false);
     // Allow navigation to continue
     navigate("/dashboard");
@@ -884,6 +819,10 @@ const EditCoursePage = () => {
     }
   };
 
+  const handleSaveContent = async () =>{
+   await handleSave(false)
+  }
+
   if (loading || convertingBlob)
     return (
       <div className="flex flex-col items-center justify-center min-h-[70vh] p-6">
@@ -911,14 +850,7 @@ const EditCoursePage = () => {
     <React.Fragment>
       {/* Main container with responsive layout changes */}
       <div className="flex flex-col p-2 md:p-4 gap-4 lg:gap-6 max-w-full overflow-hidden">
-        {/* Chapter gallery - Appears at the top on mobile, moved to side on larger screens */}
-        <div className="w-full lg:hidden">
-          <ChapterGallery
-            chapters={chapters}
-            onSelectChapter={handleChapterSelect}
-            onDeleteChapter={handleDeleteChapter}
-          />
-        </div>
+        {/* Toolbar area */}
         <div className="flex justify-between">
           <div className="flex flex-wrap items-center text-primary gap-2">
             <Button
@@ -997,80 +929,73 @@ const EditCoursePage = () => {
               <span className="text-xs whitespace-nowrap">share preview</span>
             </Button>
             <Button
-              variant="soft"
+              variant="outline"
               size="sm"
-              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-              onClick={handleSave}
-              title="View live published version in new tab"
+              className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 ml-auto px-4 py-2.5"
+              onClick={()=> handleSave(false)}
+              title="Save your content changes"
             >
-              <Save className="w-4 h-4 text-primary" />
-              <span className="text-xs whitespace-nowrap">Save Content</span>
+              <Save className="w-4 h-4 text-white" />
+              <span className="text-xs font-medium whitespace-nowrap">Save Content</span>
             </Button>
           </div>
-          {/* <div className="flex justify-center mb-4">
-            <button
-              onClick={handleSave}
-              className="flex items-center justify-center text-white bg-gradient-to-tl font-medium rounded-md text-sm px-4 py-2 transition-all duration-200 shadow-sm"
-            >
-              <Save className="w-4 h-4" />
-              <span>Save Content</span>
-            </button>
-          </div> */}
         </div>
-        {/* Main editor area and sidebar container for lg+ screens */}
-        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-          {/* Main editing area */}
 
-          <div className="p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden w-full lg:w-2/3">
-            {/* Rich text editor - with proper container to handle responsiveness */}
-            <div className="w-full overflow-hidden">
-              <RichTextEditor
-                ref={quillRef}
-                initialContent={selectedChapter}
-                imageUrl={AIImage}
-                id={Number(id)}
-                onContentChange={handleContentChange}
-                onSave={handleSave}
-                onImageClick={handleImageClick}
-              />
+        {/* Main editor area and sidebar container */}
+        <div className="flex  gap-4">
+          {/* Chapter gallery - now a responsive drawer */}
+          <div className="h-[calc(100vh-150px)]">
+          
+          <ChapterGallery
+            chapters={chapters}
+            onSelectChapter={handleChapterSelect}
+            onDeleteChapter={handleDeleteChapter}
+            isVisible={isGalleryVisible}
+            onToggleVisibility={toggleGallery}
+            />
             </div>
-
-            {/* Add the ChapterQuizDisplay component here */}
-  {chapterQuiz && chapterQuiz.length > 0 && (
-    <div className="mt-6 pt-6 border-t border-gray-200">
-      <ChapterQuizDisplay 
-        quizContent={chapterQuiz}
-        quizMessage={quizMessage}
-        // onDeleteQuiz={handleDeleteQuiz}
-        // onRegenerateQuestion={handleRegenerateQuestion}
-        // regeneratingQuestionIndex={regeneratingQuestionIndex}
-      />
-    </div>
-  )}
-
-            {/* Quiz display area - conditionally shown */}
-            {currentQuizContent && (
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <h3 className="text-lg font-semibold text-primary mb-4">
-                  Chapter Quiz
-                </h3>
-                <QuizDisplay
-                  quizContent={currentQuizContent}
-                  onRegenerateQuestion={handleRegenerateQuestion}
-                  regeneratingQuestionIndex={regeneratingQuestionIndex}
-                  onDeleteQuiz={handleDeleteQuiz}
+          {/* Main editing area - responsive width based on gallery visibility */}
+          <div className={`p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ease-in-out
+          ${isGalleryVisible ? 'w-full md:flex-1' : 'w-full'}`}
+          >
+            <div className="w-full h-full overflow-hidden flex flex-col">
+              {/* Rich text editor */}
+              <div className="flex-grow overflow-auto">
+                <RichTextEditor
+                  ref={quillRef}
+                  initialContent={selectedChapter}
+                  imageUrl={AIImage}
+                  id={Number(id)}
+                  onContentChange={handleContentChange}
+                  onSave={()=> handleSave(false)}
+                  onImageClick={handleImageClick}
                 />
               </div>
-            )}
-          </div>
 
-          {/* Chapter gallery - Only visible on large screens */}
-          <div className="hidden lg:flex lg:w-1/3">
-            <ChapterGallery
-              chapters={chapters}
-              onSelectChapter={handleChapterSelect}
-              onDeleteChapter={handleDeleteChapter}
-            />
+              {/* Quiz display area */}
+              {chapterQuiz && chapterQuiz.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <ChapterQuizDisplay 
+                    quizContent={chapterQuiz}
+                    quizMessage={quizMessage}
+                  />
+                </div>
+              )}
+
+              {currentQuizContent && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h3 className="text-lg font-semibold text-primary mb-4">
+                    Chapter Quiz
+                  </h3>
+                  <QuizDisplay
+                    quizContent={currentQuizContent}
+                    onRegenerateQuestion={handleRegenerateQuestion}
+                    regeneratingQuestionIndex={regeneratingQuestionIndex}
+                    onDeleteQuiz={handleDeleteQuiz}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

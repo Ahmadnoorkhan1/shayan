@@ -1,10 +1,11 @@
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
-const baseURL =
-  window.location.hostname === 'localhost'
-    ? 'http://localhost:5002/api/'
-    : 'https://minilessonsacademy.onrender.com/api/';
+// const baseURL =
+//   window.location.hostname === 'localhost'
+//     ? 'http://localhost:5002/api/'
+//     : 'https://minilessonsacademy.onrender.com/api/';
+const baseURL = 'https://minilessonsacademy.onrender.com/api/'
 
 const api = axios.create({
   baseURL,

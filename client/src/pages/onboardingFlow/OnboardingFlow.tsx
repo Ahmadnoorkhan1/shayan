@@ -43,7 +43,7 @@ export const theme = {
 
 export type UserData = {
   demographic: string
-  contentType: string
+  contentType: string[]
   companySize: string
 }
 
@@ -53,7 +53,7 @@ const OnboardingFlow = () => {
   const [direction, setDirection] = useState(0) // -1 for backward, 1 for forward
   const [userData, setUserData] = useState<UserData>({
     demographic: "",
-    contentType: "",
+    contentType: [],
     companySize: "",
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -111,10 +111,9 @@ const OnboardingFlow = () => {
 
  
 
-  const updateUserData = (key: keyof UserData, value: string) => {
+  const updateUserData = (key: keyof UserData, value: string | string[]) => {
     setUserData((prev) => ({ ...prev, [key]: value }))
   }
-
   const variants = {
     enter: (direction: number) => ({
       x: direction > 0 ? 60 : -60,
@@ -178,16 +177,16 @@ const OnboardingFlow = () => {
               theme={theme}
             />
           )}
-          {currentStep === 3 && (
-            <ContentTypePane
-              selectedOption={userData.contentType}
-              onSelect={(value) => updateUserData("contentType", value)}
-              onNext={handleNext}
-              onBack={handleBack}
-              onSkip={handleSkip}
-              theme={theme}
-            />
-          )}
+         {currentStep === 3 && (
+  <ContentTypePane
+    selectedOption={userData.contentType}
+    onSelect={(value) => updateUserData("contentType", value)}
+    onNext={handleNext}
+    onBack={handleBack}
+    onSkip={handleSkip}
+    theme={theme}
+  />
+)}
           {currentStep === 4 && (
             <CompanySizePane
               selectedOption={userData.companySize}

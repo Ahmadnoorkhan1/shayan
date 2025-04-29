@@ -48,6 +48,11 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [loadingGallery, setLoadingGallery] = useState(false);
   const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
+  const [promptInputRef, setPromptInputRef] = useState<HTMLTextAreaElement | null>(null);
+
+
+  
+
 
   const baseUrl = window.location.hostname === 'localhost'
     ? 'http://localhost:5002'
@@ -170,6 +175,36 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
     }
   };
 
+
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Check if Enter key was pressed without Shift (to allow multiline text with Shift+Enter)
+      if (event.key === 'Enter' && !event.shiftKey) {
+        // Check if the prompt field is focused and has content
+        if (
+          document.activeElement === promptInputRef && 
+          prompt.trim() && 
+          !loading
+        ) {
+          event.preventDefault(); // Prevent newline in textarea
+          handleGenerate();
+        }
+      }
+    };
+  
+    // Add event listener
+    if (promptInputRef) {
+      promptInputRef.addEventListener('keydown', handleKeyPress);
+    }
+  
+    // Clean up
+    return () => {
+      if (promptInputRef) {
+        promptInputRef.removeEventListener('keydown', handleKeyPress);
+      }
+    };
+  }, [promptInputRef, prompt, loading, handleGenerate]);
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden">
       {/* Only show gallery tabs if NotCover is false */}
@@ -207,15 +242,20 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
           {/* Left Section - Input */}
           <div className="flex-1 p-6 border-r border-purple-100">
             <div className="space-y-4">
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the image you want to create... (e.g., 'A magical castle under a starry night sky')"
-                className="w-full p-4 text-sm border border-purple-200 rounded-lg
-                         focus:outline-none focus:ring-2 focus:ring-purple-500/30 
-                         focus:border-purple-500 min-h-[120px] resize-none
-                         bg-purple-50/30"
-              />
+            <textarea
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  ref={(el) => setPromptInputRef(el)}
+  placeholder="Describe the image you want to create... (e.g., 'A magical castle under a starry night sky')"
+  className="w-full p-4 text-sm border border-purple-200 rounded-lg
+           focus:outline-none focus:ring-2 focus:ring-purple-500/30 
+           focus:border-purple-500 min-h-[120px] resize-none
+           bg-purple-50/30"
+/>
+
+<p className="text-xs text-gray-500 mt-1">
+  Press Enter to generate, or Shift+Enter for a new line
+</p>
 
               <div className="flex gap-3">
                 <Button

@@ -123,29 +123,31 @@ export const handleContentUpdate = (
   content: string, 
   title: string, 
   hasQuiz = false,
-  existingContent?: string
+  existingContent?: string,
+  currentQuizContent?: any
 ): string => {
   // Extract existing quiz content if present
-  let editorQuizContent = '';
-  let sharedQuizContent = '';
+  // let editorQuizContent = '';
+  // let sharedQuizContent = '';
 
-  if (hasQuiz && existingContent) {
-    // Match editor quiz section
-    const editorMatch = existingContent.match(
-      /<h2>Exercises<\/h2>([\s\S]*?)(?=<!-- SHARED_QUIZ_START -->|$)/
-    );
-    if (editorMatch) {
-      editorQuizContent = editorMatch[0];
-    }
 
-    // Match shared quiz section with markers
-    const sharedMatch = existingContent.match(
-      /<!-- SHARED_QUIZ_START -->([\s\S]*?)<!-- SHARED_QUIZ_END -->/
-    );
-    if (sharedMatch) {
-      sharedQuizContent = sharedMatch[0];
-    }
-  }
+  // if (hasQuiz && existingContent) {
+  //   // Match editor quiz section
+  //   const editorMatch = existingContent.match(
+  //     /<h2>Exercises<\/h2>([\s\S]*?)(?=<!-- SHARED_QUIZ_START -->|$)/
+  //   );
+  //   if (editorMatch) {
+  //     editorQuizContent = editorMatch[0];
+  //   }
+
+  //   // Match shared quiz section with markers
+  //   const sharedMatch = existingContent.match(
+  //     /<!-- SHARED_QUIZ_START -->([\s\S]*?)<!-- SHARED_QUIZ_END -->/
+  //   );
+  //   if (sharedMatch) {
+  //     sharedQuizContent = sharedMatch[0];
+  //   }
+  // }
 
   // Clean up the main content by removing any existing quiz sections
   let cleanContent = content;
@@ -165,24 +167,25 @@ export const handleContentUpdate = (
   // }
 
   // Preserve quiz content if it exists
-  if (editorQuizContent && sharedQuizContent) {
-    updatedContent = `${updatedContent}${editorQuizContent}${sharedQuizContent}`;
-  }
+  // if (editorQuizContent && sharedQuizContent) {
+  //   updatedContent = `${updatedContent}${editorQuizContent}${sharedQuizContent}`;
+  // }
+  
 
   // Additional validation to ensure quiz structure remains intact
-  if (hasQuiz) {
-    const verifyEditorQuiz = updatedContent.includes('<h2>Exercises</h2>');
-    const verifySharedQuiz = updatedContent.includes('<!-- SHARED_QUIZ_START -->') && 
-                            updatedContent.includes('<!-- SHARED_QUIZ_END -->');
+  // if (hasQuiz) {
+  //   const verifyEditorQuiz = updatedContent.includes('<h2>Exercises</h2>');
+  //   const verifySharedQuiz = updatedContent.includes('<!-- SHARED_QUIZ_START -->') && 
+  //                           updatedContent.includes('<!-- SHARED_QUIZ_END -->');
     
-    if (!verifyEditorQuiz || !verifySharedQuiz) {
-      console.error('Quiz structure validation failed');
-      // Restore quiz content if structure was lost
-      if (editorQuizContent && sharedQuizContent) {
-        updatedContent = `${updatedContent}${editorQuizContent}${sharedQuizContent}`;
-      }
-    }
-  }
+  //   if (!verifyEditorQuiz || !verifySharedQuiz) {
+  //     console.error('Quiz structure validation failed');
+  //     // Restore quiz content if structure was lost
+  //     if (editorQuizContent && sharedQuizContent) {
+  //       updatedContent = `${updatedContent}${editorQuizContent}${sharedQuizContent}`;
+  //     }
+  //   }
+  // }
 
   // Clean up JSON stringify artifacts
   const finalContent =  updatedContent
@@ -198,6 +201,7 @@ export const handleContentUpdate = (
   return {
     title: finalTitle,
     content: finalContent,
+    quiz: currentQuizContent
   }
 };
 

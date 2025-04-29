@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Loader2, ChevronLeft, ChevronRight, Save, BookOpen, X, AlertTriangle, RefreshCw, Check, Clock, ArrowLeft, FileText } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { Loader2, ChevronLeft, ChevronRight, Save, BookOpen, X, AlertTriangle, RefreshCw, Check, Clock, ArrowLeft, FileText, Edit } from 'lucide-react';
 import apiService from '../../utilities/service/api';
 import MarkdownEditor from "../../components/ui/markdowneditor";
 import toast from 'react-hot-toast';
@@ -494,6 +494,15 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
     navigate(savedContentId ? `/dashboard?highlight=${savedContentId}` : "/dashboard");
   }, [navigate, savedContentId]);
 
+    const checkType = useMemo(()=>{
+      return  contentCategory === "book" ? "book-creator/edit" : "course-creator/edit";
+    },[contentCategory])
+
+  const handleNavigate = ()=>{
+    console.log(checkType, "===========>")
+    navigate(`/dashboard/${checkType}/${savedContentId}`)
+  }
+
   return (
     <div className="flex flex-col h-[1000px]">
 
@@ -668,7 +677,7 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
       <div className="flex-1 lg:h-[100vh] min-h-[70vh] overflow-y-auto">
         {chapters[currentChapterIndex] ? (
           <div className="p-4 sm:p-6">
-            <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800">{chapterTitlesArray[currentChapterIndex]}</h2>
+            {/* <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-gray-800">{chapterTitlesArray[currentChapterIndex]}</h2> */}
             <div className="prose max-w-none text-sm sm:text-base">
               <MarkdownEditor data={chapters[currentChapterIndex]} />
             </div>
@@ -842,10 +851,18 @@ const ContentGenerationViewer: React.FC<ContentGenerationViewerProps> = ({
         </p>
         <button 
           onClick={goToDashboard}
-          className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors flex items-center justify-center text-sm sm:text-base"
+          className="w-full px-3 py-2 sm:px-4 sm:py-3 bg-purple-500  hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center text-sm sm:text-base"
         >
           <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
           Go to My Dashboard
+        </button>
+
+        <button 
+          onClick={handleNavigate}
+          className="w-full mt-4 px-3 py-2 sm:px-4 sm:py-3 bg-purple-500  hover:bg-purple-700 text-white rounded-md transition-colors flex items-center justify-center text-sm sm:text-base"
+        >
+          <Edit className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+          Edit My {contentCategory}
         </button>
       </div>
     </Modal>

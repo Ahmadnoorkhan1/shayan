@@ -312,9 +312,9 @@ const ContentGenerationStepper = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div  className="max-w-6xl mx-auto">
       <div className="mb-8 mt-8 px-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
+        <div  className="flex flex-col md:flex-row items-start md:items-center justify-between overflow-scroll ">
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center mb-4 md:mb-0 group">
               <div className="flex-shrink-0">
