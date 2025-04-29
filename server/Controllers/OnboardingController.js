@@ -344,8 +344,7 @@ top_p: 1,            })
         ]);
 
 
-
-      // Process chapter titles and key points
+// Process chapter titles and key points
 const rawChapterTitles = chapterTitlesResponse.choices[0].message.content.trim();
 
 // Parse the response into structured chapters with key points
@@ -373,8 +372,11 @@ chapterBlocks.forEach((block, index) => {
     
     if (lines.length === 0) return;
     
-    // First line is the title (remove any markdown formatting)
-    const title = lines[0].replace(/\*\*/g, '').trim();
+    // First line is the title (remove any markdown formatting and number prefixes)
+    const title = lines[0]
+        .replace(/\*\*/g, '')  // Remove markdown bold
+        .replace(/^\d+\.\s*/, '')  // Remove "X. " prefix pattern
+        .trim();
     
     // Remaining lines that start with "-" are key points
     const keyPoints = lines
