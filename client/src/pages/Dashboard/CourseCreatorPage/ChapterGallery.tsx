@@ -4,7 +4,7 @@ import { Book, ChevronDown, ChevronUp, FileText, BookOpen, Trash2, ChevronRight,
 import Tooltip from "../../../components/ui/tooltip";
 
 interface ChapterGalleryProps {
-  chapters: string[];
+  chapters: any[];
   onSelectChapter: (chapter: string, index: number) => void;
   onDeleteChapter?: (index: number) => void;
   isVisible: boolean; // New prop to control visibility
@@ -20,7 +20,7 @@ const ChapterGallery: React.FC<ChapterGalleryProps> = ({
 }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
-  const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
+  // const [selectedSection, setSelectedSection] = useState<{chapter: number, section: number} | null>(null);
   const [selectedChapterIndex, setSelectedChapterIndex] = useState<number | null>(null);
 
   // Existing parseChapter function remains unchanged

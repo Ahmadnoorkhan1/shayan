@@ -296,14 +296,9 @@ const EditCoursePage = () => {
 
 
   const handleSave = async (deleteQuiz:any) => {
-    console.log("++++++++++++>", deleteQuiz)
     try {
       console.log("before")
       if (selectedChapterIndex === -1) return;
-
-      console.log("after")
-
-
       const updatedChapters = [...chapters];
       const updatedContent = handleContentUpdate(
         selectedChapter,

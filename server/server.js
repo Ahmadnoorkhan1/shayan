@@ -11,6 +11,7 @@ const answerCheckRoutes = require('./Routes/AnswerCheckRoutes');
 const onboardingRoutes = require('./Routes/OnboardingRoutes');
 const audioRoutes = require('./Routes/AudioRoutes'); 
 const userDataRoutes = require('./Routes/UserDataRoutes');
+const uploadRoutes = require('./Routes/UploadRoutes');
 const cors = require("cors");
 const path = require('path');
 const { sequelize } = require('./Config/db');
@@ -43,6 +44,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/onboard', onboardingRoutes); // New route for onboarding process
 app.use('/api/audio', audioRoutes);
 app.use('/api/user-data', userDataRoutes); // Add this line
+app.use('/api/files', uploadRoutes); // Add routes for Cloudflare R2 file uploads
 
 
 const PORT = process.env.PORT || 5002;

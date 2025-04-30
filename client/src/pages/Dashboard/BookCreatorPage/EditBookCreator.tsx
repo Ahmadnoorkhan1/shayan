@@ -790,6 +790,8 @@ const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
           chapters={chapters}
           onSelectChapter={handleChapterSelect}
           onDeleteChapter={handleDeleteChapter}
+          isVisible={true}
+          onToggleVisibility={()=>{}}
         />
       </div>
       
@@ -916,6 +918,8 @@ const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
             chapters={chapters}
             onSelectChapter={handleChapterSelect}
             onDeleteChapter={handleDeleteChapter}
+            isVisible={true}
+
           />
         </div>
       </div>

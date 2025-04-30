@@ -534,45 +534,44 @@ const cleanImageUrl = (imgSrc: string): string => {
     .replace(/^data:image\/[^;]+;base64,/, (match) => decodeURIComponent(match)); // Handle base64
 };
 
-   export const formatSharedContent = (content: string, title: string, type: 'course' | 'book'): string => {
+   export const formatSharedContent = (content: any, title: string, type: 'course' | 'book'): string => {
    try {
     // Parse the content
-    // console.log(typeof(content), "=====================")
 
-    let contentString = typeof content === 'string' 
-    ? content 
-    : JSON.stringify(content);  
     
-    let chapters = [];
+    let chapters:any = [];
+    content.map((chapter:any)=>{
+      chapters.push(chapter)
+    })
     try {
       // Clean and parse the content
-      const cleanedContent = contentString
-        .replace(/^"|"$/g, '')
-        .replace(/\\"/g, '"')
-        .replace(/\\\\/g, '\\')
-        .replace(/\\n/g, '\n')
-        .replace(/\[\\"|\\"]/g, '"')
-        .replace(/"{2,}/g, '"');
+      // const cleanedContent = content
+      //   .replace(/^"|"$/g, '')
+      //   .replace(/\\"/g, '"')
+      //   .replace(/\\\\/g, '\\')
+      //   .replace(/\\n/g, '\n')
+      //   .replace(/\[\\"|\\"]/g, '"')
+      //   .replace(/"{2,}/g, '"');
       
       // Parse content into chapters array
-      let parsedContent;
-      try {
-        parsedContent = JSON.parse(cleanedContent);
-      } catch (e) {
-        parsedContent = cleanedContent.split('","').map((ch: any) => 
-          ch.replace(/^"|"$/g, '')
-        );
-      }
+      // let parsedContent;
+      // try {
+      //   parsedContent = JSON.parse(cleanedContent);
+      // } catch (e) {
+      //   parsedContent = cleanedContent.split('","').map((ch: any) => 
+      //     ch.replace(/^"|"$/g, '')
+      //   );
+      // }
       
-      chapters = Array.isArray(parsedContent) ? parsedContent : [parsedContent];
+      // chapters = Array.isArray(parsedContent) ? parsedContent : [parsedContent];
     } catch (error) {
       console.error("Content parsing error:", error);
       return `<div class="error-message">Error parsing content</div>`;
     }
     
     // Check for cover image
-    const coverIndex = chapters.findIndex(ch => 
-      ch.includes('book-cover-image') || ch.includes('data-cover="true"')
+    const coverIndex = chapters.findIndex((ch:any) => 
+      JSON.stringify(ch).includes('book-cover-image') || JSON.stringify(ch).includes('data-cover="true"')
     );
     
     let coverHtml = '';
@@ -602,28 +601,34 @@ const cleanImageUrl = (imgSrc: string): string => {
       <ul class="toc-list">`;
     
     // Process each chapter to extract titles for TOC
-    const chapterTitles = chapters.map((chapter, index) => {
+    const chapterTitles = chapters.map((chapter:any, index:any) => {
       const parser = new DOMParser();
-      const doc = parser.parseFromString(chapter, 'text/html');
-      const h1 = doc.querySelector('h1');
-      return h1?.textContent || `Chapter ${index + 1}`;
+      if(typeof(chapter)==='string'){
+        const doc = parser.parseFromString(chapter, 'text/html');
+        const h1 = doc.querySelector('h1');
+        return h1?.textContent || `Chapter ${index + 1}`;
+      }else{
+        const doc = parser.parseFromString(chapter.content, 'text/html');
+        const h1 = doc.querySelector('h1');
+        return h1?.textContent || `Chapter ${index + 1}`;
+      }
     });
-    
     // Generate TOC entries
-    chapterTitles.forEach((title, index) => {
+    chapterTitles.forEach((title:any, index:any) => {
       tocHtml += `<li><a href="#chapter-${index + 1}" class="toc-link">${title}</a></li>`;
     });
     tocHtml += `</ul></div>`;
     
     // Process each chapter
     let chaptersHtml = '';
-    chapters.forEach((chapter, index) => {
+    chapters.forEach((chapter:any, index:any) => {
       // Process chapter content
-      const processedChapter = processChapterForSharing(chapter, index);
-      chaptersHtml += processedChapter;
-      chaptersHtml = chaptersHtml.replace(/\["|"\]/g, '');
-
+        const processedChapter = processChapterForSharing(chapter, index);
+        chaptersHtml += processedChapter;
+        chaptersHtml = chaptersHtml.replace(/\["|"\]/g, '');
+      
     });
+
     
     // Assemble the complete HTML
     const htmlTemplate = `
@@ -1136,10 +1141,9 @@ const cleanImageUrl = (imgSrc: string): string => {
   }
 };
 
-function processChapterForSharing(chapter: string, index: number): string {
+function processChapterForSharing(chapter: any, index: number): string {
   try {
-    console.log(`Processing chapter ${index + 1} for sharing`);
-    
+    if(typeof(chapter)==="string"){
     // Parse the HTML content
     const parser = new DOMParser();
     const doc = parser.parseFromString(chapter, 'text/html');
@@ -1276,6 +1280,119 @@ function processChapterForSharing(chapter: string, index: number): string {
         </div>
       </section>
     `;
+    }else{
+          // Parse the HTML content
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(chapter.content, 'text/html');
+    // Extract title
+    const titleElement = doc.querySelector('h1');
+    const title = titleElement?.textContent || `Chapter ${index + 1}`;
+    
+    // Remove h1 from content to avoid duplication
+    if (titleElement) {
+      titleElement.remove();
+    }
+    
+    // Try to find quiz content with improved pattern matching
+    let quizHtml = '';
+    // Method 1: Look for quiz content with various escape patterns
+    
+    
+    // First try with original text
+    quizHtml = chapter.quiz.sharedContent;
+
+    console.log("Quiz HTML found, length:", quizHtml );
+    
+    // If not found, try with progressively unescaped versions
+    // if (!quizHtml) {
+    //   const unescaped1 = chapter.replace(/\\\\n/g, '\n').replace(/\\\\/g, '\\');
+    //   quizHtml = tryExtractQuiz(unescaped1);
+      
+    //   if (!quizHtml) {
+    //     const unescaped2 = unescaped1.replace(/\\"/g, '"').replace(/\\n/g, '\n');
+    //     quizHtml = tryExtractQuiz(unescaped2);
+    //   }
+    // }
+    
+    // Clean up the main content by removing quiz sections
+    let content = doc.body.innerHTML;
+    
+    // Remove the static quiz display meant for the editor
+    const tempDoc = parser.parseFromString(content, 'text/html');
+    const exercisesHeaders = Array.from(tempDoc.querySelectorAll('h2'));
+    
+    exercisesHeaders.forEach(header => {
+      if (header.textContent?.trim() === 'Exercises') {
+        let currentNode = header as any;
+        const nodesToRemove = [];
+        
+        while (currentNode) {
+          nodesToRemove.push(currentNode);
+          
+          if (currentNode.nextElementSibling === null || 
+              currentNode.nextElementSibling.tagName === 'H2') {
+            break;
+          }
+          
+          currentNode = currentNode.nextElementSibling;
+        }
+        
+        nodesToRemove.forEach(node => {
+          if (node.parentNode) {
+            node.parentNode.removeChild(node);
+          }
+        });
+      }
+    });
+    
+    content = tempDoc.body.innerHTML;
+    
+    // Only add the quiz content if we actually found some
+    if (quizHtml) {
+      // Deep cleaning of the quiz HTML to fix all escaping issues
+      quizHtml = quizHtml
+        .replace(/\\\\n/g, '\n')     // Double-escaped newlines
+        .replace(/\\n/g, '\n')       // Single-escaped newlines
+        .replace(/\\\\/g, '\\')      // Double-escaped backslashes
+        .replace(/\\"/g, '"')        // Escaped quotes
+        .replace(/\\t/g, '\t')       // Escaped tabs
+        .replace(/\\"([^"]*)\\"/g, '"$1"') // Quoted strings with escaped quotes
+        .replace(/style=\\"/g, 'style="')  // Specific case for style attributes
+        .replace(/\\"><\/div>/g, '"></div>') // Specific case for div closings
+        .replace(/\\'/g, "'")        // Escaped single quotes
+        .replace(/\\&/g, "&")        // Escaped ampersands
+        .replace(/\\>/g, ">")        // Escaped closing brackets
+        .replace(/\\</g, "<")        // Escaped opening brackets
+        .replace(/\\}/g, "}")        // Escaped braces
+        .replace(/\\{/g, "{")        // Escaped braces
+        .replace(/\\/g, "");        // Any remaining single backslashes
+
+      // Check if the quizHtml already contains an Exercises heading to avoid duplication
+      const hasExercisesHeader = quizHtml.includes('<h2>Exercises</h2>') || 
+                               quizHtml.includes('<h2>exercises</h2>') || 
+                               quizHtml.includes('<h2 class="') && quizHtml.includes('>Exercises</h2>') ||
+                               quizHtml.includes('<h3>Exercises</h3>');
+      
+      // Add the quiz content with proper Exercises heading if not already present
+      if (!hasExercisesHeader) {
+        content += `<h2>Exercises</h2>${quizHtml}`;
+      } else {
+        content += quizHtml;
+      }
+    }
+    content = wrapFlashCardsInGrid(content);
+
+    return `
+      <section id="chapter-${index + 1}" class="chapter">
+        <h2 class="chapter-title">${title}</h2>
+        <div class="chapter-content">
+          ${content}
+        </div>
+      </section>
+    `;
+    }
+    
+
   } catch (error) {
     console.error(`Error processing chapter ${index + 1}:`, error);
     return `<section class="chapter error">

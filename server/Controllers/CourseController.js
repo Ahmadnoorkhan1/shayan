@@ -218,7 +218,7 @@ const getCourses = async (req, res) => {
       // };
 
       let whereClause = {
-
+        creator_id:userId
       }
       
       // Add the type condition if provided

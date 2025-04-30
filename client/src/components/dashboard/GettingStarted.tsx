@@ -14,7 +14,7 @@ interface GettingStartedProps {
 }
 
 const GettingStarted: React.FC<GettingStartedProps> = ({
-  button = true,
+  button = false,
   title = "We would love to see what you make.",
   description = "Ready to make content with the help of our AI?. No need to worry we got your back! Here is a tutorial to help you understand how our tools can help.",
   modelPath = "/models/futuristic_flying_animated_robot_-_low_poly/scene.gltf",
@@ -73,7 +73,7 @@ const GettingStarted: React.FC<GettingStartedProps> = ({
                   View Tutorial
                 </a>
               )}
-              {button && (
+              {/* {button && (
                 <button
                   id="add-new-item"
                   onClick={handleNavigate}
@@ -82,7 +82,7 @@ const GettingStarted: React.FC<GettingStartedProps> = ({
                   <CircleFadingPlus className="mr-2" />
                   Create
                 </button>
-              )}
+              )} */}
             </div>
           </div>
         </div>
