@@ -102,7 +102,6 @@ const AudioCreator: React.FC = () => {
     { id: "shimmer", name: "Shimmer (Bright)" },
   ];
 
-  console.log(chapterDetails, "chapter details");
 
   // Fetch both content and existing audio files
   useEffect(() => {
@@ -141,8 +140,6 @@ const AudioCreator: React.FC = () => {
             }
 
             parsedChapters = Array.isArray(parsed) ? parsed : [parsed];
-
-            console.log(parsedChapters, "see parsed");
 
             // Filter out cover images
             parsedChapters = parsedChapters?.filter((chapter) => {

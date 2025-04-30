@@ -620,16 +620,16 @@ setChapterQuiz("")
 handleSave(true)
   };
 
-  const handleCreateAudio = async () => {
-    const response = await apiService.post(`/audio/generate/${id}/book`, {
-      voice: "alloy",
-    });
-    if (response.success) {
-      toast.success("Audio created successfully");
-    } else {
-      toast.error("Failed to create audio");
-    }
-  };
+  // const handleCreateAudio = async () => {
+  //   const response = await apiService.post(`/audio/generate/${id}/book`, {
+  //     voice: "alloy",
+  //   });
+  //   if (response.success) {
+  //     toast.success("Audio created successfully");
+  //   } else {
+  //     toast.error("Failed to create audio");
+  //   }
+  // };
 
 
   useEffect(() => {
@@ -740,7 +740,7 @@ handleSave(true)
               variant="soft"
               size="sm"
               className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-              onClick={handleCreateAudio}
+              onClick={() => navigate(`/create-audio/book/${id}`)}
             >
               <Music className="w-4 h-4" />
               <span className="text-xs whitespace-nowrap">Create Audio</span>

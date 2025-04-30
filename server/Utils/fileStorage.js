@@ -1,4 +1,5 @@
-const { uploadFile } = require('./cloudflareStorage'); // Import S3 upload function
+const { ListObjectsCommand } = require('@aws-sdk/client-s3');
+const { uploadFile, BUCKET_NAME, r2Client } = require('./cloudflareStorage'); // Import S3 upload function
 
 const saveImage = async (imageData, contentType, contentId, description = '') => {
   try {
@@ -36,4 +37,42 @@ const saveImage = async (imageData, contentType, contentId, description = '') =>
   }
 };
 
-module.exports = { saveImage };
+const getImagesFromS3 = async (contentType, contentId) => {
+  
+
+  const BUCKET_NAME = 'files'; // Set your bucket name here
+
+  try {
+    // Ensure contentType is either 'course' or 'book'
+    if (!['course', 'book'].includes(contentType)) {
+      throw new Error('Invalid content type. Must be "course" or "book".');
+    }
+
+    const folderPath = `images/${contentType}/${contentId}`;
+    console.log(`Retrieving images from folderPath: ${folderPath}`);
+
+    const listObjectsCommand = new ListObjectsCommand({
+      Bucket: BUCKET_NAME,
+      Prefix: folderPath,
+    });
+
+    const response = await r2Client.send(listObjectsCommand);
+
+    if (!response.Contents || response.Contents.length === 0) {
+      return [];
+    }
+
+    // Generate public URLs for the images
+    return response.Contents.map((item) => {
+      return {
+        key: item.Key,
+        url: `https://files.minilessonsacademy.com/files/${item.Key}`,
+      };
+    });
+  } catch (error) {
+    console.error("Error retrieving images from S3:", error.message);
+    throw error;
+  }
+};
+
+module.exports = { saveImage, getImagesFromS3 };

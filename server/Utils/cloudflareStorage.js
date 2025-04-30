@@ -15,7 +15,7 @@ const r2Client = new S3Client({
 });
 
 // Bucket name - you might want to set this in your .env file
-const BUCKET_NAME = 'files'; // Set your bucket name here
+ const BUCKET_NAME = 'files'; // Set your bucket name here
 
 /**
  * Uploads a file to Cloudflare R2 storage

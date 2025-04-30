@@ -1,11 +1,10 @@
 const express = require('express');
 const { generateImage } = require('../Utils/generateImage');
 const { generateQuiz } = require('../Utils/generateQuiz');
-const { getContentImages, deleteImage } = require('../Utils/fileStorage');
+const { getImagesFromS3, deleteImage } = require('../Utils/fileStorage');
 
 const router = express.Router();
 
-// Generate image API endpoint
 router.post('/generate-image', async (req, res) => {
     try {
         const { contentType = 'book',  courseId,prompt } = req.body;
@@ -46,24 +45,28 @@ router.post('/generate-image', async (req, res) => {
     }
 });
 
-// Get images for content API endpoint
 router.get('/images/:contentType/:contentId', async (req, res) => {
     try {
         const { contentType, contentId } = req.params;
-        
+
         if (!contentId) {
             return res.status(400).json({ success: false, message: "Content ID is required" });
         }
-        
-        const imagesList = await getContentImages(contentType, contentId);
-        
+
+        // Fetch images using the getImagesFromS3 function
+        const imagesList = await getImagesFromS3(contentType, contentId);
+
+        if (imagesList.length === 0) {
+            return res.status(404).json({ success: false, message: "No images found for the specified content" });
+        }
+
         return res.status(200).json({ 
             success: true, 
             data: imagesList, 
             message: "Images retrieved successfully" 
         });
     } catch (error) {
-        console.error("Error:", error.message);
+        console.error("Error retrieving images:", error.message);
         return res.status(500).json({ 
             success: false, 
             message: "Error retrieving images", 

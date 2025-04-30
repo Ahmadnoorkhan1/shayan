@@ -22,7 +22,8 @@ dotenv.config();
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(cors({
-    origin:  'http://localhost:5173'|| 'http"://localhost:4173',
+    // origin:  'http://localhost:5173'|| 'http"://localhost:4173',
+    origin: "*",
     credentials: true,
 }));
 app.use('/images', express.static(path.join(__dirname, 'public/images')));

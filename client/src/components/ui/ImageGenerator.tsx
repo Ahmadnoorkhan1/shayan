@@ -21,14 +21,10 @@ interface ApiResponse {
   message: string;
 }
 
+// Update GalleryImage interface for new API response
 interface GalleryImage {
-  id: string | number;
-  filename: string;
-  path: string;
-  contentType: string;
-  contentId: string | number;
-  description: string;
-  createdAt: string;
+  key: string;
+  url: string;
 }
 
 const ImageGenerator: React.FC<ImageGeneratorProps> = ({ 
@@ -72,15 +68,13 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       setError("Content type or ID not provided");
       return;
     }
-    
+
     try {
       setLoadingGallery(true);
       const response = await apiService.get(`/images/${contentType}/${courseId}`);
-      
-      if (response?.success && response?.data?.images) {
-        // Process images from the correct response structure
-        const images = response.data.images;
-        setGalleryImages(images);
+
+      if (response?.success && Array.isArray(response?.data)) {
+        setGalleryImages(response.data); // response.data is now an array of { key, url }
       } else {
         setGalleryImages([]);
       }
@@ -142,13 +136,11 @@ if(response.success){
   };
 
   const selectGalleryImage = (image: GalleryImage) => {
-    // Use the direct URL from the API response
-    const fullImageUrl = image.path.startsWith('http') ? image.path : image.filename;
-    setSelectedGalleryImage(fullImageUrl);
-    setGeneratedImage(fullImageUrl);
+    setSelectedGalleryImage(image.url);
+    setGeneratedImage(image.url);
 
     if (!isEditorContext) {
-      onImageSelect(fullImageUrl);
+      onImageSelect(image.url);
     }
   };
 
@@ -356,44 +348,41 @@ if(response.success){
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {galleryImages?.map((image) => {
-                  // Use the direct URL
-                  const fullImageUrl = image.path.startsWith('http') ? image.path : image.filename;
-                  return (
-                    <div 
-                      key={image.id}
-                      className={`
-                        relative rounded-lg overflow-hidden cursor-pointer h-40
-                        border-2 ${selectedGalleryImage === fullImageUrl ? 'border-purple-500' : 'border-transparent'} 
-                        transition-all hover:shadow-md
-                      `}
-                      onClick={() => selectGalleryImage(image)}
-                    >
-                      <img 
-                        src={fullImageUrl} 
-                        alt={image.description || "Generated image"} 
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/placeholder-image.png';
-                        }}
-                      />
-                      {selectedGalleryImage === fullImageUrl && (
-                        <div className="absolute top-2 right-2 bg-purple-600 rounded-full p-1">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      )}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                        <Tooltip content={image.description || "Generated image"} width="medium">
-                          <p className="text-white text-xs truncate">
-                            {image.description ? image.description.substring(0, 40) + '...' : "AI Image"}
-                          </p>
-                        </Tooltip>
+                {galleryImages?.map((image) => (
+                  <div
+                    key={image.key}
+                    className={`
+                      relative rounded-lg overflow-hidden cursor-pointer h-40
+                      border-2 ${selectedGalleryImage === image.url ? 'border-purple-500' : 'border-transparent'} 
+                      transition-all hover:shadow-md
+                    `}
+                    onClick={() => selectGalleryImage(image)}
+                  >
+                    <img
+                      src={image.url}
+                      alt="Generated image"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        console.error("Image failed to load:", e);
+                        // const target = e.target as HTMLImageElement;
+                        // target.src = '/placeholder-image.png';
+                      }}
+                    />
+                    {selectedGalleryImage === image.url && (
+                      <div className="absolute top-2 right-2 bg-purple-600 rounded-full p-1">
+                        <Check className="w-4 h-4 text-white" />
                       </div>
+                    )}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                      <Tooltip content={image.key} width="medium">
+                        <p className="text-white text-xs truncate">
+                          {image.key}
+                        </p>
+                      </Tooltip>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
 
               {isEditorContext && selectedGalleryImage && (
