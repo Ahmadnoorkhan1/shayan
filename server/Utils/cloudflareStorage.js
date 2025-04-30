@@ -50,7 +50,7 @@ const uploadFile = async (fileContent, fileName, folderPath = '', contentType = 
     await upload.done();
     
     // Return the public URL where the file can be accessed
-    return `https://files.minilessonsacademy.com/files/${key}`;
+    return `https://files.minilessonsacademy.com/${key}`;
   } catch (error) {
     console.error('Error uploading file to Cloudflare R2:', error);
     throw error;

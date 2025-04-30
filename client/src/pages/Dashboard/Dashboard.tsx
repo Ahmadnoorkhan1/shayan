@@ -1,9 +1,12 @@
+import { useEffect } from "react";
 import GettingStarted from "../../components/dashboard/GettingStarted"
 import Tabs from "../../components/ui/tabs"
 import { useDashboardTour } from "../../hooks/useDashboardTour";
 
 const Dashboard = () => {
     const { startTour } = useDashboardTour();
+
+   
     
     return (
         <>

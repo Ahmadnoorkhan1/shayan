@@ -59,6 +59,7 @@ exports.verifyAccessToken = async (req, res) => {
       userData: {
         id: user.user_id,
         email: user.email,
+        onBoardingCompleted: user.onboarding_completed,
       },
       token: token // Return the token back to the client
     });

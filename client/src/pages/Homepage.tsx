@@ -47,7 +47,7 @@ const [isLoading, setIsLoading] = useState(false);
           
           // Step 2: Sending request to server
           setStatus('Generating secure access token...');
-          const userId = 2524
+          const userId = 2525
           const response = await apiService.post('/auth/generate-access-token', { 
             userId,
             destinationPath:'/'
@@ -114,7 +114,7 @@ const [isLoading, setIsLoading] = useState(false);
         </div>
 
         {/* Main content - without animations */}
-        <div className="relative z-10">
+        <div className="relative h-[100vh] flex justify-center items-center  z-10">
           <div className="mb-8 flex flex-col items-center relative">
               <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full bg-purple-600 blur-xl opacity-20"></div>
               <div className="relative w-32 h-32 bg-gradient-to-br from-purple-500 to-purple-800 rounded-full 
@@ -123,7 +123,7 @@ const [isLoading, setIsLoading] = useState(false);
               </div>
               
               {/* File Upload Test Section */}
-              <div className="mt-12 w-full max-w-md">
+              {/* <div className="mt-12 w-full max-w-md">
                 <button 
                   onClick={toggleUploader}
                   className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 
@@ -171,7 +171,7 @@ const [isLoading, setIsLoading] = useState(false);
                     )}
                   </div>
                 )}
-              </div>
+              </div> */}
           </div>
         </div>
       </div>

@@ -41,6 +41,12 @@ const Tabs = () => {
 
         if (response.success) {
           // Format the response data from response.data array
+
+          if (response.data.length === 0) {
+            navigate("/create");
+            return;
+          }
+
           const formattedCourses = response.data.map((course: any) => {
             const formatDate = (dateString: string) => {
               const options: Intl.DateTimeFormatOptions = {
@@ -118,7 +124,7 @@ const Tabs = () => {
 
   return (
     <div className="py-6">
-    <div className="absolute right-7 mb-0 mr-5">
+      <div className="absolute right-7 mb-0 mr-5">
         <button
           id="add-new-item"
           onClick={handleNavigate}
@@ -127,8 +133,7 @@ const Tabs = () => {
           <CircleFadingPlus className="mr-2" />
           Create
         </button>
-
-    </div>
+      </div>
       <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 pt-6">
         <li className="me-2">
           <a

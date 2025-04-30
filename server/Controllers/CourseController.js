@@ -212,6 +212,7 @@ const getCourses = async (req, res) => {
       
       // Get the user ID from the authentication middleware
       const userId = req.user.userId;
+      console.log("User ID:", userId);
       
       // let whereClause = {
       //     creator_id: userId // Add the creator_id condition

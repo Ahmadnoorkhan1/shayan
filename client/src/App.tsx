@@ -74,6 +74,7 @@ function App() {
       // Fix: JSON stringify the object before storing
       if (userData.userData) {
         localStorage.setItem('userData', JSON.stringify(userData.userData));
+        console.log(userData, "=======================>one")
       } else {
         // If the userData structure is different (flat structure)
         const userDataToStore = {
@@ -81,6 +82,9 @@ function App() {
           email: userData.email
         };
         localStorage.setItem('userData', JSON.stringify(userDataToStore));
+        // localStorage.setItem("onBoardingCompleted", userData.userData.onboarding_completed)
+
+        console.log(userDataToStore, "=======================>two")
       }
       
       // Also store the user ID directly for easier access
@@ -94,7 +98,7 @@ function App() {
     setWelcomeEmail(userData?.userData?.email || userData?.email || '');
     
     // Rest of your code remains the same
-    const redirectPath = '/onboard';
+    const redirectPath =   userData?.userData?.onBoardingCompleted ? "/dashboard" :  '/onboard';
     console.log(`[App] Redirecting to: ${redirectPath}`);
     
     navigate(redirectPath, { replace: true });

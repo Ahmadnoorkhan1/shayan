@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import Scene from "./Scene"
-import { useNavigate } from "react-router"
+import { useNavigate, useLocation } from "react-router"
 import { CircleFadingPlus } from "lucide-react"
-
+ 
 interface GettingStartedProps {
   button?: boolean
   title?: string
@@ -20,24 +20,35 @@ const GettingStarted: React.FC<GettingStartedProps> = ({
   modelPath = "/models/futuristic_flying_animated_robot_-_low_poly/scene.gltf",
   onTutorialClick,
 }) => {
-
+  const location = useLocation()
   const navigate = useNavigate()
+  const tourTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     // Check if tutorial has been shown before
     const tutorialShown = localStorage.getItem('tutorial_shown')
     
-    // Only show tutorial if it hasn't been shown before
-    if (!tutorialShown && onTutorialClick) {
-      onTutorialClick()
-      // Mark tutorial as shown
-      localStorage.setItem('tutorial_shown', 'true')
+    // Only schedule tutorial if we're on dashboard and it hasn't been shown before
+    if (!tutorialShown && onTutorialClick && location.pathname === "/dashboard") {
+      // Set a small delay to ensure the user has settled on the dashboard
+      tourTimeoutRef.current = setTimeout(() => {
+        // Double check we're still on the dashboard before starting tour
+        if (location.pathname === "/dashboard") {
+          onTutorialClick()
+          // Mark tutorial as shown
+          localStorage.setItem('tutorial_shown', 'true')
+        }
+      }, 800) // 800ms delay gives time for potential quick navigation away
     }
-  }, [onTutorialClick]) // Add onTutorialClick to dependency array for proper cleanup
 
-  const handleNavigate = () => {
-    navigate('/create')
-  }
+    // Cleanup function to cancel any pending tour
+    return () => {
+      if (tourTimeoutRef.current) {
+        clearTimeout(tourTimeoutRef.current)
+        tourTimeoutRef.current = null
+      }
+    }
+  }, [onTutorialClick, location.pathname]) // Use location.pathname instead of the entire location object
 
   return (
     <section
@@ -58,7 +69,10 @@ const GettingStarted: React.FC<GettingStartedProps> = ({
                   href="#"
                   onClick={(e) => {
                     e.preventDefault()
-                    if (onTutorialClick) onTutorialClick()
+                    // Only trigger tutorial if we're on the dashboard
+                    if (onTutorialClick && location.pathname === "/dashboard") {
+                      onTutorialClick()
+                    }
                   }}
                   className="group inline-flex items-center justify-center px-5 py-3 text-base font-medium text-white border border-white/30 rounded-lg hover:bg-white/10 focus:ring-4 focus:ring-white/20 transition-all"
                 >

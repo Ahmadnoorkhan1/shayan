@@ -17,15 +17,8 @@ const openai = new OpenAI({
  */
 const generateImage = async (prompt, options = {}) => {
   try {
-    // Extract options with defaults
-    const { 
-      contentType = 'general', 
-      contentId = 'temp', 
-      size = '1024x1024',
-      description = prompt.substring(0, 100)
-    } = options;
-    
-    // If no valid contentId is provided, throw an error
+    const { contentType = 'general', contentId = 'temp', size = '1024x1024', description = prompt.substring(0, 100) } = options;
+
     if (!contentId || contentId === 'temp') {
       throw new Error('Content ID is required for image storage');
     }
@@ -38,7 +31,7 @@ const generateImage = async (prompt, options = {}) => {
       prompt: prompt,
       n: 1,
       size: size,
-      response_format: "b64_json"
+      response_format: "b64_json",
     });
 
     if (!response || !response.data || !response.data[0] || !response.data[0].b64_json) {
@@ -48,13 +41,18 @@ const generateImage = async (prompt, options = {}) => {
     // Get base64 image data
     const imageData = `data:image/png;base64,${response.data[0].b64_json}`;
 
-    // Save image to filesystem
+    console.log("Image data received from OpenAI API");
+    console.log("Image data:", imageData);
+
+    // Save image to S3
     const imageMetadata = await saveImage(imageData, contentType, contentId, description);
 
-    // Return image metadata
+    console.log("Image metadata:", imageMetadata);
+    console.log("Image saved successfully:", imageMetadata.path);
+
     return {
       url: imageMetadata.path,
-      metadata: imageMetadata
+      metadata: imageMetadata,
     };
   } catch (error) {
     console.error("Error generating image:", error.message);

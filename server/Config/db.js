@@ -8,6 +8,11 @@ const DB_URI = `mysql://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${proc
 const sequelize = new Sequelize(DB_URI, {
   dialect: 'mysql',
   logging: false, // Disable query logging for cleaner output
+  dialectOptions: {
+    connectTimeout: 60000, // Increase connection timeout to 60 seconds
+    // Additional MySQL-specific options
+    multipleStatements: true,
+  },
 });
 console.log('is there working? ')
 // Sync function to create tables if they don't exist

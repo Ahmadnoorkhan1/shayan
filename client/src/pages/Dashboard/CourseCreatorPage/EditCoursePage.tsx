@@ -41,6 +41,7 @@ import {
   formatQuizHTML,
 } from "../../../utilities/shared/quizUtils";
 import { QuizDisplay } from "../../../components/QuizDisplay";
+import BackButton from "../../../components/ui/BackButton";
 
 interface QuillEditor {
   getContents: () => Delta;
@@ -256,7 +257,7 @@ const EditCoursePage = () => {
     setSelectedChapter(newContent);
   };
 
-  const handleChapterSelect = (chapterContent: any, index: number) => {
+   const handleChapterSelect = (chapterContent: any, index: number) => {
    
     if(chapterContent.title && chapterContent.content){
 
@@ -845,6 +846,12 @@ handleSave(true)
     <React.Fragment>
       {/* Main container with responsive layout changes */}
       <div className="flex flex-col p-2 md:p-4 gap-4 lg:gap-6 max-w-full overflow-hidden">
+
+      <BackButton 
+
+  onBeforeNavigate={()=> true}
+  label="Back to Dashboard"
+/>
         {/* Toolbar area */}
         <div className="flex justify-between">
           <div className="flex flex-wrap items-center text-primary gap-2">

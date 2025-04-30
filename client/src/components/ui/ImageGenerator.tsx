@@ -51,12 +51,7 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   const [promptInputRef, setPromptInputRef] = useState<HTMLTextAreaElement | null>(null);
 
 
-  
 
-
-  const baseUrl = window.location.hostname === 'localhost'
-    ? 'http://localhost:5002'
-    : 'https://minilessonsacademy.onrender.com';
 
   useEffect(() => {
     if (uploadedImage) {
@@ -118,36 +113,18 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
       // Pass the structured payload to generateImage
       const response: ApiResponse = await generateImage(payload.prompt, Number(payload.contentId), payload.contentType);
       
-      if (response.success && response.data) {
-        let imageUrl;
-        
-        // Handle if response.data is an object with url property or direct path string
-        if (typeof response.data === 'object' && response.data.url) {
-          imageUrl = `${baseUrl}${response.data.url}`;
-        } else if (typeof response.data === 'string') {
-          imageUrl = `${baseUrl}${response.data}`;
-        } else if (response.data.path) {
-          imageUrl = `${baseUrl}${response.data.path}`;
-        }
-        
-        if (imageUrl) {
-          setGeneratedImage(imageUrl);
-          
-          // Immediately call the onImageSelect callback when image is available
-          if(!isEditorContext) {
-            onImageSelect(imageUrl);
-          }
-          
-          // If we're showing gallery, refresh it to include the new image
-          if (!NotCover && showGallery && contentType && courseId) {
-            fetchPreviousImages();
-          }
-        } else {
-          setError('Invalid image URL in response');
-        }
-      } else {
-        setError(response.message || 'Failed to generate image');
-      }
+
+
+if(response.success){
+  setGeneratedImage(response.data.url)
+  if(!isEditorContext) {
+    onImageSelect(response.data.url)
+  }
+  if (!NotCover && showGallery && contentType && courseId) {
+    fetchPreviousImages();
+  }
+}
+
     } catch (err) {
       console.error(err);
       setError('Failed to generate image');
@@ -165,11 +142,11 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
   };
 
   const selectGalleryImage = (image: GalleryImage) => {
-    const fullImageUrl = `${baseUrl}${image.path}`;
+    // Use the direct URL from the API response
+    const fullImageUrl = image.path.startsWith('http') ? image.path : image.filename;
     setSelectedGalleryImage(fullImageUrl);
     setGeneratedImage(fullImageUrl);
-    
-    // Add this line to immediately notify parent when a gallery image is selected
+
     if (!isEditorContext) {
       onImageSelect(fullImageUrl);
     }
@@ -336,8 +313,8 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
                     alt="AI Generated" 
                     className="w-full h-full object-cover rounded-lg transition-transform duration-300"
                     onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = '/placeholder-image.png';
+                      // const target = e.target as HTMLImageElement;
+                      // target.src = '/placeholder-image.png';
                       setError('Failed to load generated image');
                     }}
                   />
@@ -380,7 +357,8 @@ const ImageGenerator: React.FC<ImageGeneratorProps> = ({
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {galleryImages?.map((image) => {
-                  const fullImageUrl = `${baseUrl}${image.path}`;
+                  // Use the direct URL
+                  const fullImageUrl = image.path.startsWith('http') ? image.path : image.filename;
                   return (
                     <div 
                       key={image.id}
