@@ -374,40 +374,32 @@ console.log("after quiz")
   const handleAddCoverImage = async (imageUrl: string) => {
     try {
       const coverContent = generateCoverContent(imageUrl);
-      let updatedChapters = [...chapters];
-
-      const coverIndex = updatedChapters.findIndex((chapter) =>
-        isCoverChapter(chapter)
+  
+      // Remove any existing cover chapter
+      let updatedChapters = chapters.filter(
+        (chapter) => !isCoverChapter(chapter)
       );
-
-      if (coverIndex >= 0) {
-        updatedChapters[coverIndex] = coverContent;
-      } else {
-        updatedChapters.unshift(coverContent);
-      }
-
+  
+      // Insert the new cover at the beginning
+      updatedChapters.unshift(coverContent);
+  
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/course`,
         {
           content: JSON.stringify(updatedChapters),
         }
       );
-
       if (response.success) {
         setChapters(updatedChapters);
-        const targetIndex = coverIndex >= 0 ? coverIndex : 0;
-
-        setSelectedChapterTitle("Course Cover");
+        setSelectedChapterTitle("Book Cover");
         setSelectedChapter("");
-        setSelectedChapterIndex(targetIndex);
-
-        toast.success("Course cover added successfully");
+        setSelectedChapterIndex(0);
+        toast.success("Book cover added successfully");
       } else {
-        toast.error("Failed to save course cover");
+        toast.error("Failed to save book cover");
       }
     } catch (error) {
-      console.error("Error saving course cover:", error);
-      toast.error("Error saving course cover");
+      toast.error("Error saving book cover");
     }
   };
 
