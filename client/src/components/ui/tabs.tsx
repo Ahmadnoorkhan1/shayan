@@ -9,6 +9,7 @@ import {
 } from "../../utilities/shared/tableUtils";
 import { useNavigate } from "react-router";
 import { CircleFadingPlus } from "lucide-react";
+import { Button } from "./button";
 
 const Tabs = () => {
   const [courses, setCourses] = useState([]);
@@ -125,14 +126,14 @@ const Tabs = () => {
   return (
     <div className="py-6">
       <div className="absolute right-7 mb-0 mr-5">
-        <button
+        <Button
           id="add-new-item"
           onClick={handleNavigate}
           className=" flex items-center justify-center text-white bg-gradient-to-tl font-medium rounded-md text-sm px-12 py-6 transition-all duration-200 shadow-sm"
         >
           <CircleFadingPlus className="mr-2" />
           Create
-        </button>
+        </Button>
       </div>
       <ul className="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 pt-6">
         <li className="me-2">
