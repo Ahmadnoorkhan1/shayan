@@ -47,7 +47,7 @@ const [isLoading, setIsLoading] = useState(false);
           
           // Step 2: Sending request to server
           setStatus('Generating secure access token...');
-          const userId = 2525
+          const userId = 1
           const response = await apiService.post('/auth/generate-access-token', { 
             userId,
             destinationPath:'/'
