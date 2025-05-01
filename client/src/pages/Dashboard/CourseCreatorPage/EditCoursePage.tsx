@@ -26,7 +26,6 @@ import { useNavigate, useLocation } from "react-router";
 import { Music } from "lucide-react";
 import ChapterQuizDisplay from "../../../components/ChapterQuizDisplay";
 
-
 import {
   processChapterSelection,
   handleContentUpdate,
@@ -101,8 +100,8 @@ const EditCoursePage = () => {
   const [quizUrl, setQuizUrl] = useState<string>("");
   const [isRefreshingCourse, setIsRefreshingCourse] = useState(false);
   const [hasQuizBeenImported, setHasQuizBeenImported] = useState(false);
-  const [ chapterQuiz, setChapterQuiz] = useState("")
-  const [quizMessage, setQuizMessage] = useState("")
+  const [chapterQuiz, setChapterQuiz] = useState("");
+  const [quizMessage, setQuizMessage] = useState("");
 
   const toggleQuizModal = () => setOpenQuizModal(!OpenQuizModal);
 
@@ -127,7 +126,6 @@ const EditCoursePage = () => {
   };
 
   const toggleGallery = () => setIsGalleryVisible(!isGalleryVisible);
-
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -192,14 +190,17 @@ const EditCoursePage = () => {
 
         // Check for quiz_location and convert external quiz if it exists
         if (response.data?.quiz_location && !hasQuizBeenImported) {
-
-          const quizFinalUrl = response?.data?.quiz_location.includes('minilessonsacademy') ? response?.data?.quiz_location : `https://minilessonsacademy.com/${response?.data?.quiz_location}`
-          try { 
+          const quizFinalUrl = response?.data?.quiz_location.includes(
+            "minilessonsacademy"
+          )
+            ? response?.data?.quiz_location
+            : `https://minilessonsacademy.com/${response?.data?.quiz_location}`;
+          try {
             const quizResponse = await apiService.post(
               "/course-creator/convert-external-quiz",
               {
                 // quizUrl: `https://minilessonsacademy.com${response.data.quiz_location}`,
-                quizUrl:quizFinalUrl,
+                quizUrl: quizFinalUrl,
               }
             );
 
@@ -239,7 +240,6 @@ const EditCoursePage = () => {
       }
     };
 
-   
     if (id && !isRefreshingCourse) {
       fetchCourse();
     }
@@ -257,48 +257,49 @@ const EditCoursePage = () => {
     setSelectedChapter(newContent);
   };
 
-   const handleChapterSelect = (chapterContent: any, index: number) => {
-   
-    if(chapterContent.title && chapterContent.content){
+  const handleChapterSelect = (chapterContent: any, index: number) => {
+    if (chapterContent.title && chapterContent.content) {
+      console.log(chapterContent.quiz, "quiz coming here ====>");
+      setSelectedChapterTitle(chapterContent.title);
+      setSelectedChapter(chapterContent.content);
+      if (chapterContent.quiz) {
+        setChapterQuiz(chapterContent.quiz);
+      } else {
+        setChapterQuiz;
+      }
 
-      console.log(chapterContent.quiz, "quiz coming here ====>")
- setSelectedChapterTitle(chapterContent.title);
-    setSelectedChapter(chapterContent.content);
-    if(chapterContent.quiz){
-      setChapterQuiz(chapterContent.quiz)
-    }
-    if(chapterContent?.quiz && chapterContent?.quiz?.editorContent && chapterContent.quiz.sharedContent){
-      setCurrentQuizContent(chapterContent.quiz)
-    }
-    setSelectedChapterIndex(index);
-    setQuizMessage("This quiz is generated using legacy application, for new quizes you have to delete the old ones")
+      if (
+        chapterContent?.quiz &&
+        chapterContent?.quiz?.editorContent &&
+        chapterContent.quiz.sharedContent
+      ) {
+        setCurrentQuizContent(chapterContent.quiz);
+      }
+      setSelectedChapterIndex(index);
+      setQuizMessage(
+        "This quiz is generated using legacy application, for new quizes you have to delete the old ones"
+      );
     } else {
-
       const {
         isCover,
         content,
         title,
         quizContent,
-        index: selectedIndex
+        index: selectedIndex,
       } = processChapterSelection(chapterContent, index);
-
-
 
       console.log(quizContent);
       setSelectedChapterTitle(title);
       setSelectedChapter(content);
       setSelectedChapterIndex(selectedIndex);
-      setCurrentQuizContent(quizContent)
-      
+      setCurrentQuizContent(quizContent);
     }
     // setCurrentQuizContent(quizContent);
   };
 
-
-
-  const handleSave = async (deleteQuiz:any) => {
+  const handleSave = async (deleteQuiz: any) => {
     try {
-      console.log("before")
+      console.log("before");
       if (selectedChapterIndex === -1) return;
       const updatedChapters = [...chapters];
       const updatedContent = handleContentUpdate(
@@ -309,21 +310,20 @@ const EditCoursePage = () => {
         currentQuizContent
       ) as any;
 
-      console.log("before quiz")
+      console.log("before quiz");
 
-      if(deleteQuiz){
-        updatedContent.quiz = null
-        setCurrentQuizContent(null)
-        setChapterQuiz("")
-}
+      if (deleteQuiz) {
+        updatedContent.quiz = null;
+        setCurrentQuizContent(null);
+        setChapterQuiz("");
+      }
 
-console.log("after quiz")
-
+      console.log("after quiz");
 
       updatedChapters[selectedChapterIndex] = updatedContent;
 
-      console.log(updatedContent, "see updated content")
-       
+      console.log(updatedContent, "see updated content");
+
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/course`,
         {
@@ -374,15 +374,15 @@ console.log("after quiz")
   const handleAddCoverImage = async (imageUrl: string) => {
     try {
       const coverContent = generateCoverContent(imageUrl);
-  
+      console.log('first',chapters)
       // Remove any existing cover chapter
+
       let updatedChapters = chapters.filter(
-        (chapter) => !isCoverChapter(chapter)
+        (chapter:any) => typeof(chapter)==='string' ? !isCoverChapter(chapter) : !isCoverChapter(chapter.content) 
       );
-  
       // Insert the new cover at the beginning
       updatedChapters.unshift(coverContent);
-  
+
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/course`,
         {
@@ -664,10 +664,9 @@ console.log("after quiz")
       return;
     }
 
-
-setCurrentQuizContent(null)
-setChapterQuiz("")
-handleSave(true)
+    setCurrentQuizContent(null);
+    setChapterQuiz("");
+    handleSave(true);
   };
 
   const handleCreateAudio = async () => {
@@ -807,9 +806,9 @@ handleSave(true)
     }
   };
 
-  const handleSaveContent = async () =>{
-   await handleSave(false)
-  }
+  const handleSaveContent = async () => {
+    await handleSave(false);
+  };
 
   if (loading || convertingBlob)
     return (
@@ -838,119 +837,118 @@ handleSave(true)
     <React.Fragment>
       {/* Main container with responsive layout changes */}
       <div className="flex flex-col p-2 md:p-4 gap-4 lg:gap-6 max-w-full overflow-hidden">
-
-      <BackButton 
-
-  onBeforeNavigate={()=> true}
-  label="Back to Dashboard"
-/>
-        {/* Toolbar area */}
-        <div className="flex justify-between">
-          <div className="flex flex-wrap items-center text-primary gap-2">
-            <Button
-              variant="soft"
-              size="sm"
-              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-              onClick={toggleQuizModal}
-            >
-              <PackagePlus className="w-4 h-4" />
-              <span className="text-xs whitespace-nowrap">Create Quiz</span>
-            </Button>
-            <Button
-              variant="soft"
-              size="sm"
-              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-              onClick={() => navigate(`/create-audio/course/${id}`)}
-            >
-              <Music className="w-4 h-4" />
-              <span className="text-xs whitespace-nowrap">Create Audio</span>
-            </Button>
-
-            <GenerateCover
-              onCoverImageGenerated={handleAddCoverImage}
-              courseId={id}
-              contentType={"course"}
-            />
-
-            <div className="text-primary">
+        <div className="flex justify-between items-center">
+          <BackButton onBeforeNavigate={() => true} label="Back to Dashboard" />
+          <div className="flex justify-between">
+            <div className="flex flex-wrap items-center text-primary gap-2">
               <Button
                 variant="soft"
                 size="sm"
-                ref={buttonRef}
-                onClick={() => setShowImageGenerator(!showImageGenerator)}
                 className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-                title={
-                  showImageGenerator
-                    ? "Hide AI Image Generator"
-                    : "Generate AI Image"
-                }
+                onClick={toggleQuizModal}
               >
-                <ImageIcon className="w-4 h-4" />
-                <span className="text-xs whitespace-nowrap">
-                  Generate Image
-                </span>
+                <PackagePlus className="w-4 h-4" />
+                <span className="text-xs whitespace-nowrap">Create Quiz</span>
               </Button>
-            </div>
+              <Button
+                variant="soft"
+                size="sm"
+                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+                onClick={() => navigate(`/create-audio/course/${id}`)}
+              >
+                <Music className="w-4 h-4" />
+                <span className="text-xs whitespace-nowrap">Create Audio</span>
+              </Button>
 
-            {selectedChapterIndex !== -1 &&
-              chapters[selectedChapterIndex] &&
-              typeof chapters[selectedChapterIndex] === "string" &&
-              (chapters[selectedChapterIndex].includes('data-cover="true"') ||
-                chapters[selectedChapterIndex].includes(
-                  "book-cover-image"
-                )) && (
+              <GenerateCover
+                onCoverImageGenerated={handleAddCoverImage}
+                courseId={id}
+                contentType={"course"}
+              />
+
+              <div className="text-primary">
                 <Button
                   variant="soft"
                   size="sm"
-                  onClick={handleRemoveCoverImage}
-                  className="bg-red-100 hover:bg-red-200 transition flex items-center gap-1"
-                  title="Remove cover image"
+                  ref={buttonRef}
+                  onClick={() => setShowImageGenerator(!showImageGenerator)}
+                  className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+                  title={
+                    showImageGenerator
+                      ? "Hide AI Image Generator"
+                      : "Generate AI Image"
+                  }
                 >
-                  <ShieldCloseIcon className="w-4 h-4 text-red-600" />
+                  <ImageIcon className="w-4 h-4" />
                   <span className="text-xs whitespace-nowrap">
-                    Remove Cover
+                    Generate Image
                   </span>
                 </Button>
-              )}
-            <Button
-              variant="soft"
-              size="sm"
-              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-              onClick={() => window.open(`/shared/course/${id}`, "_blank")}
-              title="View live published version in new tab"
-            >
-              <ExternalLink className="w-4 h-4 text-primary" />
-              <span className="text-xs whitespace-nowrap">share preview</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 ml-auto px-4 py-2.5"
-              onClick={()=> handleSave(false)}
-              title="Save your content changes"
-            >
-              <Save className="w-4 h-4 text-white" />
-              <span className="text-xs font-medium whitespace-nowrap">Save Content</span>
-            </Button>
+              </div>
+
+              {selectedChapterIndex !== -1 &&
+                chapters[selectedChapterIndex] &&
+                typeof chapters[selectedChapterIndex] === "string" &&
+                (chapters[selectedChapterIndex].includes('data-cover="true"') ||
+                  chapters[selectedChapterIndex].includes(
+                    "book-cover-image"
+                  )) && (
+                  <Button
+                    variant="soft"
+                    size="sm"
+                    onClick={handleRemoveCoverImage}
+                    className="bg-red-100 hover:bg-red-200 transition flex items-center gap-1"
+                    title="Remove cover image"
+                  >
+                    <ShieldCloseIcon className="w-4 h-4 text-red-600" />
+                    <span className="text-xs whitespace-nowrap">
+                      Remove Cover
+                    </span>
+                  </Button>
+                )}
+              <Button
+                variant="soft"
+                size="sm"
+                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+                onClick={() => window.open(`/shared/course/${id}`, "_blank")}
+                title="View live published version in new tab"
+              >
+                <ExternalLink className="w-4 h-4 text-primary" />
+                <span className="text-xs whitespace-nowrap">share preview</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 ml-auto px-4 py-2.5"
+                onClick={() => handleSave(false)}
+                title="Save your content changes"
+              >
+                <Save className="w-4 h-4 text-white" />
+                <span className="text-xs font-medium whitespace-nowrap">
+                  Save Content
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
+        {/* Toolbar area */}
 
         {/* Main editor area and sidebar container */}
         <div className="flex  gap-4">
           {/* Chapter gallery - now a responsive drawer */}
           <div className="h-[calc(100vh-150px)]">
-          
-          <ChapterGallery
-            chapters={chapters}
-            onSelectChapter={handleChapterSelect}
-            onDeleteChapter={handleDeleteChapter}
-            isVisible={isGalleryVisible}
-            onToggleVisibility={toggleGallery}
+            <ChapterGallery
+              chapters={chapters}
+              onSelectChapter={handleChapterSelect}
+              onDeleteChapter={handleDeleteChapter}
+              isVisible={isGalleryVisible}
+              onToggleVisibility={toggleGallery}
             />
-            </div>
+          </div>
           {/* Main editing area - responsive width based on gallery visibility */}
-          <div className={`p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ease-in-out
-          ${isGalleryVisible ? 'w-full md:flex-1' : 'w-full'}`}
+          <div
+            className={`p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ease-in-out
+          ${isGalleryVisible ? "w-full md:flex-1" : "w-full"}`}
           >
             <div className="w-full h-full overflow-hidden flex flex-col">
               {/* Rich text editor */}
@@ -961,7 +959,7 @@ handleSave(true)
                   imageUrl={AIImage}
                   id={Number(id)}
                   onContentChange={handleContentChange}
-                  onSave={()=> handleSave(false)}
+                  onSave={() => handleSave(false)}
                   onImageClick={handleImageClick}
                 />
               </div>
@@ -969,7 +967,7 @@ handleSave(true)
               {/* Quiz display area */}
               {chapterQuiz && chapterQuiz.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
-                  <ChapterQuizDisplay 
+                  <ChapterQuizDisplay
                     quizContent={chapterQuiz}
                     quizMessage={quizMessage}
                   />

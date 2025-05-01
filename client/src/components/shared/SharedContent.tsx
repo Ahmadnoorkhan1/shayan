@@ -26,6 +26,8 @@ const SharedContent: React.FC<SharedContentProps> = () => {
         if (response.success && response.data) {
           // Handle different types of content formats
           let processedContent;
+
+          console.log(response.data, ' <<< ')
           
           // Check if content is already stringified or needs to be
           if (typeof response.data.content === 'string') {
@@ -38,6 +40,7 @@ const SharedContent: React.FC<SharedContentProps> = () => {
             }
           }
           const parsedContent = JSON.parse(processedContent)
+          console.log(parsedContent, ' <<< ')
           const html = await formatSharedContent(
             parsedContent, 
             response.data.title || 'Shared Content', 

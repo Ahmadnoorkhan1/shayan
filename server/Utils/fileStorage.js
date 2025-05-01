@@ -66,7 +66,7 @@ const getImagesFromS3 = async (contentType, contentId) => {
     return response.Contents.map((item) => {
       return {
         key: item.Key,
-        url: `https://files.minilessonsacademy.com/files/${item.Key}`,
+        url: `https://files.minilessonsacademy.com/${item.Key}`,
       };
     });
   } catch (error) {

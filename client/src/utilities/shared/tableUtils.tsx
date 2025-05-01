@@ -1297,11 +1297,15 @@ function processChapterForSharing(chapter: any, index: number): string {
     let quizHtml = '';
     // Method 1: Look for quiz content with various escape patterns
     
+    if(typeof(chapter.quiz)==='string'){
+      quizHtml = chapter.quiz
+    }else{
+      quizHtml = chapter.quiz?.sharedContent;
+    }
     
     // First try with original text
-    quizHtml = chapter.quiz.sharedContent;
 
-    console.log("Quiz HTML found, length:", quizHtml );
+    // console.log("Quiz HTML found, length:", quizHtml );
     
     // If not found, try with progressively unescaped versions
     // if (!quizHtml) {
@@ -1374,6 +1378,11 @@ function processChapterForSharing(chapter: any, index: number): string {
                                quizHtml.includes('<h3>Exercises</h3>');
       
       // Add the quiz content with proper Exercises heading if not already present
+
+      if(typeof(chapter.quiz)==='string'){
+        quizHtml = legacyQuizConversion(quizHtml)
+        console.log(quizHtml, '<<<<<<<<<<<<< ')
+      }
       if (!hasExercisesHeader) {
         content += `<h2>Exercises</h2>${quizHtml}`;
       } else {
@@ -1403,6 +1412,36 @@ function processChapterForSharing(chapter: any, index: number): string {
     </section>`;
   }
 }
+
+function legacyQuizConversion(input: string) {
+  const blocks = input.trim().split(/\n(?=Question \d+:)/);
+
+  const htmlCards = blocks.map((block: string, index: number) => {
+    const questionMatch = block.match(/Q:\s*(.+)/);
+    const answerMatch = block.match(/A:\s*(.+)/);
+    const question = questionMatch ? questionMatch[1].trim() : '';
+    const answer = answerMatch ? answerMatch[1].trim() : '';
+
+    return `
+<div class="rounded-lg border border-gray-200 bg-white shadow-sm transition-all duration-200">
+  <div class="flex items-start gap-3 p-4 border-b border-gray-100">
+    <div class="flex-shrink-0 w-6 h-6 bg-purple-50 text-purple-700 font-medium text-sm rounded flex items-center justify-center mt-7">${index + 1}</div>
+    <div class="flex-1">
+      <h3 class="text-base font-semibold text-gray-800">${question}</h3>
+    </div>
+  </div>
+  <div class="px-4 py-3 text-sm text-gray-700">
+    ${answer}
+  </div>
+</div>`;
+  }).join('\n');
+
+  return `
+<div class="space-y-4">
+  ${htmlCards}
+</div>`;
+}
+
 
 // Helper function to escape special characters for RegExp
 function escapeRegExp(string:any) {

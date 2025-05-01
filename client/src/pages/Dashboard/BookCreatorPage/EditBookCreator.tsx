@@ -53,49 +53,49 @@ interface Operation {
 
 const EditBookCreator = () => {
   const { id } = useParams<{ id: string }>();
-    const [courseData, setCourseData] = useState<any>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [convertingBlob, setConvertingBlob] = useState<boolean>(false);
-    const [error, setError] = useState<string>("");
-    const [showImageGenerator, setShowImageGenerator] = useState(false);
-    const buttonRef = useRef<HTMLButtonElement>(null);
-    const [AIImage, setAiIMage] = useState<string | null>(null);
-    const [selectedChapter, setSelectedChapter] = useState<string>("");
-    const [selectedChapterIndex, setSelectedChapterIndex] = useState<number>(-1);
-    const [chapters, setChapters] = useState<string[]>([]);
-    const [selectedChapterTitle, setSelectedChapterTitle] = useState<string>("");
-    const [openEditor, setOpenEditor] = useState<boolean>(false);
-    const [currentEditingImage, setCurrentEditingImage] = useState<string | null>(
-      null
-    );
-    const [isGalleryVisible, setIsGalleryVisible] = useState(true);
-  
-    const quillRef = useRef<ReactQuill>(null);
-    const [showEditConfirmation, setShowEditConfirmation] =
-      useState<boolean>(false);
-    const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
-    const [showDeleteConfirmation, setShowDeleteConfirmation] =
-      useState<boolean>(false);
-    const [chapterToDelete, setChapterToDelete] = useState<number>(-1);
-    const [OpenQuizModal, setOpenQuizModal] = useState<boolean>(false);
-    const [currentQuizContent, setCurrentQuizContent] = useState<{
-      editorContent: string;
-      sharedContent: string;
-    } | null>(null);
-    const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
-    const [regeneratingQuestionIndex, setRegeneratingQuestionIndex] =
-      useState<number>(-1);
-    const [showLeaveConfirmation, setShowLeaveConfirmation] =
-      useState<boolean>(false);
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
-    const navigate = useNavigate();
-    const location = useLocation();
-    const [importingQuiz, setImportingQuiz] = useState<boolean>(false);
-    const [quizUrl, setQuizUrl] = useState<string>("");
-    const [isRefreshingCourse, setIsRefreshingCourse] = useState(false);
-    const [hasQuizBeenImported, setHasQuizBeenImported] = useState(false);
-    const [ chapterQuiz, setChapterQuiz] = useState("")
-    const [quizMessage, setQuizMessage] = useState("")
+  const [courseData, setCourseData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [convertingBlob, setConvertingBlob] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [AIImage, setAiIMage] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<string>("");
+  const [selectedChapterIndex, setSelectedChapterIndex] = useState<number>(-1);
+  const [chapters, setChapters] = useState<string[]>([]);
+  const [selectedChapterTitle, setSelectedChapterTitle] = useState<string>("");
+  const [openEditor, setOpenEditor] = useState<boolean>(false);
+  const [currentEditingImage, setCurrentEditingImage] = useState<string | null>(
+    null
+  );
+  const [isGalleryVisible, setIsGalleryVisible] = useState(true);
+
+  const quillRef = useRef<ReactQuill>(null);
+  const [showEditConfirmation, setShowEditConfirmation] =
+    useState<boolean>(false);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] =
+    useState<boolean>(false);
+  const [chapterToDelete, setChapterToDelete] = useState<number>(-1);
+  const [OpenQuizModal, setOpenQuizModal] = useState<boolean>(false);
+  const [currentQuizContent, setCurrentQuizContent] = useState<{
+    editorContent: string;
+    sharedContent: string;
+  } | null>(null);
+  const [isRegeneratingQuiz, setIsRegeneratingQuiz] = useState(false);
+  const [regeneratingQuestionIndex, setRegeneratingQuestionIndex] =
+    useState<number>(-1);
+  const [showLeaveConfirmation, setShowLeaveConfirmation] =
+    useState<boolean>(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [importingQuiz, setImportingQuiz] = useState<boolean>(false);
+  const [quizUrl, setQuizUrl] = useState<string>("");
+  const [isRefreshingCourse, setIsRefreshingCourse] = useState(false);
+  const [hasQuizBeenImported, setHasQuizBeenImported] = useState(false);
+  const [chapterQuiz, setChapterQuiz] = useState("");
+  const [quizMessage, setQuizMessage] = useState("");
 
   const toggleQuizModal = () => setOpenQuizModal(!OpenQuizModal);
 
@@ -121,122 +121,123 @@ const EditBookCreator = () => {
 
   const toggleGallery = () => setIsGalleryVisible(!isGalleryVisible);
 
-
   useEffect(() => {
-      const fetchBook = async () => {
-        try {
-          const response: any = await apiService.get(
-            `/book-creator/getBookById/${id}`,
-            {}
-          );
-          setCourseData(response.data);
-  
-          if (response.data?.content) {
-            try {
-              const parsed = JSON.parse(response.data.content);
-              if (typeof parsed === "string") {
-                const again = JSON.parse(parsed);
-                setChapters(again);
-              } else {
-                setChapters(parsed);
-              }
-            } catch (e) {
-              console.error("Error parsing course content", e);
-              setChapters([]);
+    const fetchBook = async () => {
+      try {
+        const response: any = await apiService.get(
+          `/book-creator/getBookById/${id}`,
+          {}
+        );
+        setCourseData(response.data);
+
+        if (response.data?.content) {
+          try {
+            const parsed = JSON.parse(response.data.content);
+            if (typeof parsed === "string") {
+              const again = JSON.parse(parsed);
+              setChapters(again);
+            } else {
+              setChapters(parsed);
             }
-          } else if (response.data?.blob_location) {
-            // If content is null but blob_location exists, convert blob to chapters
-            setConvertingBlob(true);
-            try {
-              const blobResponse = await apiService.post(
-                "/course-creator/convert-blob-to-chapters",
+          } catch (e) {
+            console.error("Error parsing course content", e);
+            setChapters([]);
+          }
+        } else if (response.data?.blob_location) {
+          // If content is null but blob_location exists, convert blob to chapters
+          setConvertingBlob(true);
+          try {
+            const blobResponse = await apiService.post(
+              "/course-creator/convert-blob-to-chapters",
+              {
+                blobUrl: response.data.blob_location,
+              }
+            );
+
+            if (blobResponse.success) {
+              // Update the course with the new content
+              const updateResponse = await apiService.post(
+                `/course-creator/updateCourse/${id}/book`,
                 {
-                  blobUrl: response.data.blob_location,
+                  content: JSON.stringify(blobResponse.data.chapters),
                 }
               );
-  
-              if (blobResponse.success) {
-                // Update the course with the new content
-                const updateResponse = await apiService.post(
-                  `/course-creator/updateCourse/${id}/book`,
-                  {
-                    content: JSON.stringify(blobResponse.data.chapters),
-                  }
-                );
-  
-                if (updateResponse.success) {
-                  setChapters(blobResponse.data.chapters);
-                } else {
-                  throw new Error(
-                    "Failed to update course with converted content"
-                  );
-                }
+
+              if (updateResponse.success) {
+                setChapters(blobResponse.data.chapters);
               } else {
                 throw new Error(
-                  blobResponse.message || "Failed to convert blob to chapters"
+                  "Failed to update course with converted content"
                 );
               }
-            } catch (err: any) {
-              setError(err.message || "Error converting blob to chapters");
-            } finally {
-              setConvertingBlob(false);
-            }
-          }
-  
-          // Check for quiz_location and convert external quiz if it exists
-          if (response.data?.quiz_location && !hasQuizBeenImported) {
-  
-            const quizFinalUrl = response?.data?.quiz_location.includes('minilessonsacademy') ? response?.data?.quiz_location : `https://minilessonsacademy.com/${response?.data?.quiz_location}`
-            try { 
-              const quizResponse = await apiService.post(
-                "/course-creator/convert-external-quiz",
-                {
-                  // quizUrl: `https://minilessonsacademy.com${response.data.quiz_location}`,
-                  quizUrl:quizFinalUrl,
-                }
+            } else {
+              throw new Error(
+                blobResponse.message || "Failed to convert blob to chapters"
               );
-  
-              if (quizResponse.success) {
-                setHasQuizBeenImported(true);
-                setIsRefreshingCourse(true);
-                // Fetch course again to get updated content with quizzes
-                const updatedResponse = await apiService.get(
-                  `/book-creator/getBookById/${id}`,
-                  {}
-                );
-                if (updatedResponse.data?.content) {
-                  try {
-                    const parsed = JSON.parse(updatedResponse.data.content);
-                    if (typeof parsed === "string") {
-                      const again = JSON.parse(parsed);
-                      setChapters(again);
-                    } else {
-                      setChapters(parsed);
-                    }
-                  } catch (e) {
-                    console.error("Error parsing updated course content", e);
+            }
+          } catch (err: any) {
+            setError(err.message || "Error converting blob to chapters");
+          } finally {
+            setConvertingBlob(false);
+          }
+        }
+
+        // Check for quiz_location and convert external quiz if it exists
+        if (response.data?.quiz_location && !hasQuizBeenImported) {
+          const quizFinalUrl = response?.data?.quiz_location.includes(
+            "minilessonsacademy"
+          )
+            ? response?.data?.quiz_location
+            : `https://minilessonsacademy.com/${response?.data?.quiz_location}`;
+          try {
+            const quizResponse = await apiService.post(
+              "/course-creator/convert-external-quiz",
+              {
+                // quizUrl: `https://minilessonsacademy.com${response.data.quiz_location}`,
+                quizUrl: quizFinalUrl,
+              }
+            );
+
+            if (quizResponse.success) {
+              setHasQuizBeenImported(true);
+              setIsRefreshingCourse(true);
+              // Fetch course again to get updated content with quizzes
+              const updatedResponse = await apiService.get(
+                `/book-creator/getBookById/${id}`,
+                {}
+              );
+              if (updatedResponse.data?.content) {
+                try {
+                  const parsed = JSON.parse(updatedResponse.data.content);
+                  if (typeof parsed === "string") {
+                    const again = JSON.parse(parsed);
+                    setChapters(again);
+                  } else {
+                    setChapters(parsed);
                   }
+                } catch (e) {
+                  console.error("Error parsing updated course content", e);
                 }
               }
-            } catch (error) {
-              console.error("Error converting external quiz:", error);
-              toast.error("Error converting external quiz");
-            } finally {
-              setIsRefreshingCourse(false);
             }
+          } catch (error) {
+            console.error("Error converting external quiz:", error);
+            toast.error("Error converting external quiz");
+          } finally {
+            setIsRefreshingCourse(false);
           }
-        } catch (err: any) {
-          setError(err.message || "Error fetching course data");
-        } finally {
-          setLoading(false);
         }
-      };
-  
-     
-      if (id && !isRefreshingCourse) {
-        fetchBook();
+      } catch (err: any) {
+        setError(err.message || "Error fetching course data");
+      } finally {
+        setLoading(false);
       }
-    }, [id, hasQuizBeenImported, isRefreshingCourse]);
+    };
+
+    if (id && !isRefreshingCourse) {
+      fetchBook();
+    }
+  }, [id, hasQuizBeenImported, isRefreshingCourse]);
 
   const handleAIImageSelect = (imageUrl: string) => {
     setAiIMage(imageUrl);
@@ -250,48 +251,46 @@ const EditBookCreator = () => {
     setSelectedChapter(newContent);
   };
 
-
   const handleChapterSelect = (chapterContent: any, index: number) => {
-     
-      if(chapterContent.title && chapterContent.content){
-  
-        console.log(chapterContent.quiz, "quiz coming here ====>")
-   setSelectedChapterTitle(chapterContent.title);
+    if (chapterContent.title && chapterContent.content) {
+      console.log(chapterContent.quiz, "quiz coming here ====>");
+      setSelectedChapterTitle(chapterContent.title);
       setSelectedChapter(chapterContent.content);
-      if(chapterContent.quiz){
-        setChapterQuiz(chapterContent.quiz)
+      if (chapterContent.quiz) {
+        setChapterQuiz(chapterContent.quiz);
       }
-      if(chapterContent?.quiz && chapterContent?.quiz?.editorContent && chapterContent.quiz.sharedContent){
-        setCurrentQuizContent(chapterContent.quiz)
+      if (
+        chapterContent?.quiz &&
+        chapterContent?.quiz?.editorContent &&
+        chapterContent.quiz.sharedContent
+      ) {
+        setCurrentQuizContent(chapterContent.quiz);
       }
       setSelectedChapterIndex(index);
-      setQuizMessage("This quiz is generated using legacy application, for new quizes you have to delete the old ones")
-      } else {
-  
-        const {
-          isCover,
-          content,
-          title,
-          quizContent,
-          index: selectedIndex
-        } = processChapterSelection(chapterContent, index);
-  
-  
-  
-        console.log(quizContent);
-        setSelectedChapterTitle(title);
-        setSelectedChapter(content);
-        setSelectedChapterIndex(selectedIndex);
-        setCurrentQuizContent(quizContent)
-        
-      }
-      // setCurrentQuizContent(quizContent);
-    };
+      setQuizMessage(
+        "This quiz is generated using legacy application, for new quizes you have to delete the old ones"
+      );
+    } else {
+      const {
+        isCover,
+        content,
+        title,
+        quizContent,
+        index: selectedIndex,
+      } = processChapterSelection(chapterContent, index);
 
+      console.log(quizContent);
+      setSelectedChapterTitle(title);
+      setSelectedChapter(content);
+      setSelectedChapterIndex(selectedIndex);
+      setCurrentQuizContent(quizContent);
+    }
+    // setCurrentQuizContent(quizContent);
+  };
 
-  const handleSave = async (deleteQuiz:any) => {
+  const handleSave = async (deleteQuiz: any) => {
     try {
-      console.log("before")
+      console.log("before");
       if (selectedChapterIndex === -1) return;
       const updatedChapters = [...chapters];
       const updatedContent = handleContentUpdate(
@@ -302,21 +301,20 @@ const EditBookCreator = () => {
         currentQuizContent
       ) as any;
 
-      console.log("before quiz")
+      console.log("before quiz");
 
-      if(deleteQuiz){
-        updatedContent.quiz = null
-        setCurrentQuizContent(null)
-        setChapterQuiz("")
-}
+      if (deleteQuiz) {
+        updatedContent.quiz = null;
+        setCurrentQuizContent(null);
+        setChapterQuiz("");
+      }
 
-console.log("after quiz")
-
+      console.log("after quiz");
 
       updatedChapters[selectedChapterIndex] = updatedContent;
 
-      console.log(updatedContent, "see updated content")
-       
+      console.log(updatedContent, "see updated content");
+
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/book`,
         {
@@ -338,7 +336,6 @@ console.log("after quiz")
       toast.error("Error saving content");
     }
   };
-
 
   const handleEditedImageSave = (editedImageUrl: string): void => {
     if (!quillRef.current || !currentEditingImage) return;
@@ -395,19 +392,20 @@ console.log("after quiz")
   //   }
   // };
 
-
   const handleAddCoverImage = async (imageUrl: string) => {
     try {
       const coverContent = generateCoverContent(imageUrl);
-  
+      console.log(coverContent, " <<< ");
       // Remove any existing cover chapter
-      let updatedChapters = chapters.filter(
-        (chapter) => !isCoverChapter(chapter)
+      let updatedChapters = chapters.filter((chapter: any) =>
+        typeof chapter === "string"
+          ? !isCoverChapter(chapter)
+          : !isCoverChapter(chapter.content)
       );
-  
+
       // Insert the new cover at the beginning
       updatedChapters.unshift(coverContent);
-  
+
       const response = await apiService.post(
         `/course-creator/updateCourse/${id}/book`,
         {
@@ -513,8 +511,6 @@ console.log("after quiz")
     setShowDeleteConfirmation(false);
     setChapterToDelete(-1);
   };
-
-  
 
   const handleSaveQuiz = (editorQuizHTML: string, sharedQuizHTML: string) => {
     setCurrentQuizContent({
@@ -650,9 +646,9 @@ console.log("after quiz")
       return;
     }
 
-setCurrentQuizContent(null)
-setChapterQuiz("")
-handleSave(true)
+    setCurrentQuizContent(null);
+    setChapterQuiz("");
+    handleSave(true);
   };
 
   // const handleCreateAudio = async () => {
@@ -665,7 +661,6 @@ handleSave(true)
   //     toast.error("Failed to create audio");
   //   }
   // };
-
 
   useEffect(() => {
     // Confirmation handler for when user tries to navigate away
@@ -757,7 +752,7 @@ handleSave(true)
           //   }
           //   return true;
           // }}
-          onBeforeNavigate = {(()=> true)}
+          onBeforeNavigate={() => true}
           label="Back to Dashboard"
         />
         <div className="flex justify-between">
@@ -799,14 +794,18 @@ handleSave(true)
                 }
               >
                 <ImageIcon className="w-4 h-4" />
-                <span className="text-xs whitespace-nowrap">Generate Image</span>
+                <span className="text-xs whitespace-nowrap">
+                  Generate Image
+                </span>
               </Button>
             </div>
             {selectedChapterIndex !== -1 &&
               chapters[selectedChapterIndex] &&
               typeof chapters[selectedChapterIndex] === "string" &&
               (chapters[selectedChapterIndex].includes('data-cover="true"') ||
-                chapters[selectedChapterIndex].includes("book-cover-image")) && (
+                chapters[selectedChapterIndex].includes(
+                  "book-cover-image"
+                )) && (
                 <Button
                   variant="soft"
                   size="sm"
@@ -815,7 +814,9 @@ handleSave(true)
                   title="Remove cover image"
                 >
                   <ShieldCloseIcon className="w-4 h-4 text-red-600" />
-                  <span className="text-xs whitespace-nowrap">Remove Cover</span>
+                  <span className="text-xs whitespace-nowrap">
+                    Remove Cover
+                  </span>
                 </Button>
               )}
             <Button
