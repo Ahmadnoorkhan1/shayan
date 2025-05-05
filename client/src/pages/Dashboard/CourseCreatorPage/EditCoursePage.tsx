@@ -837,106 +837,204 @@ const EditCoursePage = () => {
     <React.Fragment>
       {/* Main container with responsive layout changes */}
       <div className="flex flex-col p-2 md:p-4 gap-4 lg:gap-6 max-w-full overflow-hidden">
-        <div className="flex justify-between items-center">
+        {/* Mobile sticky header with essential actions */}
+        <div className="md:hidden sticky top-0 z-20 bg-white py-2 px-3 border-b border-purple-100 shadow-sm flex justify-between items-center">
+          <BackButton onBeforeNavigate={() => true} label="Back" />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition-all duration-200 flex items-center gap-1 px-3 py-1.5"
+              onClick={() => handleSave(false)}
+            >
+              <Save className="w-3.5 h-3.5 text-white" />
+              <span className="text-xs font-medium">Save</span>
+            </Button>
+            <Button
+              variant="soft"
+              size="sm"
+              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1 px-2 py-1.5"
+              onClick={toggleGallery}
+            >
+              <Book className="w-3.5 h-3.5 text-primary" />
+            </Button>
+          </div>
+        </div>
+        
+        {/* Desktop header with all tools */}
+        <div className="hidden md:flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
           <BackButton onBeforeNavigate={() => true} label="Back to Dashboard" />
-          <div className="flex justify-between">
-            <div className="flex flex-wrap items-center text-primary gap-2">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+            <Button
+              variant="soft"
+              size="sm"
+              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+              onClick={toggleQuizModal}
+            >
+              <PackagePlus className="w-4 h-4" />
+              <span className="text-xs whitespace-nowrap">Create Quiz</span>
+            </Button>
+            <Button
+              variant="soft"
+              size="sm"
+              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+              onClick={() => navigate(`/create-audio/course/${id}`)}
+            >
+              <Music className="w-4 h-4" />
+              <span className="text-xs whitespace-nowrap">Create Audio</span>
+            </Button>
+            <GenerateCover
+              onCoverImageGenerated={handleAddCoverImage}
+              courseId={id}
+              contentType={"course"}
+            />
+            <div className="text-primary">
               <Button
                 variant="soft"
                 size="sm"
+                ref={buttonRef}
+                onClick={() => setShowImageGenerator(!showImageGenerator)}
                 className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-                onClick={toggleQuizModal}
+                title={
+                  showImageGenerator
+                    ? "Hide AI Image Generator"
+                    : "Generate AI Image"
+                }
               >
-                <PackagePlus className="w-4 h-4" />
-                <span className="text-xs whitespace-nowrap">Create Quiz</span>
-              </Button>
-              <Button
-                variant="soft"
-                size="sm"
-                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-                onClick={() => navigate(`/create-audio/course/${id}`)}
-              >
-                <Music className="w-4 h-4" />
-                <span className="text-xs whitespace-nowrap">Create Audio</span>
-              </Button>
-
-              <GenerateCover
-                onCoverImageGenerated={handleAddCoverImage}
-                courseId={id}
-                contentType={"course"}
-              />
-
-              <div className="text-primary">
-                <Button
-                  variant="soft"
-                  size="sm"
-                  ref={buttonRef}
-                  onClick={() => setShowImageGenerator(!showImageGenerator)}
-                  className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-                  title={
-                    showImageGenerator
-                      ? "Hide AI Image Generator"
-                      : "Generate AI Image"
-                  }
-                >
-                  <ImageIcon className="w-4 h-4" />
-                  <span className="text-xs whitespace-nowrap">
-                    Generate Image
-                  </span>
-                </Button>
-              </div>
-
-              {selectedChapterIndex !== -1 &&
-                chapters[selectedChapterIndex] &&
-                typeof chapters[selectedChapterIndex] === "string" &&
-                (chapters[selectedChapterIndex].includes('data-cover="true"') ||
-                  chapters[selectedChapterIndex].includes(
-                    "book-cover-image"
-                  )) && (
-                  <Button
-                    variant="soft"
-                    size="sm"
-                    onClick={handleRemoveCoverImage}
-                    className="bg-red-100 hover:bg-red-200 transition flex items-center gap-1"
-                    title="Remove cover image"
-                  >
-                    <ShieldCloseIcon className="w-4 h-4 text-red-600" />
-                    <span className="text-xs whitespace-nowrap">
-                      Remove Cover
-                    </span>
-                  </Button>
-                )}
-              <Button
-                variant="soft"
-                size="sm"
-                className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-                onClick={() => window.open(`/shared/course/${id}`, "_blank")}
-                title="View live published version in new tab"
-              >
-                <ExternalLink className="w-4 h-4 text-primary" />
-                <span className="text-xs whitespace-nowrap">share preview</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 ml-auto px-4 py-2.5"
-                onClick={() => handleSave(false)}
-                title="Save your content changes"
-              >
-                <Save className="w-4 h-4 text-white" />
-                <span className="text-xs font-medium whitespace-nowrap">
-                  Save Content
+                <ImageIcon className="w-4 h-4" />
+                <span className="text-xs whitespace-nowrap">
+                  Generate Image
                 </span>
               </Button>
             </div>
+            {selectedChapterIndex !== -1 &&
+              chapters[selectedChapterIndex] &&
+              typeof chapters[selectedChapterIndex] === "string" &&
+              (chapters[selectedChapterIndex].includes('data-cover="true"') ||
+                chapters[selectedChapterIndex].includes(
+                  "book-cover-image"
+                )) && (
+                <Button
+                  variant="soft"
+                  size="sm"
+                  onClick={handleRemoveCoverImage}
+                  className="bg-red-100 hover:bg-red-200 transition flex items-center gap-1"
+                  title="Remove cover image"
+                >
+                  <ShieldCloseIcon className="w-4 h-4 text-red-600" />
+                  <span className="text-xs whitespace-nowrap">
+                    Remove Cover
+                  </span>
+                </Button>
+              )}
+            <Button
+              variant="soft"
+              size="sm"
+              className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+              onClick={() => window.open(`/shared/course/${id}`, "_blank")}
+              title="View live published version in new tab"
+            >
+              <ExternalLink className="w-4 h-4 text-primary" />
+              <span className="text-xs whitespace-nowrap">share preview</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-purple-600 hover:bg-purple-700 text-white shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 px-4 py-2.5"
+              onClick={() => handleSave(false)}
+              title="Save your content changes"
+            >
+              <Save className="w-4 h-4 text-white" />
+              <span className="text-xs font-medium whitespace-nowrap">
+                Save Content
+              </span>
+            </Button>
           </div>
         </div>
-        {/* Toolbar area */}
+
+        {/* Mobile toolbar with additional actions - appears below the editor */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white p-2 border-t border-purple-100 shadow-lg flex flex-wrap justify-around">
+          <div className="flex flex-col items-center justify-center px-2 py-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleQuizModal}
+              className="p-0 flex items-center justify-center"
+            >
+              <PackagePlus className="w-5 h-5 text-primary" />
+            </Button>
+            <span className="text-[10px] text-gray-600 mt-1">Quiz</span>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center px-2 py-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate(`/create-audio/course/${id}`)}
+              className="p-0 flex items-center justify-center"
+            >
+              <Music className="w-5 h-5 text-primary" />
+            </Button>
+            <span className="text-[10px] text-gray-600 mt-1">Audio</span>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center px-2 py-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowImageGenerator(!showImageGenerator)}
+              className="p-0 flex items-center justify-center"
+            >
+              <ImageIcon className="w-5 h-5 text-primary" />
+            </Button>
+            <span className="text-[10px] text-gray-600 mt-1">Image</span>
+          </div>
+          
+          <div className="flex flex-col items-center justify-center px-2 py-1.5">
+            <GenerateCover
+              onCoverImageGenerated={handleAddCoverImage}
+              courseId={id}
+              contentType={"course"}
+              isMobile={true}
+            />
+            <span className="text-[10px] text-gray-600 mt-1">Cover</span>
+          </div>
+          
+          {selectedChapterIndex !== -1 &&
+            chapters[selectedChapterIndex] &&
+            typeof chapters[selectedChapterIndex] === "string" &&
+            (chapters[selectedChapterIndex].includes('data-cover="true"') ||
+              chapters[selectedChapterIndex].includes("book-cover-image")) && (
+              <div className="flex flex-col items-center justify-center px-2 py-1.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveCoverImage}
+                  className="p-0 flex items-center justify-center"
+                >
+                  <ShieldCloseIcon className="w-5 h-5 text-red-500" />
+                </Button>
+                <span className="text-[10px] text-gray-600 mt-1">Remove</span>
+              </div>
+            )}
+          
+          <div className="flex flex-col items-center justify-center px-2 py-1.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(`/shared/course/${id}`, "_blank")}
+              className="p-0 flex items-center justify-center"
+            >
+              <ExternalLink className="w-5 h-5 text-primary" />
+            </Button>
+            <span className="text-[10px] text-gray-600 mt-1">Preview</span>
+          </div>
+        </div>
 
         {/* Main editor area and sidebar container */}
-        <div className="flex  gap-4">
-          {/* Chapter gallery - now a responsive drawer */}
-          <div className="h-[calc(100vh-150px)]">
+        <div className="flex flex-col md:flex-row gap-4 mb-16 md:mb-0">
+          {/* Chapter gallery - responsive drawer */}
+          <div className="w-full md:w-auto">
             <ChapterGallery
               chapters={chapters}
               onSelectChapter={handleChapterSelect}
@@ -945,23 +1043,49 @@ const EditCoursePage = () => {
               onToggleVisibility={toggleGallery}
             />
           </div>
+          
           {/* Main editing area - responsive width based on gallery visibility */}
           <div
-            className={`p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ease-in-out
-          ${isGalleryVisible ? "w-full md:flex-1" : "w-full"}`}
+            className={`p-2 sm:p-4 md:p-6 bg-white rounded-lg shadow-md overflow-hidden transition-all duration-300 ease-in-out w-full 
+              ${isGalleryVisible ? "md:flex-1" : "w-full"}`}
           >
             <div className="w-full h-full overflow-hidden flex flex-col">
               {/* Rich text editor */}
-              <div className="flex-grow overflow-auto">
-                <RichTextEditor
-                  ref={quillRef}
-                  initialContent={selectedChapter}
-                  imageUrl={AIImage}
-                  id={Number(id)}
-                  onContentChange={handleContentChange}
-                  onSave={() => handleSave(false)}
-                  onImageClick={handleImageClick}
-                />
+              <div className="flex-grow overflow-auto pb-20 md:pb-0">
+                {selectedChapter ? (
+                  <RichTextEditor
+                    ref={quillRef}
+                    initialContent={selectedChapter}
+                    imageUrl={AIImage}
+                    id={Number(id)}
+                    onContentChange={handleContentChange}
+                    onSave={() => handleSave(false)}
+                    onImageClick={handleImageClick}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-[40vh] md:h-[50vh] text-center p-4">
+                    <div className="w-12 h-12 md:w-16 md:h-16 mb-3 md:mb-4 text-purple-300">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-lg md:text-xl font-semibold text-gray-700 mb-2">No Chapter Selected</h2>
+                    <p className="text-sm text-gray-500 max-w-md">
+                      {isGalleryVisible 
+                        ? "Please select a chapter from the side panel to start editing its content."
+                        : "Click the chapters button to view and select a chapter."}
+                    </p>
+                    {!isGalleryVisible && (
+                      <button 
+                        onClick={toggleGallery}
+                        className="mt-4 px-4 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-md text-sm font-medium flex items-center gap-2 transition-colors"
+                      >
+                        <Book className="w-4 h-4" />
+                        Show Chapters
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Quiz display area */}
@@ -992,7 +1116,7 @@ const EditCoursePage = () => {
         </div>
       </div>
 
-      {/* Modals and dialog boxes - unchanged */}
+      {/* Modals and dialog boxes */}
       <Modal
         isOpen={openEditor}
         onClose={() => setOpenEditor(false)}

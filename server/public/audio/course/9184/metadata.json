@@ -1,0 +1,52 @@
+{
+  "chapters": {
+    "0": {
+      "path": "/audio/course/9184/chapters/chapter_0.mp3",
+      "createdAt": "2025-04-24T21:54:08.150Z",
+      "voice": "alloy",
+      "duration": 4853
+    },
+    "1": {
+      "path": "/audio/course/9184/chapters/chapter_1.mp3",
+      "createdAt": "2025-04-24T21:54:58.268Z",
+      "voice": "alloy",
+      "duration": 4296
+    },
+    "2": {
+      "path": "/audio/course/9184/chapters/chapter_2.mp3",
+      "createdAt": "2025-04-24T21:55:42.695Z",
+      "voice": "alloy",
+      "duration": 3540
+    },
+    "3": {
+      "path": "/audio/course/9184/chapters/chapter_3.mp3",
+      "createdAt": "2025-04-24T21:56:21.873Z",
+      "voice": "alloy",
+      "duration": 3627
+    },
+    "4": {
+      "path": "/audio/course/9184/chapters/chapter_4.mp3",
+      "createdAt": "2025-04-24T21:57:13.100Z",
+      "voice": "alloy",
+      "duration": 4685
+    },
+    "6": {
+      "path": "/audio/course/9184/chapters/chapter_6.mp3",
+      "createdAt": "2025-04-24T21:58:58.783Z",
+      "voice": "alloy",
+      "duration": 4437
+    },
+    "7": {
+      "path": "/audio/course/9184/chapters/chapter_7.mp3",
+      "createdAt": "2025-04-24T21:59:27.518Z",
+      "voice": "alloy",
+      "duration": 4263
+    },
+    "8": {
+      "path": "/audio/course/9184/chapters/chapter_8.mp3",
+      "createdAt": "2025-04-24T22:00:07.553Z",
+      "voice": "alloy",
+      "duration": 4427
+    }
+  }
+}

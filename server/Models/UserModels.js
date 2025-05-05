@@ -20,11 +20,11 @@ const User = sequelize?.define(
     email: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      unique: false,
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     preferences: {
       type: DataTypes.TEXT, // Stores JSON as text
@@ -65,6 +65,14 @@ const User = sequelize?.define(
     premium_credits: {
       type: DataTypes.INTEGER,
       defaultValue: 0, // Premium credits for additional features
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      defaultValue: Date.now, // Premium credits for additional features
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      defaultValue: Date.now, // Premium credits for additional features
     },
   },
   {

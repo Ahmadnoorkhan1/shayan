@@ -14,7 +14,6 @@ const sequelize = new Sequelize(DB_URI, {
     multipleStatements: true,
   },
 });
-console.log('is there working? ')
 // Sync function to create tables if they don't exist
 const syncDatabase = async () => {
   try {
@@ -22,7 +21,7 @@ const syncDatabase = async () => {
     console.log('Database connected successfully.');
     // await sequelize.sync();
     // // Sync models with database
-    // await sequelize.sync({ alter: true, force: false });  
+    await sequelize.sync({ alter: true, force: false });  
     // // Use { force: true } only if you want to drop and recreate tables
     // console.log('Database synced.');
   } catch (error) {

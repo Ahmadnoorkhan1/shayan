@@ -10,9 +10,10 @@ interface GenerateCoverProps {
   onCoverImageGenerated?: (imageUrl: string) => void;
   courseId?: string | number
   contentType?: string 
+  isMobile?: boolean
 }
 
-export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenerated, courseId, contentType }) => {
+export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenerated, courseId, contentType, isMobile }) => {
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState<'generate' | 'edit'>('generate');
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -99,17 +100,28 @@ export const GenerateCover: React.FC<GenerateCoverProps> = ({ onCoverImageGenera
 
   return (
     <>
-    <div className='text-purple-600'>
-      <Button 
-        variant="soft"
-        size='sm'
-        onClick={() => setShowModal(true)}
-        className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
-        >
-        <Book className="w-4 h-4 " />
-        <span className="text-[12px] ">{contentType?.toLowerCase() === "course" ? "Course Cover" : "Book Cover" }</span>
-      </Button>
+    {!isMobile ? (
+      <div className='text-purple-600'>
+        <Button 
+          variant="soft"
+          size='sm'
+          onClick={() => setShowModal(true)}
+          className="bg-gray-100 hover:bg-gray-200 transition flex items-center gap-1"
+          >
+          <Book className="w-4 h-4 " />
+          <span className="text-[12px] ">{contentType?.toLowerCase() === "course" ? "Course Cover" : "Book Cover" }</span>
+        </Button>
       </div>
+    ) : (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setShowModal(true)}
+        className="p-0 flex items-center justify-center"
+      >
+        <Book className="w-5 h-5 text-primary" />
+      </Button>
+    )}
 
       {/* Hidden file input for upload */}
       <input 

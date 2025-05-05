@@ -1,7 +1,7 @@
 const OpenAI = require('openai');
 const fs = require('fs-extra');
 const path = require('path');
-const axios = require('axios');
+const { uploadFile } = require('./cloudflareStorage');
 require('dotenv').config();
 
 const openai = new OpenAI({
@@ -99,17 +99,16 @@ const prepareContentForAudio = (content) => {
 const generateAudio = async (data) => {
     try {
         // Extract data
-        const { title, content, voice = 'alloy' } = data;
+        const { title, content, voice = 'alloy', id } = data;
+        
+        if (!id) {
+            throw new Error("Missing required parameter: id");
+        }
         
         // Create unique filename based on title and timestamp
         const timestamp = Date.now();
         const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         const filename = `${safeTitle}_${timestamp}.mp3`;
-        
-        // Create audio directory if it doesn't exist
-        const audioDir = path.join(__dirname, '../public/audio');
-        await fs.ensureDir(audioDir);
-        const filepath = path.join(audioDir, filename);
         
         // Prepare content for audio conversion
         const preparedText = prepareContentForAudio(content);
@@ -118,12 +117,10 @@ const generateAudio = async (data) => {
         const audioBuffers = [];
         
         // Process content in chunks (OpenAI limit is 4096 characters)
-        const MAX_CHUNK_SIZE = 3500; // Leave some margin below the 4096 limit
-        
-        // Split text into natural chunks (sentences and paragraphs)
+        const MAX_CHUNK_SIZE = 3500;
         const chunks = [];
         
-        // Split by paragraphs first
+        // Split text into natural chunks (sentences and paragraphs)
         const paragraphs = preparedText.split(/\n{2,}/);
         let currentChunk = '';
         
@@ -148,7 +145,7 @@ const generateAudio = async (data) => {
                                 chunks.push(currentChunk);
                                 currentChunk = sentence + ' ';
                             } else {
-                                // If a single sentence is too long, we need to split by words
+                                // If a single sentence is too long, split by words
                                 if (sentence.length > MAX_CHUNK_SIZE) {
                                     const words = sentence.split(' ');
                                     let wordChunk = '';
@@ -193,7 +190,6 @@ const generateAudio = async (data) => {
             try {
                 console.log(`Processing audio chunk ${i+1}/${chunks.length}, length: ${chunks[i].length} characters`);
                 
-                // Generate audio for this chunk
                 const response = await openai.audio.speech.create({
                     model: "tts-1",
                     voice: voice,
@@ -201,32 +197,26 @@ const generateAudio = async (data) => {
                     response_format: "mp3"
                 });
                 
-                // Get audio data as buffer
                 const chunkBuffer = Buffer.from(await response.arrayBuffer());
-                
-                // Add to our collection of audio buffers
                 audioBuffers.push(chunkBuffer);
                 
-                // Add a small pause between audio chunks for natural flow
                 if (i < chunks.length - 1) {
-                    // Create a small silence buffer (500ms)
-                    const silence = Buffer.alloc(4000); // Small silence buffer
+                    const silence = Buffer.alloc(4000);
                     audioBuffers.push(silence);
                 }
             } catch (chunkError) {
                 console.error(`Error processing chunk ${i+1}:`, chunkError.message);
-                // Continue with other chunks even if one fails
             }
         }
         
         // Combine all audio buffers
         const combinedAudioBuffer = Buffer.concat(audioBuffers);
         
-        // Save the combined audio file
-        await fs.writeFile(filepath, combinedAudioBuffer);
+        // Upload to S3 with simplified path
+        const folderPath = `audio/${courseId}`;
+        const audioUrl = await uploadFile(combinedAudioBuffer, filename, folderPath, 'audio/mpeg');
         
-        // Return the path to the audio file
-        return `/audio/${filename}`;
+        return audioUrl;
         
     } catch (error) {
         console.error("Audio Generation Error:", error.message);
@@ -242,26 +232,22 @@ const generateAudio = async (data) => {
  */
 const generateChapterAudio = async (data) => {
     try {
-        // Extract data
         const { 
             chapterContent, 
             chapterIndex, 
             voice = 'alloy', 
-            type = 'course',
-            id 
+            type='course',
+            id, 
+            onProgress = null  // Add onProgress callback parameter
         } = data;
         
         if (!chapterContent || !id || chapterIndex === undefined) {
             throw new Error("Missing required parameters: chapterContent, id, and chapterIndex");
         }
         
-        // Create directory structure: /audio/[type]/[id]/chapters/
-        const baseDir = path.join(__dirname, '../public/audio', type, id.toString(), 'chapters');
-        await fs.ensureDir(baseDir);
-        
         // Create unique filename based on chapter index
-        const filename = `chapter_${chapterIndex}.mp3`;
-        const filepath = path.join(baseDir, filename);
+        const timestamp = Date.now();
+        const filename = `${timestamp}-chapter_${chapterIndex}.mp3`;
         
         // Prepare content for audio conversion
         const preparedText = prepareContentForAudio(chapterContent);
@@ -269,24 +255,27 @@ const generateChapterAudio = async (data) => {
         // Create an array to store audio buffers
         const audioBuffers = [];
         
-        // Process content in chunks (OpenAI limit is 4096 characters)
-        const MAX_CHUNK_SIZE = 3500; // Leave some margin below the 4096 limit
-        
-        // Split by paragraphs first
-        const paragraphs = preparedText.split(/\n{2,}/);
-        let currentChunk = '';
+        // Process content in chunks
+        const MAX_CHUNK_SIZE = 3500;
         const chunks = [];
         
-        // Process each paragraph into chunks
+        // Split text into natural chunks (sentences and paragraphs)
+        const paragraphs = preparedText.split(/\n{2,}/);
+        let currentChunk = '';
+        
+        // Process each paragraph
         for (const paragraph of paragraphs) {
+            // If this paragraph would make the chunk too large
             if (currentChunk.length + paragraph.length > MAX_CHUNK_SIZE) {
+                // If the current chunk already has content
                 if (currentChunk.length > 0) {
                     chunks.push(currentChunk);
                     currentChunk = '';
                 }
                 
+                // If the paragraph itself is too large, split into sentences
                 if (paragraph.length > MAX_CHUNK_SIZE) {
-                    // Split long paragraphs into sentences
+                    // Split by sentences (period, question mark, exclamation mark followed by space)
                     const sentences = paragraph.split(/(?<=[.!?])\s+/);
                     
                     for (const sentence of sentences) {
@@ -340,61 +329,56 @@ const generateChapterAudio = async (data) => {
             try {
                 console.log(`Processing audio chunk ${i+1}/${chunks.length} for chapter ${chapterIndex}`);
                 
-                const response = await openai.audio.speech.create({
-                    model: "tts-1",
-                    voice: voice,
-                    input: chunks[i],
-                    response_format: "mp3"
-                });
-                
-                // Get audio data as buffer
-                const chunkBuffer = Buffer.from(await response.arrayBuffer());
-                audioBuffers.push(chunkBuffer);
-                
-                // Add a small pause between chunks
-                if (i < chunks.length - 1) {
-                    const silence = Buffer.alloc(2000);
-                    audioBuffers.push(silence);
+                // Calculate and report progress if callback provided
+                if (typeof onProgress === 'function') {
+                    const progressPercent = Math.round((i / chunks.length) * 90); // 0-90% for chunks
+                    onProgress(progressPercent);
                 }
+                
+                try {
+                    console.log('Calling open ai for chunk '+i+1/chunks.length);
+                    const response = await openai.audio.speech.create({
+                        model: "tts-1",
+                        voice: voice,
+                        input: chunks[i],
+                        response_format: "mp3"
+                    })
+                    const chunkBuffer = Buffer.from(await response.arrayBuffer());
+                    audioBuffers.push(chunkBuffer);
+                
+                    if (i < chunks.length - 1) {
+                        const silence = Buffer.alloc(2000);
+                        audioBuffers.push(silence);
+                    }
+                    
+                } catch (error) {
+                    console.log('THE ERROR COMES HERE', error)
+                }
+                
+                
             } catch (chunkError) {
                 console.error(`Error processing chunk ${i+1} for chapter ${chapterIndex}:`, chunkError.message);
-                // Continue with other chunks
             }
+        }
+        
+        // Report upload starting
+        if (typeof onProgress === 'function') {
+            onProgress(92); // Uploading phase
         }
         
         // Combine all audio buffers
         const combinedAudioBuffer = Buffer.concat(audioBuffers);
         
-        // Save the combined audio file
-        await fs.writeFile(filepath, combinedAudioBuffer);
+        // Upload to S3
+        const folderPath = `audio/${type}/${id}/chapters`;
+        const audioUrl = await uploadFile(combinedAudioBuffer, filename, folderPath, 'audio/mpeg');
         
-        // Return the path to the audio file
-        const publicPath = `/audio/${type}/${id}/chapters/${filename}`;
-        
-        // Update metadata file
-        const metadataPath = path.join(path.dirname(baseDir), 'metadata.json');
-        let metadata = { chapters: {} };
-        
-        if (await fs.pathExists(metadataPath)) {
-            try {
-                metadata = await fs.readJson(metadataPath);
-                metadata.chapters = metadata.chapters || {};
-            } catch (error) {
-                console.error('Error reading metadata file, creating new one:', error);
-            }
+        // Final progress update
+        if (typeof onProgress === 'function') {
+            onProgress(100);
         }
         
-        // Add chapter info to metadata
-        metadata.chapters[chapterIndex] = {
-            path: publicPath,
-            createdAt: new Date().toISOString(),
-            voice: voice,
-            duration: Math.floor(combinedAudioBuffer.length / 1000) // Rough estimate of duration in seconds
-        };
-        
-        await fs.writeJson(metadataPath, metadata, { spaces: 2 });
-        
-        return publicPath;
+        return audioUrl;
     } catch (error) {
         console.error("Chapter Audio Generation Error:", error.message);
         return null;

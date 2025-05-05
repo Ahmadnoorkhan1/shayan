@@ -40,13 +40,13 @@ const SharedContent: React.FC<SharedContentProps> = () => {
             }
           }
           const parsedContent = JSON.parse(processedContent)
-          console.log(parsedContent, ' <<< ')
           const html = await formatSharedContent(
             parsedContent, 
             response.data.title || 'Shared Content', 
             (response.data.courseType || type) as 'course' | 'book'
           );
 
+          
           console.log('HTML generated:', html);
           
           // Set the sanitized and formatted content

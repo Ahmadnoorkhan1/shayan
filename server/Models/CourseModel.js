@@ -39,7 +39,7 @@ const Course = sequelize?.define(
     },
     type: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       defaultValue: 'course' || 'book', // e.g book, course
     },
     quiz_location: {
@@ -48,13 +48,19 @@ const Course = sequelize?.define(
     },
     content: {
       type: DataTypes.JSON,
-      allowNull: false,
+      allowNull: true,
     },
     is_shared: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: false,
     },
+    audios: {
+      type: DataTypes.JSON,
+      allowNull: true,
+      defaultValue: [],
+    }
+    
   },
     {
     timestamps: true, // Adds createdAt and updatedAt fields

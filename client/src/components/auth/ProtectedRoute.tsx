@@ -112,12 +112,22 @@ const ProtectedRoute = () => {
   }
 
   // Redirect to login
-  return <Navigate to="/login" state={{ from: location, message: errorMessage }} replace />;
+  return <ExternalRedirect />
 };
 
 // Export a function to clear the session cache (useful for logout)
 export const clearAuthSessionCache = () => {
   localStorage.removeItem(SESSION_CACHE_KEY);
 };
+
+
+const ExternalRedirect = () => {
+  useEffect(() => {
+    window.location.href = 'https://minilessonsacademy.com/react-access.php';
+  }, []);
+
+  return null; // or a loader/spinner
+};
+
 
 export default ProtectedRoute;

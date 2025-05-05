@@ -1,0 +1,13 @@
+{
+  "images": [
+    {
+      "id": 1745341580442,
+      "filename": "cover_1745341580442.png",
+      "path": "/images/course/1006/cover_1745341580442.png",
+      "contentType": "course",
+      "contentId": 1006,
+      "description": "Inventory management is a crucial aspect of business operations that involves overseeing the flow of goods from manufacturers to warehouses and ultimately to the final point of sale to customers. One of the key components of inventory management is determining the value of inventory, which can be done through various methods such as FIFO (First In, First Out), LIFO (Last In, First Out), and Weighted Average. Additionally, assessing inventory efficiency through metrics like the inventory turnover ratio is vital for optimizing operations and financial performance. Effective inventory management not only ensures the availability of products to meet customer demand but also plays a significant role in financial reporting and decision-making processes within an organization.",
+      "createdAt": "2025-04-22T17:06:20.448Z"
+    }
+  ]
+}

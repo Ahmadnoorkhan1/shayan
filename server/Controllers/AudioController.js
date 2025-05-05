@@ -21,25 +21,29 @@ const getChaptersWithAudioUrls = async (req, res) => {
         message: 'chapters must be a non-empty array' 
       });
     }
-    
+    let audioUrls = []
     // Generate audio URLs for each chapter
-    const chaptersWithAudio = chapters.map((chapterName, index) => {
+    const chaptersWithAudio = chapters.map((chapter, index) => {
       // Index starts from 1, not 0
       const audioUrl = `https://minilessonsacademy.com/wf-content/audio/${courseId}/chapter${index + 1}.mp3`;
-      
+      audioUrls.push(audioUrl)
       return {
-        chapterName,
         audioUrl
       };
     });
+
+    const course = await Course.findOne(
+      { where: { course_id: courseId } }
+    );
+
+    course.audios = audioUrls;
+
+    course.save();
     
     // Return response
     return res.status(200).json({
       success: true,
-      data: {
-        courseId,
-        chapters: chaptersWithAudio
-      }
+      data: course
     });
     
   } catch (error) {
